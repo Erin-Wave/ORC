@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from orc import clean_room
 from orc.eval.analytic import AnalyticSpec, evaluate, strided_window_sum
 from orc.eval.signal import LONG as SIG_LONG, SHORT as SIG_SHORT
-from orc.eval.signal import SignalSpec, run_signals
+from orc.eval.signal import SignalSpec, liquidation_level, run_signals
 from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak,
                                simulate)
 from orc.kernel.liquidation import (BTC_LIKE, LONG_TAIL, is_liquidated,
@@ -479,3 +479,133 @@ def test_sharpe_refuses_a_destroyed_curve():
     assert np.isnan(sharpe(eq, 8760))
     big = np.concatenate([np.full(1000, 10_000_000.0), np.zeros(2000)])
     assert np.isnan(sharpe(big, 8760))
+
+
+# --------------------------------------------------------------------------
+# the funding leg and the wallet are the same money
+#
+# Three findings from the kernel review, deferred as one rewrite because they
+# are one defect seen from three sides: Track B booked a funding-driven wipeout
+# as an ordinary signal exit.  The liquidation level was frozen at the fill, the
+# clamp absorbed a loss larger than the wallet into a zero, and the funding
+# income of a liquidated trade was reported as collected beside a wallet of
+# nothing.  Each of these fails on the commit before the rewrite.
+# --------------------------------------------------------------------------
+def _flat(n, price=100.0):
+    c = np.full(n, price)
+    return c, c.copy(), c.copy()
+
+
+def test_funding_paid_during_a_trade_moves_the_liquidation_level():
+    """A 10x short that has paid 3,600 of funding has a 6,400 wallet, and the
+    exchange liquidates it 3.6 dollars earlier than it would have at the fill.
+    The level used to be computed once from the entry wallet, so the bar that
+    breached it was not liquidated here and the run carried on."""
+    n = 300
+    close, high, low = _flat(n)
+    fr = np.zeros(n)
+    fr[8:290:8] = -0.0010                 # a short pays a negative rate
+    e, x = _one_trade(n, SIG_SHORT, 0, n - 1)
+    spec = SignalSpec(capital=10_000.0, leverage=10.0, fee_bps=0.0, slippage_bps=0.0)
+
+    high[290] = 107.0                     # inside 109.50, outside 105.9
+    frozen = liquidation_level(SIG_SHORT, 10_000.0, 10_000.0 * 10.0 / 100.0,
+                               100.0, BTC_LIKE)
+    assert frozen > 107.0 > 105.0         # the trigger only bites in between
+
+    r = run_signals(close, high, low, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    t = r["trades"][0]
+    assert t["reason"] == "liquidation"
+    assert t["exit_bar"] == 290
+    assert r["final_equity"] == pytest.approx(0.0)
+    # The wallet was down to about 6,400 of funding-eaten margin, so the level
+    # had walked in from 109.5 to under 107.
+    assert t["funding"] < -3_000.0
+
+
+def test_funding_alone_can_wipe_a_position_out():
+    """Flat price, 0.6 % against the position every eight hours.  Nothing can
+    trigger on price, so this is the pure case: the wallet is consumed by the
+    coupon and the exchange takes the position.  It used to close on its
+    ordinary signal exit having booked -22,200 against a 10,000 wallet."""
+    n = 300
+    close, high, low = _flat(n)
+    fr = np.zeros(n)
+    fr[8::8] = -0.0060
+    e, x = _one_trade(n, SIG_SHORT, 0, n - 1)
+    spec = SignalSpec(capital=10_000.0, leverage=10.0, fee_bps=0.0, slippage_bps=0.0)
+
+    r = run_signals(close, high, low, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    t = r["trades"][0]
+    assert t["reason"] == "liquidation"
+    assert r["n_liquidations"] == 1
+    assert t["pnl"] == pytest.approx(-10_000.0)      # exactly the wallet, not twice it
+    assert t["exit_bar"] < 200                       # taken when the margin ran out
+    assert r["final_equity"] == pytest.approx(0.0)
+    assert r["equity"].min() >= 0.0                  # no negative equity anywhere
+
+
+def test_a_wiped_out_position_does_not_recover_when_the_rate_flips():
+    """The same trade, with funding turning favourable after bar 200.  The
+    position is long gone by then.  It used to carry negative mark equity for
+    104 bars, be scored a win, and finish at +56 %."""
+    n = 300
+    close, high, low = _flat(n)
+    fr = np.zeros(n)
+    fr[8:200:8] = -0.0060
+    fr[200::8] = +0.0080
+    e, x = _one_trade(n, SIG_SHORT, 0, n - 1)
+    spec = SignalSpec(capital=10_000.0, leverage=10.0, fee_bps=0.0, slippage_bps=0.0)
+
+    r = run_signals(close, high, low, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    assert r["n_liquidations"] == 1
+    assert r["final_equity"] == pytest.approx(0.0)
+    assert r["win_rate"] == pytest.approx(0.0)
+    assert r["equity"].min() >= 0.0
+
+
+def test_the_funding_of_a_liquidated_trade_is_reported_against_its_price_leg():
+    """A short that collected 3,600 and was then squeezed out reported
+    'funding_collected 3,600' beside a final equity of zero -- the mirror image
+    of KT-1's 36 % tax, and the exact number this family exists to find.  The
+    coupon was real; what was missing is the price leg that took it away."""
+    n = 200
+    close, high, low = _flat(n)
+    fr = np.zeros(n)
+    fr[8:150:8] = +0.0020                 # a short collects a positive rate
+    close[150:] = 125.0
+    high[150:] = 125.0
+    low[150:] = 125.0
+    e, x = _one_trade(n, SIG_SHORT, 0, n - 1)
+    spec = SignalSpec(capital=10_000.0, leverage=10.0, fee_bps=0.0, slippage_bps=0.0)
+
+    r = run_signals(close, high, low, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    t = r["trades"][0]
+    assert t["reason"] == "liquidation"
+    assert r["final_equity"] == pytest.approx(0.0)
+    assert t["funding"] > 3_000.0                        # collected, and true
+    assert t["gross"] == pytest.approx(t["pnl"] - t["funding"])
+    assert t["gross"] < -13_000.0                        # what took it away
+    assert r["funding_collected"] + r["gross_collected"] == pytest.approx(
+        r["pnl_total"])
+    assert r["pnl_total"] == pytest.approx(r["final_equity"] - spec.capital)
+
+
+def test_every_trade_reconciles_with_the_equity_curve(sig_series):
+    """sum(pnl) and the curve are two accounts of one pot of money.  Nothing
+    cross-footed them, so a clamped wipeout could disagree by 12,200 in
+    silence."""
+    close, high, low = sig_series
+    fr = np.zeros(close.size)
+    fr[::8] = 0.0004
+    e = np.zeros(close.size, dtype=np.int8)
+    e[10::200] = SIG_SHORT
+    e[110::200] = SIG_LONG
+    x = np.zeros(close.size, dtype=bool)
+    x[100::200] = True
+    spec = SignalSpec(capital=10_000.0, leverage=3.0, stop_loss=0.3)
+    r = run_signals(close, high, low, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    assert r["n_trades"] > 3
+    assert r["pnl_total"] == pytest.approx(r["final_equity"] - spec.capital)
+    for t in r["trades"]:
+        assert t["gross"] + t["funding"] == pytest.approx(t["pnl"], abs=1e-7)

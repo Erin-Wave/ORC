@@ -459,20 +459,21 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
                         best = max(best, v)
             return best
     else:
+        # Through the same routing a real trial uses.  This branch used to
+        # hand-build an AnalyticSpec and call the closed form for every cell,
+        # discarding gate, leverage, take_profit, stop_loss and funding: on
+        # H0007 the null for a gated funded DCA was an unconditional unfunded
+        # one.  It is now the same shape, which is what makes the p-value mean
+        # anything -- and it is why this is slow: 199 synthetic histories times
+        # the whole grid, at roughly half a second per path-dependent cell.
+        from orc.orchestrator.runner import tm_q05_on_path
+
         def score(close):
             best = -np.inf
             for cfg in configs:
-                stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
-                if stride < 1 or (cfg.n_contributions - 1) * stride + hold >= close.size:
-                    continue
-                spec = AnalyticSpec(contribution=cfg.contribution, stride_bars=stride,
-                                    n_contributions=cfg.n_contributions, hold_bars=hold,
-                                    fee_bps=cfg.effective_fee_bps,
-                                    slippage_bps=cfg.effective_slippage_bps,
-                                    exit_fee_bps=cfg.effective_fee_bps)
-                res = evaluate(close, spec)
-                if res.get("n_starts", 0):
-                    best = max(best, float(np.quantile(res["terminal_multiple"], 0.05)))
+                v = tm_q05_on_path(cfg, p, close)
+                if np.isfinite(v):
+                    best = max(best, v)
             return best
 
     return best_of_g(observed_best, score, p, len(configs))

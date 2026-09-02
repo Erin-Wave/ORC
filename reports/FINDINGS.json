@@ -688,45 +688,45 @@
     },
     "db4ec5e581de": {
       "id": "db4ec5e581de",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
+      "disposition": "fixed: liquidation_level takes an array of per-bar wallets and the trade scan builds one from the funding that has settled by each bar, taking the worse of before/after the bar so a coupon never rescues a position from a wick that may have printed first.",
       "file": "orc/eval/signal.py",
       "line": 162,
       "severity": "high",
       "what": "The liquidation level is computed once from the entry wallet and never revisited, so funding debited during the trade never moves it and a position whose margin has been eaten by funding is never margin-checked again.",
       "trigger": "capital=10_000, leverage=10, SHORT filled at 100.0 on a flat series, funding_rate=-0.0010 on every 8th bar for 300 bars. The trade pays 3,700 of funding, leaving a 6,300 wallet, but `liq` stays frozen at 109.502 where liquidation_level(SHORT, 6300, 1000, 100, BTC_LIKE) = 105.821. A bar with high=107 is liquidated on the exchange and is not liquidated here; the run continues and books whatever the price does next.",
       "why_silent": "`adverse >= liq` simply never fires, so no branch is taken and no exception is raised. The trade closes on its ordinary signal exit with an arithmetically consistent gross/funding/pnl, and n_liquidations and liquidation_rate come back 0 — the exact figures KT-2 reads to decide whether a leverage setting is survivable.",
-      "decided_utc": "2026-09-02T23:11:43.539040+00:00"
+      "decided_utc": "2026-09-02T23:25:50.534837+00:00"
     },
     "9cea2bbfc3ac": {
       "id": "9cea2bbfc3ac",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
+      "disposition": "fixed: the clamp is gone. Once the liquidation level tracks the wallet a funding-driven wipeout IS a liquidation, and an ordinary exit that loses more than its wallet now raises instead of being absorbed into a zero. sum(pnl) is cross-footed against the equity curve on every run.",
       "file": "orc/eval/signal.py",
       "line": 219,
       "severity": "high",
       "what": "`cash = max(cash + pnl, 0.0)` (with the matching `np.maximum(..., 0.0)` on the path at line 217) absorbs a loss larger than the wallet into a zero instead of a wipeout, so a trade that is destroyed by funding rather than by price is recorded as an ordinary signal exit and, if the funding regime flips back, the position carries negative equity through the middle of the trade and recovers.",
       "trigger": "Two cases, both on a flat close=high=low=100.0 series so no price move can trigger anything. (a) capital=10_000, leverage=10, SHORT, funding_rate=-0.0060 on every 8th bar of 300: trade reason 'signal', n_liquidations 0, trade pnl -22,200 against a 10,000 wallet, equity_after 0.0, funding_frac_of_capital -2.22 — a bill 222% of capital the account never had. (b) same but funding_rate=-0.0060 on bars 8..200 step 8 then +0.0080 after: true mark equity reaches -4,400 and stays below zero for 104 bars, n_liquidations 0, the trade is scored a win, final_equity 15,600, total_return +56%.",
       "why_silent": "The clamp is what a wipeout is supposed to look like, so nothing distinguishes 'lost exactly the wallet' from 'lost twice the wallet'. cagr, total_return, win_rate and liquidation_rate all come out finite and plausible; only max_drawdown (exactly 1.0) and a nan sharpe hint at it, and a curve that recovers to +56% reads as a strategy that survived a bad patch. sum(t['pnl']) = -22,200 while the curve moved -10,000, so the trade log does not reconcile with the equity curve and neither one errors.",
-      "decided_utc": "2026-09-02T23:11:43.546832+00:00"
+      "decided_utc": "2026-09-02T23:25:50.542220+00:00"
     },
     "6641f54ee642": {
       "id": "6641f54ee642",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
+      "disposition": "fixed: a liquidated trade reports the coupon it really accrued and puts the rest on the price leg, so gross + funding == pnl on every trade and funding_collected + gross_collected == pnl_total. runner.py records gross_frac_of_capital beside funding_frac_of_capital.",
       "file": "orc/eval/signal.py",
       "line": 237,
       "severity": "high",
       "what": "`funding_collected` sums the `funding` field of every trade including liquidated ones, but line 212 sets `pnl = -cash` on liquidation and discards that funding, so the reported funding income was never credited to any wallet.",
       "trigger": "capital=10_000, leverage=10, SHORT filled at 100.0; funding_rate=+0.0020 on bars 8..150 step 8; close/high jump to 112.0 at bar 150 (past the 109.502 liquidation level). Result: reason 'liquidation', final_equity 0.0, funding recorded 3,600, funding_collected 3,600, and the runner's funding_frac_of_capital = 0.36 — 'collected 36% of capital in funding' on an account that ended at zero, numerically the mirror image of KT-1's 36% funding tax and exactly the number Track B's first family exists to find.",
       "why_silent": "The 3,600 is a correct sum of real per-bar accruals, so it passes any sanity check on its own magnitude. It is reported in a different key from the equity curve, and nothing in run_signals or run_signal_trial cross-foots funding_collected against final_equity, so the contradiction never meets itself.",
-      "decided_utc": "2026-09-02T23:11:43.553609+00:00"
+      "decided_utc": "2026-09-02T23:25:50.549338+00:00"
     },
     "46b1960c42a3": {
       "id": "46b1960c42a3",
@@ -1085,17 +1085,17 @@
     },
     "abbca0c3d7c5": {
       "id": "abbca0c3d7c5",
-      "status": "deferred",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "the null has to re-run the shape it is a null for, which means routing it through the same evaluator selection a real trial uses rather than a hand-built AnalyticSpec. Real work, and it changes search_test on every family.",
+      "disposition": "fixed: the Track A null now scores every cell through runner.tm_q05_on_path, the same cfg.uses_analytic routing a real trial takes, carrying gate, leverage, TP, SL and funding. Handed the real close it reproduces the observed best exactly (H0001 BTCUSDT 2.0510). Costs 199 x the whole grid: ~13 min/symbol on H0001, ~9 on H0007.",
       "file": "orc/orchestrator/surface.py",
       "line": 403,
       "severity": "high",
       "what": "The Track A search-test null re-runs only the unconditional, unfunded, closed-form shape — `score()` builds an AnalyticSpec from contribution/stride/n_contributions/hold and calls `evaluate(close, spec)` with no funding — silently discarding `gate`, `leverage`, `take_profit`, `stop_loss` and `include_funding`, so the null carries neither the width nor the mechanism of the search that produced the observed number.",
       "trigger": "H0007 (`dislocation_gated_dca`, grid = gate ['none','dip:0.10:7','dip:0.20:30'] x include_funding [True,False]) as registered: all 6 configurations per symbol collapse to one distinct AnalyticSpec (100.0, 168, 52, 0, 4.5, 1.0) — verified — so the null distribution is best-of-1 while the result reports `n_configs: 6`, and the gate the family exists to test is never applied to a synthetic path. The observed side is worse: BNBUSDT's `observed_best` 0.8095 came from the simulator with the dip gate and funding on, while the null is closed-form, ungated and unfunded. Best-of-1 is stochastically below best-of-6, so `p_value` is systematically too small and `survives_search` — the last disqualifier in verdict.py — can clear on it. (On H0007 the p-values were 0.33 and 0.77, so this did not flip that family's verdict; the bias is present and unflagged.)",
       "why_silent": "`best_of_g` derives the null's search width entirely from what `score_grid` varies and takes `n_configs` as a label it only reports, so a collapsed grid produces a full 199-path null, a finite p-value, a `status: ok` and a `verdict` string that all look like a measurement of the registered grid.",
-      "decided_utc": "2026-09-02T13:22:00.324119+00:00"
+      "decided_utc": "2026-09-02T23:25:50.556308+00:00"
     },
     "16b0d99d66ee": {
       "id": "16b0d99d66ee",

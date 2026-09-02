@@ -13,6 +13,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 import pytest
 
@@ -892,3 +893,76 @@ def test_a_cycle_refuses_to_book_trials_while_a_high_finding_is_open(monkeypatch
     assert out["status"] == "BLOCKED"
     assert out["blocked_by"] == ["deadbeef1234"]
     assert "trials_added" not in out          # nothing was evaluated
+
+
+# --------------------------------------------------------------------------
+# the null has to be the same search as the one it is a null for
+# --------------------------------------------------------------------------
+def _panel_for(close, rate=None):
+    """A minimal Panel over a given path -- the search test's null is handed
+    exactly this: a synthetic close, and the real panel for everything else."""
+    from orc.facts.panel import Panel
+    n = close.size
+    fr = np.zeros(n) if rate is None else rate
+    return Panel(symbol="BTCUSDT", clock="1h",
+                 ts=np.datetime64("2020-01-01") + np.arange(n) * np.timedelta64(1, "h"),
+                 open=close, high=close, low=close, close=close,
+                 volume=np.ones(n), funding_rate=fr,
+                 funding_settled=fr != 0.0,
+                 holdout_state="development", panel_hash="ph")
+
+
+def test_the_search_test_null_runs_the_shape_it_is_a_null_for():
+    """It did not.  Every cell was scored by a hand-built AnalyticSpec, so the
+    null for H0007 -- a gated, funded DCA -- was an unconditional unfunded one:
+    it carried neither the mechanism nor the width of the search whose p-value
+    it was being used to produce.  Each of the four axes below compared EQUAL
+    under the old scorer, which is how a null can be run and mean nothing.
+    """
+    from orc.orchestrator.runner import tm_q05_on_path
+
+    n = 24 * 400
+    t = np.arange(n)
+    close = 100.0 * (1.0 + 0.4 * np.sin(t / (24 * 45.0)))     # deep, repeated dips
+    rate = np.zeros(n)
+    rate[::8] = 0.0005                                        # a real funding tax
+    p = _panel_for(close, rate)
+
+    def cell(**kw):
+        params = dict(include_funding=False)
+        params.update(kw)
+        return tm_q05_on_path(
+            TrialConfig(symbol="BTCUSDT", contribution=100.0, stride_days=7.0,
+                        n_contributions=52, **params), p, close)
+
+    base = cell()
+    assert np.isfinite(base)
+    # a gate defers deposits, so it cannot leave the outcome untouched
+    assert cell(gate="dip:0.10:30") != pytest.approx(base)
+    # funding is a real cost on a perpetual and the grid carries it as an axis
+    assert cell(include_funding=True) != pytest.approx(base)
+    # leverage and a stop are the difference between a DCA and a liquidation
+    assert cell(leverage=2.0) != pytest.approx(base)
+    assert cell(stop_loss=0.2) != pytest.approx(base)
+
+
+def test_the_null_routes_a_cell_the_way_a_real_trial_does():
+    """Same decision, same evaluator: whatever the closed form may express, the
+    null must use it there and the simulator everywhere else."""
+    from orc.orchestrator.runner import tm_q05_on_path
+
+    n = 24 * 300
+    close = 100.0 * np.exp(np.cumsum(np.full(n, 0.00002)))
+    p = _panel_for(close)
+    plain = TrialConfig(symbol="BTCUSDT", contribution=100.0, stride_days=7.0,
+                        n_contributions=40, include_funding=False)
+    assert plain.uses_analytic
+    levered = TrialConfig(symbol="BTCUSDT", contribution=100.0, stride_days=7.0,
+                          n_contributions=40, include_funding=False, leverage=2.0)
+    assert not levered.uses_analytic
+    # On a straight line at 1x the two evaluators agree, which is the invariant
+    # test_analytic_matches_simulator guards; the point here is that both routes
+    # produce a number rather than the analytic one being taken for both.
+    assert np.isfinite(tm_q05_on_path(plain, p, close))
+    assert np.isfinite(tm_q05_on_path(levered, p, close))
+    assert tm_q05_on_path(levered, p, close) > tm_q05_on_path(plain, p, close)

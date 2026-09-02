@@ -44,16 +44,72 @@ class UnsupportedConfig(RuntimeError):
     pass
 
 
-def build_gate(spec: str, p: Panel) -> np.ndarray | None:
+def build_gate(spec: str, p: Panel, close: np.ndarray | None = None) -> np.ndarray | None:
+    """The gate, read off `close` -- the panel's by default, a synthetic path
+    when the search test needs the gate to fire on the series it is testing."""
     if spec in ("none", "", None):
         return None
+    close = p.close if close is None else close
     kind, *rest = spec.split(":")
     if kind == "dip":
         drop, lookback_days = float(rest[0]), float(rest[1])
-        return gate_below_trailing_peak(p.close, drop, p.bars(lookback_days))
+        return gate_below_trailing_peak(close, drop, p.bars(lookback_days))
     if kind == "sma":
-        return gate_below_sma(p.close, p.bars(float(rest[0])))
+        return gate_below_sma(close, p.bars(float(rest[0])))
     raise UnsupportedConfig(f"unknown gate {spec!r}")
+
+
+def tm_q05_on_path(cfg: TrialConfig, p: Panel, close: np.ndarray) -> float:
+    """One Track A cell's 5th-percentile terminal multiple on a given path.
+
+    The search test's null has to re-run the shape it is a null for, and it was
+    not: it built an AnalyticSpec from contribution, stride, n_contributions and
+    hold and called the closed form, silently dropping `gate`, `leverage`,
+    `take_profit`, `stop_loss` and `include_funding`.  For H0007 -- a gated,
+    funded DCA -- the null was therefore an unconditional unfunded DCA, which
+    carries neither the mechanism nor the width of the search whose significance
+    it was being used to judge.  Routing through cfg.uses_analytic, the same
+    decision a real trial makes, is the only way the two stay the same shape.
+
+    The bootstrap has no wick, so the simulator is handed close as its low.
+    That understates liquidation and stop-outs in the null, which RAISES the
+    bar the observed cell has to clear, so it errs against the finding.
+
+    Returns nan for a cell this path cannot express.
+    """
+    stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
+    if stride < 1:
+        return float("nan")
+    horizon = (cfg.n_contributions - 1) * stride + hold
+    if horizon >= close.size:
+        return float("nan")
+    fee, slip = cfg.effective_fee_bps, cfg.effective_slippage_bps
+
+    if cfg.uses_analytic:
+        spec = AnalyticSpec(contribution=cfg.contribution, stride_bars=stride,
+                            n_contributions=cfg.n_contributions, hold_bars=hold,
+                            fee_bps=fee, slippage_bps=slip, exit_fee_bps=fee)
+        res = evaluate(close, spec,
+                       funding_flow=p.funding_flow if cfg.include_funding else None)
+        if not res.get("n_starts", 0):
+            return float("nan")
+        return float(np.quantile(res["terminal_multiple"], 0.05))
+
+    sim = SimSpec(contribution=cfg.contribution, stride_bars=stride,
+                  n_contributions=cfg.n_contributions, hold_bars=hold,
+                  leverage=cfg.leverage, fee_bps=fee, slippage_bps=slip,
+                  exit_fee_bps=fee, take_profit=cfg.take_profit,
+                  stop_loss=cfg.stop_loss)
+    step = max(p.bars(SIM_START_STRIDE_DAYS), 1)
+    starts = np.arange(0, close.size - horizon - 1, step, dtype=np.int64)
+    if starts.size == 0:
+        return float("nan")
+    out = simulate(close, close, starts, sim,
+                   funding_rate=p.funding_rate if cfg.include_funding else None,
+                   gate=build_gate(cfg.gate, p, close),
+                   table=tier_table_for(cfg.symbol))
+    tm = out["terminal_multiple"]
+    return float(np.nanquantile(tm, 0.05)) if tm.size else float("nan")
 
 
 @dataclass
@@ -122,8 +178,15 @@ def run_signal_trial(cfg: "SignalTrialConfig", p: Panel | None = None) -> TrialO
         **m,
         "n_trades": r["n_trades"],
         "win_rate": r["win_rate"],
+        # Both legs, never the coupon alone.  'collected 36 % of capital in
+        # funding' is the number this family exists to find and it was being
+        # written next to nothing that could contradict it -- including on
+        # accounts that ended at zero.  The price leg is what says whether the
+        # coupon was income or a rebate on a losing short.
         "funding_collected": r["funding_collected"],
         "funding_frac_of_capital": r["funding_collected"] / cfg.capital,
+        "gross_collected": r["gross_collected"],
+        "gross_frac_of_capital": r["gross_collected"] / cfg.capital,
         "n_liquidations": r["n_liquidations"],
         "liquidation_rate": r["n_liquidations"] / r["n_trades"],
         "final_equity": r["final_equity"],
