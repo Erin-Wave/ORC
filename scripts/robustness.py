@@ -21,6 +21,14 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+# Findings and reports quote code and prose that a cp949 console cannot encode.
+# A print that raises takes the whole run down over a dash, which is how the
+# first full panel build died at symbol 807 of 810.
+try:
+    sys.stdout.reconfigure(errors="replace")
+except (AttributeError, OSError):                                  # pragma: no cover
+    pass
+
 from orc import config                                            # noqa: E402
 from orc.facts import panel as panel_mod                          # noqa: E402
 from orc.kernel import metrics_fc                                 # noqa: E402
