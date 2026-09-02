@@ -143,15 +143,19 @@ gh run watch
 | | |
 |---|---|
 | 작업 이름 | `ORC Reasoning Cycle` |
-| 실행 | 매일 00:00 KST |
+| 실행 | 매일 08:25 KST |
 | 스크립트 | `scripts/reasoning_cycle.ps1` |
 | 프롬프트 | `scripts/reasoning_prompt.txt` |
 | 모델 | `claude-opus-5` |
 | 허용 도구 | `Read`, `Glob`, `Grep`, `Write`, `Edit`, `Bash(git *)` |
 | 로그 | `logs/reasoning_YYYY-MM-DD.log` (커밋 안 됨) |
 
-**대가: 00:00 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
+**대가: 08:25 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
 `StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다.
+
+08:25인 이유: Actions 워커의 `0 */6 * * *` 는 UTC 기준이라 09:00 / 15:00 /
+21:00 / 03:00 KST에 발화합니다. 08:25에 큐를 밀어넣으면 **35분 뒤 바로**
+수거됩니다. 시각이 어긋나면 최대 6시간을 기다리게 됩니다.
 
 상태 확인과 수동 실행:
 
@@ -217,14 +221,14 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 ## 매일 무슨 일이 벌어지는가
 
 ```
-00:00 KST   추론 계층 (로컬 스케줄러)   새 가설 1~3개 → configs/queue/ 커밋
-00:00~      GitHub Actions (6시간마다)  큐 수거 → 사전등록 해시 → 전 그리드 평가
+08:25 KST   추론 계층 (로컬 스케줄러)   새 가설 1~3개 → configs/queue/ 커밋
+09:00 KST   GitHub Actions (6시간마다)  큐 수거 → 사전등록 해시 → 전 그리드 평가
             (public 저장소, 무제한 무료)  → 원장 기록 → 반응표면 + PBO
                                         → reports/ 커밋
 다음날      추론 계층이 CYCLE_REPORT.md 읽고 다음 질문 결정
 ```
 
-**00:00 KST에만 PC가 켜져 있으면 됩니다. 평가는 PC와 무관하게 돕니다. 총 비용 ₩0.**
+**08:25 KST에만 PC가 켜져 있으면 됩니다. 평가는 PC와 무관하게 돕니다. 총 비용 ₩0.**
 
 당신이 개입해야 할 때는 두 번뿐입니다:
 1. 패널을 갱신할 때 (`deploy_panel.py` + `gh release upload`)
@@ -241,4 +245,4 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 | `test_analytic_matches_simulator` 실패 | 두 평가기가 어긋남 | **다른 모든 작업 중단.** 모든 결과가 무효입니다 |
 | `HoldoutViolation` | 봉인 구간이 새어들어옴 | 정상 동작. `panel.load()` 를 쓰지 않은 코드가 있는지 확인 |
 | 큐 파일이 `rejected/` 로 감 | 스키마 오류 | `configs/queue/rejected/` 에서 원인 확인 |
-| 아침에 새 가설이 없음 | 00:00에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
+| 아침에 새 가설이 없음 | 08:25에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
