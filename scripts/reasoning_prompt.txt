@@ -34,6 +34,25 @@ Rules:
   entered long or short and exited on their own signal.
 - Never propose opening the sealed holdout.
 
+## What the evaluator can express
+
+A hypothesis is only runnable if every key in `grid` and `fixed` is a field of
+the config type its track uses. Anything else expands to a TypeError and the
+proposal is killed mechanically before it reaches the queue. Propose within
+this vocabulary, or propose a rule shape that fits it.
+
+Track A -- TrialConfig fields:
+  contribution, stride_days, n_contributions, hold_days, leverage, gate, take_profit, stop_loss, include_funding, clock, fee_bps, slippage_bps, cost_multiplier
+  `gate` is a string: "none", "dip:<drop>:<lookback_days>", or "sma:<days>".
+
+Track B -- SignalTrialConfig fields:
+  rule, lookback_days, enter_rate, exit_rate, capital, leverage, stop_loss, take_profit, max_hold_days, clock, fee_bps, slippage_bps, cost_multiplier
+  `rule` must be one of: carry_funding, carry_funding_long
+
+If the shape you want needs a rule or a field that does not exist, say so in
+the claim and propose the closest thing that does exist. A hypothesis the
+machine cannot run is not a hypothesis, it is a note.
+
 Before choosing hypothesis ids, list configs/registry/, configs/queue/ and
 configs/killed/ and pick the next free H#### ids so you do not collide with an
 existing one or repeat one already rejected.

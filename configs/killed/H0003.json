@@ -1,0 +1,46 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0003",
+    "family": "negative_funding_carry_long",
+    "track": "B",
+    "claim": "Negative funding means the shorts are paying the longs. It happens when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and the payers keep paying because the demand to be short is a demand for immediacy: a desk with spot to protect needs the hedge on now, and a leveraged bear who waits for the rate to normalise has missed the move they are positioning for. Neither will sit out an expensive rate, so the rate stays negative until the crowd unwinds. H0002 closed the mirror of this trade and closed it for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, and six of nine symbols had no positive cell anywhere in 972 trials. The negative-funding leg is the side that was never tested, and it is the side where the two point the same way - a crowded short base is the same condition that produces upward squeezes, so the carry is collected while the price move, when it comes, is in the position's favour rather than against it. This is not a re-opening of KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the funding tax at a median 36 percent of contributed capital; this rule holds the perpetual only on the bars where that tax is a rebate, and flattens as soon as the rate returns to the 0.01 percent baseline at which the tax resumes. Short entries are excluded by design because H0002 already paid for that answer and the ledger should not pay for it twice.",
+    "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included and a liquidation on none of them. Also closed, whatever the Calmar, if at every cell the median number of completed round trips across the nine symbols is below 10: negative funding is rare, and a rule that opens fewer than ten positions per symbol over the development window has no ensemble, so its Calmar and Sharpe describe a handful of episodes rather than a mechanism and must not be reported as a result. Also closed if every cell that satisfies the first clause has shape SPIKE - a positive that is a grid corner is what closed H0002 and will not be accepted as a finding here.",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT",
+      "ADAUSDT",
+      "LTCUSDT",
+      "AVAXUSDT"
+    ],
+    "grid": {
+      "enter_rate": [
+        0.0,
+        -0.0001
+      ],
+      "lookback_days": [
+        7,
+        21
+      ],
+      "stop_loss": [
+        0.15,
+        null
+      ]
+    },
+    "fixed": {
+      "side": "long",
+      "leverage": 1.0,
+      "clock": "1h",
+      "exit_rate": 0.0001,
+      "include_funding": true
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "TypeError: SignalTrialConfig.__init__() got an unexpected keyword argument 'side'",
+    "killed_by": "expandability"
+  }
+}

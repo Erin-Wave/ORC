@@ -63,6 +63,35 @@ def propose() -> list[Path]:
     return sorted(PROPOSED.glob("*.json"))
 
 
+def expandable(path: Path) -> str | None:
+    """Can the evaluator actually express this? Returns the failure, or None.
+
+    The adversary judges whether a hypothesis is well posed as research. That
+    is a different question from whether the machine can run it, and it is not
+    a question worth asking a model: expanding the grid answers it exactly.
+    The first three proposals were all good research and none of them could be
+    expanded -- they named parameters the config types do not have -- and
+    without this they would have reached the worker and been recorded as
+    failures with the day already spent.
+    """
+    from orc.orchestrator.spec import Hypothesis
+
+    try:
+        h = Hypothesis(**json.loads(path.read_text(encoding="utf-8")))
+        h.register()
+        cfgs = h.expand()
+    except Exception as exc:                                       # noqa: BLE001
+        return f"{type(exc).__name__}: {exc}"
+    if not cfgs:
+        return "the grid expands to nothing"
+    rule = h.fixed.get("rule") or (cfgs[0].rule if hasattr(cfgs[0], "rule") else None)
+    if rule is not None:
+        from orc.eval.signal_rules import RULES
+        if rule not in RULES:
+            return f"unknown signal rule {rule!r}; known rules are {sorted(RULES)}"
+    return None
+
+
 def review(path: Path) -> dict:
     """The adversary. A proposal reaches the queue only by surviving this."""
     raw = json.loads(path.read_text(encoding="utf-8"))
@@ -132,6 +161,18 @@ def main() -> int:
     print("adversary")
     registered = []
     for p in proposals:
+        why = expandable(p)
+        if why:
+            (KILLED / p.name).write_text(
+                json.dumps({"proposal": json.loads(p.read_text(encoding="utf-8")),
+                            "verdict": {"verdict": "KILL", "reason": why,
+                                        "killed_by": "expandability"}},
+                           indent=2, ensure_ascii=False), encoding="utf-8")
+            p.unlink()
+            _log(f"{p.name} KILLED    not expressible -- {why[:100]}")
+            report["steps"].setdefault("unexpandable", []).append(
+                {"file": p.name, "reason": why})
+            continue
         try:
             v = review(p)
         except llm.LLMUnavailable as exc:

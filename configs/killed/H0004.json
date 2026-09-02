@@ -1,0 +1,47 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0004",
+    "family": "cross_sectional_funding_spread",
+    "track": "B",
+    "claim": "The settlement rate a perpetual prints has two parts. One is common to the whole market - the general appetite for leverage, which rises with price and falls with it - and one is specific to the symbol, the crowding of whatever story is currently being levered. H0002 traded the sum of the two, which meant it was short the market's beta whenever leverage appetite was high, and that is why its only positives were SPIKEs sitting in negative neighbourhoods and why PBO on XRPUSDT was 0.647. Subtracting the cross-sectional median of the universe's trailing settlement rate strips the common part out of the signal and leaves the question the level cannot ask: which perpetual is over-crowded relative to the leverage appetite of this moment. Who pays: the flow that concentrates in whichever perpetual currently carries the narrative, and symmetrically the flow that pays to be short whichever one is currently unloved. They keep doing it because attention is scarce and rotates - there is always a hottest and a coldest perpetual - and being early in the hot one with leverage is the entire reason for using a perpetual instead of buying spot, so the crowding re-forms in a new symbol about as fast as it decays in the old one. Because the common component is removed the rule can take both sides without standing against the market as a whole: short the symbol whose funding is rich relative to its peers, long the symbol whose funding is cheap relative to its peers, and flatten when the spread crosses zero. The signal variable is a difference, not a level, so this is not the H0002 grid re-cut; it is the specific repair for the reason H0002 failed.",
+    "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included and a liquidation on none of them. Closed also if every cell that satisfies that first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed - in either case the spread is carrying no more selectable information than the level did, and the diagnosis that closed H0002 was wrong about the cure. Closed also if the two legs do not both contribute: if at the best cell one side's aggregate contribution to return is negative on six or more of the nine symbols, then the surviving side is a one-sided directional bet that happens to be triggered by funding, and the cross-sectional claim is not what is paying.",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT",
+      "ADAUSDT",
+      "LTCUSDT",
+      "AVAXUSDT"
+    ],
+    "grid": {
+      "spread_enter": [
+        0.0001,
+        0.0002
+      ],
+      "lookback_days": [
+        7,
+        21
+      ],
+      "stop_loss": [
+        0.15,
+        null
+      ]
+    },
+    "fixed": {
+      "side": "both",
+      "leverage": 1.0,
+      "clock": "1h",
+      "cross_section": "universe_trailing_funding_median",
+      "exit_spread": 0.0,
+      "include_funding": true
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "TypeError: SignalTrialConfig.__init__() got an unexpected keyword argument 'spread_enter'",
+    "killed_by": "expandability"
+  }
+}
