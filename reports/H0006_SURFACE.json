@@ -1,0 +1,671 @@
+{
+  "hypothesis_id": "H0006",
+  "family": "negative_funding_carry_long",
+  "track": "B",
+  "claim": "H0002 closed the short side of the funding trade for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, because the rate is rich exactly when leveraged long demand is strongest, which is exactly when price is rising. Six of nine symbols had no positive cell anywhere in 972 trials. This is the leg that was never tested, and it is the leg where the two point the same way. Negative funding means the shorts are paying the longs. It appears when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and a crowded short base is the same condition that produces upward squeezes, so the coupon is collected while the directional move, when it comes, is in the position's favour rather than against it. Who pays: the leveraged bear, and the desk holding spot that needs protection now. They keep paying because the demand to be short in a drawdown is a demand for immediacy - a hedge deferred until the rate normalises is not a hedge, and a bear who waits for cheap funding has missed the move they are positioning for - so the rate stays negative until the crowd unwinds. This does not re-open KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the tax at a median 36 percent of contributed capital; this rule holds the perpetual only while that tax is a rebate and flattens once the trailing rate crosses back above the 0.01 percent baseline at which the tax resumes. The real deliverable is the asymmetry. The evaluator's own note on this rule is that if the mirror pays as well as the original then what is being harvested is not the funding tax but something else; H0002 established that the original does not pay, so a mirror that also fails would say that the funding level carries no tradable information on either side, and a mirror that pays would locate the effect in the rarity and depth of the negative case rather than in carry as such. Either outcome closes a question rather than opening one.",
+  "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.",
+  "prereg_hash": "d6b50b9b2c14f44ff898a4c5523fc950e4379b22460ff1b3683e597ba1c24ea8",
+  "generated_utc": "2026-09-02T08:06:51.787017+00:00",
+  "metric": "calmar",
+  "holdout_start": "2024-03-01",
+  "trials_in_family": 72,
+  "trials_in_project": 1546,
+  "surfaces": {
+    "ADAUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            -0.15512080720316188,
+            -0.1482567940543327
+          ],
+          [
+            0.3532675860807236,
+            0.1443912007571936
+          ]
+        ],
+        [
+          [
+            -0.07068331988347366,
+            -0.1432160303641178
+          ],
+          [
+            0.14584274996012536,
+            0.0342562700980436
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 0.3532675860807236,
+      "best_config": {
+        "enter_rate": 0.0,
+        "lookback_days": 21,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 0.3532675860807236,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 12.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.24599969129416444,
+      "max_drawdown_best": 0.6963551171602598,
+      "sharpe_best": 0.41765646516248256,
+      "n_trades_best": 12,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.06664070663409563
+    },
+    "AVAXUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            -0.21786947439176568,
+            -0.08505281710012098
+          ],
+          [
+            -0.3579877215283611,
+            -0.21332356109737052
+          ]
+        ],
+        [
+          [
+            -0.13509589483190465,
+            0.15104892019903104
+          ],
+          [
+            -0.016588196274618765,
+            0.2757871772130838
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 0.2757871772130838,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 21,
+        "stop_loss": null
+      },
+      "shape_diagnostic": {
+        "peak": 0.2757871772130838,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 5.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.2124529644242641,
+      "max_drawdown_best": 0.7703511329684293,
+      "sharpe_best": 0.2755763656471753,
+      "n_trades_best": 5,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.03874206589082711
+    },
+    "BNBUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            1.0366283538927579,
+            1.203344112106357
+          ],
+          [
+            0.5259289954577677,
+            0.5515981194460083
+          ]
+        ],
+        [
+          [
+            1.1777885733923883,
+            1.3364321743931256
+          ],
+          [
+            0.271582797255236,
+            0.4336051819747759
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 1.3364321743931256,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 7,
+        "stop_loss": null
+      },
+      "shape_diagnostic": {
+        "peak": 1.3364321743931256,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 19.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.876665608937057,
+      "max_drawdown_best": 0.6559746358509748,
+      "sharpe_best": 1.0428636754958294,
+      "n_trades_best": 19,
+      "n_liquidations_best": 0,
+      "funding_frac_best": 2.7998471005412147
+    },
+    "BTCUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.41084480253503813,
+            0.3086229930982212
+          ],
+          [
+            0.7658372711175766,
+            0.2184903315004297
+          ]
+        ],
+        [
+          [
+            1.1950782132680435,
+            1.1131561942288966
+          ],
+          [
+            1.2803051041008862,
+            1.2803051041008862
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 1.2803051041008862,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 21,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 1.2803051041008862,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 2.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.14652119019261844,
+      "max_drawdown_best": 0.11444240105214232,
+      "sharpe_best": 1.1116455651319508,
+      "n_trades_best": 2,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.012742182598900137
+    },
+    "DOGEUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            -0.24832064854031022,
+            -0.21555619341738144
+          ],
+          [
+            0.14778117983985264,
+            0.10560598399256872
+          ]
+        ],
+        [
+          [
+            -0.18102228360680908,
+            -0.1076394265357561
+          ],
+          [
+            1.1799180342876685,
+            0.5137113532351777
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 1.1799180342876685,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 21,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 1.1799180342876685,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 4.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.251847866235549,
+      "max_drawdown_best": 0.21344522154676004,
+      "sharpe_best": 0.710357844142258,
+      "n_trades_best": 4,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.05346324330345243
+    },
+    "ETHUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.3620782894165793,
+            0.09898871448798288
+          ],
+          [
+            -0.046013419486853085,
+            -0.1455709140876367
+          ]
+        ],
+        [
+          [
+            -0.29287741684456264,
+            -0.0842899046819998
+          ],
+          [
+            -0.2756849651476504,
+            -0.06413149176991458
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 0.3620782894165793,
+      "best_config": {
+        "enter_rate": 0.0,
+        "lookback_days": 7,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 0.3620782894165793,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 8.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.21079629258028243,
+      "max_drawdown_best": 0.5821842920213216,
+      "sharpe_best": 0.43092658481811114,
+      "n_trades_best": 8,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.05484837113325768
+    },
+    "LTCUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            -0.2511783737907154,
+            -0.09668669605997066
+          ],
+          [
+            0.12232310188985164,
+            -0.019833826934614017
+          ]
+        ],
+        [
+          [
+            0.1684263211514481,
+            -0.037651835694234075
+          ],
+          [
+            0.010920184861533563,
+            0.0015294771407376028
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 0.1684263211514481,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 7,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 0.1684263211514481,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 6.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.08538500678320493,
+      "max_drawdown_best": 0.5069576192098096,
+      "sharpe_best": 0.18791664995886445,
+      "n_trades_best": 6,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.04642021061929064
+    },
+    "SOLUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.435236333954496,
+            0.41945372032195
+          ],
+          [
+            0.37329417887645205,
+            0.2210887390313567
+          ]
+        ],
+        [
+          [
+            0.9238351446666461,
+            0.5719140357461704
+          ],
+          [
+            1.400717588413689,
+            0.599353574679426
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 1.400717588413689,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 21,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 1.400717588413689,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 12.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.9338815525304167,
+      "max_drawdown_best": 0.6667165174873233,
+      "sharpe_best": 1.0461405601257088,
+      "n_trades_best": 12,
+      "n_liquidations_best": 0,
+      "funding_frac_best": 0.521984704112146
+    },
+    "XRPUSDT": {
+      "axes": [
+        "enter_rate",
+        "lookback_days",
+        "stop_loss"
+      ],
+      "axis_values": {
+        "enter_rate": [
+          0.0,
+          -0.0001
+        ],
+        "lookback_days": [
+          7,
+          21
+        ],
+        "stop_loss": [
+          0.15,
+          null
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.03959874106758694,
+            -0.03249853532119958
+          ],
+          [
+            -0.1665142082386895,
+            -0.22462357970613775
+          ]
+        ],
+        [
+          [
+            0.224833224727077,
+            -0.03374027704460146
+          ],
+          [
+            -0.07427483623885915,
+            -0.0704996659141149
+          ]
+        ]
+      ],
+      "cells_filled": 8,
+      "cells_total": 8,
+      "best_value": 0.224833224727077,
+      "best_config": {
+        "enter_rate": -0.0001,
+        "lookback_days": 7,
+        "stop_loss": 0.15
+      },
+      "shape_diagnostic": {
+        "peak": 0.224833224727077,
+        "plateau_ratio": NaN,
+        "n_neighbours": 0
+      },
+      "n_starts_best": 1,
+      "independent_paths_best": 10.0,
+      "mwrr_q05_best": null,
+      "mwrr_q50_best": null,
+      "horizon_days_best": null,
+      "cagr_best": 0.13119689932341938,
+      "max_drawdown_best": 0.5835298563309675,
+      "sharpe_best": 0.25193482525159416,
+      "n_trades_best": 10,
+      "n_liquidations_best": 0,
+      "funding_frac_best": -0.022967639016323635
+    }
+  },
+  "pbo": {
+    "SOLUSDT": {
+      "symbol": "SOLUSDT",
+      "status": "ok",
+      "n_configs": 8,
+      "n_bars": 30328,
+      "n_splits": 252,
+      "pbo": 0.5158730158730159,
+      "median_logit": -0.22314355131420985,
+      "degraded_fraction": 0.7261904761904762,
+      "verdict": "SELECTION_IS_NOISE",
+      "n_liquidating_configs": 0,
+      "best_config_overall": {
+        "lookback_days": 21,
+        "enter_rate": -0.0001,
+        "stop_loss": 0.15
+      }
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "status": "ok",
+      "n_configs": 8,
+      "n_bars": 35535,
+      "n_splits": 252,
+      "pbo": 0.2896825396825397,
+      "median_logit": 0.22314355131420993,
+      "degraded_fraction": 0.626984126984127,
+      "verdict": "SELECTION_WEAK",
+      "n_liquidating_configs": 0,
+      "best_config_overall": {
+        "lookback_days": 7,
+        "enter_rate": -0.0001,
+        "stop_loss": null
+      }
+    },
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
+      "status": "ok",
+      "n_configs": 8,
+      "n_bars": 39242,
+      "n_splits": 252,
+      "pbo": 0.8214285714285714,
+      "median_logit": -0.6931471805599454,
+      "degraded_fraction": 0.6666666666666666,
+      "verdict": "SELECTION_IS_NOISE",
+      "n_liquidating_configs": 0,
+      "best_config_overall": {
+        "lookback_days": 7,
+        "enter_rate": -0.0001,
+        "stop_loss": null
+      }
+    }
+  }
+}

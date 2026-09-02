@@ -1,5 +1,7 @@
 {
-  "generated_utc": "2026-09-02T06:28:15.434280+00:00",
-  "run_id": "bc4eecfb8893",
-  "items": []
+  "generated_utc": "2026-09-02T08:06:52.535583+00:00",
+  "run_id": "eb4e93343d6c",
+  "items": [
+    "H0006 negative_funding_carry_long: BNBUSDT clears every check at calmar +1.3364  {'enter_rate': -0.0001, 'lookback_days': 7, 'stop_loss': None}"
+  ]
 }

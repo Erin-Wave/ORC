@@ -1,14 +1,32 @@
 {
   "hypothesis_id": "H0006",
   "family": "negative_funding_carry_long",
-  "track": "B",
   "claim": "H0002 closed the short side of the funding trade for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, because the rate is rich exactly when leveraged long demand is strongest, which is exactly when price is rising. Six of nine symbols had no positive cell anywhere in 972 trials. This is the leg that was never tested, and it is the leg where the two point the same way. Negative funding means the shorts are paying the longs. It appears when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and a crowded short base is the same condition that produces upward squeezes, so the coupon is collected while the directional move, when it comes, is in the position's favour rather than against it. Who pays: the leveraged bear, and the desk holding spot that needs protection now. They keep paying because the demand to be short in a drawdown is a demand for immediacy - a hedge deferred until the rate normalises is not a hedge, and a bear who waits for cheap funding has missed the move they are positioning for - so the rate stays negative until the crowd unwinds. This does not re-open KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the tax at a median 36 percent of contributed capital; this rule holds the perpetual only while that tax is a rebate and flattens once the trailing rate crosses back above the 0.01 percent baseline at which the tax resumes. The real deliverable is the asymmetry. The evaluator's own note on this rule is that if the mirror pays as well as the original then what is being harvested is not the funding tax but something else; H0002 established that the original does not pay, so a mirror that also fails would say that the funding level carries no tradable information on either side, and a mirror that pays would locate the effect in the rarity and depth of the negative case rather than in carry as such. Either outcome closes a question rather than opening one.",
   "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.",
-  "universe": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "LTCUSDT", "AVAXUSDT"],
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "ADAUSDT",
+    "LTCUSDT",
+    "AVAXUSDT"
+  ],
   "grid": {
-    "enter_rate": [0.0, -0.0001],
-    "lookback_days": [7, 21],
-    "stop_loss": [0.15, null]
+    "enter_rate": [
+      0.0,
+      -0.0001
+    ],
+    "lookback_days": [
+      7,
+      21
+    ],
+    "stop_loss": [
+      0.15,
+      null
+    ]
   },
   "fixed": {
     "rule": "carry_funding_long",
@@ -18,5 +36,8 @@
     "take_profit": null,
     "capital": 10000.0,
     "clock": "1h"
-  }
+  },
+  "track": "B",
+  "registered_utc": "2026-09-02T08:06:15.318192+00:00",
+  "prereg_hash": "d6b50b9b2c14f44ff898a4c5523fc950e4379b22460ff1b3683e597ba1c24ea8"
 }
