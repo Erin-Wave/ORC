@@ -1,7 +1,7 @@
 # ORC cycle report
 
-- run `a8ec45174015` finished 2026-09-02T00:51:38.251445+00:00
-- trials in project: **224** (+112 this cycle)
+- run `a07c3ea5cfad` finished 2026-09-02T01:59:51.568588+00:00
+- trials in project: **336** (+112 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric: `tm_q05` (5th-percentile terminal multiple across start dates)
 
@@ -13,7 +13,7 @@ Every number below is development data only. The ranking is not a result; the sh
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 224. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 336. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | best cell |
 |---|---:|---|---:|---|
