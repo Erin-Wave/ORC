@@ -1,13 +1,26 @@
 # ORC — project constitution
 
-ORC researches one question, deeply and honestly:
+ORC researches two questions on Binance USDⓈ-M perpetuals, deeply and honestly.
 
-> Is there a **DCA-shaped** rule on Binance USDⓈ-M perpetuals whose worst
+> **Track A — accumulation.** Is there a **DCA-shaped** rule whose worst
 > realistic outcome is acceptable — and if not, exactly where and why does each
 > variant break?
+>
+> **Track B — positions.** Is there a **signal-driven** rule, entering long or
+> short and exiting on its own signal, whose worst realistic outcome is
+> acceptable — and if not, where does it break?
 
-The deliverable is **a map of where DCA breaks**, not "the optimal DCA setting".
-`FAIL` is a publishable result. A cycle that closes a family has done its job.
+Track B opens where KT-1 left off. Long-side perp accumulation was closed
+because it pays a structural funding tax; the mirror of that tax — standing on
+the side that *collects* funding — is the first family Track B asks about.
+
+The deliverable is **a map of where these rules break**, not "the optimal
+setting". `FAIL` is a publishable result. A cycle that closes a family has done
+its job.
+
+The two tracks share this document, the sealed holdout, the ledger and its `N`.
+They differ only in what a position is, and therefore in which metrics are
+defined — see section 4.
 
 ---
 
@@ -56,7 +69,8 @@ changed hypothesis must get a new id.
 
 ## 4. Metrics — cash-flow aware, left-tail first
 
-DCA takes external deposits, so fixed-capital metrics are simply wrong:
+**Track A.** DCA takes external deposits, so fixed-capital metrics are simply
+wrong:
 
 | Never use | Because | Use instead |
 |---|---|---|
@@ -66,12 +80,34 @@ DCA takes external deposits, so fixed-capital metrics are simply wrong:
 
 `PRIMARY_METRIC = "tm_q05"`. The mean is reported and must not be argued from.
 
+`tm_q05` is a multiple of contributed capital, so it grows with the horizon and
+**may not be compared between cells that hold for different lengths of time.**
+The annualised IRR is the comparison that survives a horizon change, and both
+appear side by side in every report.
+
+**Track B.** A signal strategy starts from one capital and takes no deposits,
+so every objection above disappears and the familiar ratios are exactly right:
+**CAGR, maximum drawdown on equity, Calmar, Sharpe.** Report all four.
+
+What does *not* transfer is where independence comes from. Track A gets its
+ensemble from start dates; a signal rule simply runs, giving one equity curve
+per symbol. Its independent-path count therefore comes from the number of
+symbols and the number of non-overlapping time blocks, never from bar count. A
+Sharpe computed on one curve over one history is one experiment, and must be
+reported as one.
+
+The left tail still decides. A strategy is described by its worst realistic
+outcome across that ensemble, never by its average.
+
 ## 5. Two evaluators that check each other
 
 - `orc/eval/analytic.py` — closed-form, prefix sums, **every** start date in
   O(N). Exact only for unconditional, unlevered, no path exit.
 - `orc/eval/simulate.py` — bar-by-bar, vectorised across start dates. Handles
-  gates, leverage, liquidation, TP/SL.
+  gates, leverage, liquidation, TP/SL. DCA-shaped: a schedule of contributions.
+- `orc/eval/signal.py` — Track B. One position at a time, entered long or short
+  on a signal and closed on a signal, stop or liquidation. Fixed capital, so it
+  produces an equity curve rather than a terminal multiple.
 
 `tests/test_kernel.py::test_analytic_matches_simulator` requires them to agree
 to machine precision on the shape both can express. **If that test fails, every
