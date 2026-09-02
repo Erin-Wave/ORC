@@ -1,14 +1,15 @@
 {
   "hypothesis_id": "H0001",
   "family": "unconditional_dca_spot_style",
+  "track": "A",
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T04:13:59.677223+00:00",
+  "generated_utc": "2026-09-02T05:58:18.334675+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 336,
-  "trials_in_project": 336,
+  "trials_in_family": 448,
+  "trials_in_project": 1420,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -89,7 +90,16 @@
         "shape": "SLOPE"
       },
       "n_starts_best": 34552,
-      "independent_paths_best": 29.23
+      "independent_paths_best": 29.23,
+      "mwrr_q05_best": -0.980723567163303,
+      "mwrr_q50_best": -0.05026593691719383,
+      "horizon_days_best": 51.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "AVAXUSDT": {
       "axes": [
@@ -170,7 +180,16 @@
         "shape": "SLOPE"
       },
       "n_starts_best": 28889,
-      "independent_paths_best": 24.6
+      "independent_paths_best": 24.6,
+      "mwrr_q05_best": -0.9954794785403294,
+      "mwrr_q50_best": 0.02762575358269792,
+      "horizon_days_best": 51.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "BNBUSDT": {
       "axes": [
@@ -251,7 +270,16 @@
         "shape": "SLOPE"
       },
       "n_starts_best": 9496,
-      "independent_paths_best": 1.36
+      "independent_paths_best": 1.36,
+      "mwrr_q05_best": 0.08066824648750182,
+      "mwrr_q50_best": 0.5011945897125694,
+      "horizon_days_best": 1085.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "BTCUSDT": {
       "axes": [
@@ -332,7 +360,16 @@
         "shape": "SPIKE"
       },
       "n_starts_best": 2523,
-      "independent_paths_best": 1.07
+      "independent_paths_best": 1.07,
+      "mwrr_q05_best": 0.3615816385553472,
+      "mwrr_q50_best": 0.42193768761835704,
+      "horizon_days_best": 1530.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "DOGEUSDT": {
       "axes": [
@@ -413,7 +450,16 @@
         "shape": "SLOPE"
       },
       "n_starts_best": 5871,
-      "independent_paths_best": 1.23
+      "independent_paths_best": 1.23,
+      "mwrr_q05_best": -0.0988066126163582,
+      "mwrr_q50_best": 0.4830447612277601,
+      "horizon_days_best": 1085.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "ETHUSDT": {
       "axes": [
@@ -494,7 +540,16 @@
         "shape": "SPIKE"
       },
       "n_starts_best": 616,
-      "independent_paths_best": 1.02
+      "independent_paths_best": 1.02,
+      "mwrr_q05_best": 0.6789141697407873,
+      "mwrr_q50_best": 0.7500426413546053,
+      "horizon_days_best": 1530.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "LTCUSDT": {
       "axes": [
@@ -575,7 +630,16 @@
         "shape": "SLOPE"
       },
       "n_starts_best": 35080,
-      "independent_paths_best": 29.66
+      "independent_paths_best": 29.66,
+      "mwrr_q05_best": -0.9886218450825102,
+      "mwrr_q50_best": 0.17189855567929535,
+      "horizon_days_best": 51.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "SOLUSDT": {
       "axes": [
@@ -656,7 +720,16 @@
         "shape": "SPIKE"
       },
       "n_starts_best": 4289,
-      "independent_paths_best": 1.16
+      "independent_paths_best": 1.16,
+      "mwrr_q05_best": 0.3726884486782851,
+      "mwrr_q50_best": 0.9683629406627341,
+      "horizon_days_best": 1085.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     },
     "XRPUSDT": {
       "axes": [
@@ -737,7 +810,16 @@
         "shape": "SPIKE"
       },
       "n_starts_best": 10336,
-      "independent_paths_best": 1.4
+      "independent_paths_best": 1.4,
+      "mwrr_q05_best": -0.05335045602927216,
+      "mwrr_q50_best": 0.03920185603346249,
+      "horizon_days_best": 1085.0,
+      "cagr_best": null,
+      "max_drawdown_best": null,
+      "sharpe_best": null,
+      "n_trades_best": null,
+      "n_liquidations_best": null,
+      "funding_frac_best": null
     }
   },
   "pbo": {
