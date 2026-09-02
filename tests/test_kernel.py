@@ -18,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from orc import clean_room
 from orc.eval.analytic import AnalyticSpec, evaluate, strided_window_sum
+from orc.eval.signal import LONG as SIG_LONG, SHORT as SIG_SHORT
+from orc.eval.signal import SignalSpec, run_signals
 from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak,
                                simulate)
 from orc.kernel.liquidation import (BTC_LIKE, LONG_TAIL, is_liquidated,
@@ -203,3 +205,122 @@ def test_start_date_profile_reports_the_left_tail():
 def test_no_prior_lab_artifacts_referenced():
     hits = clean_room.scan(Path(__file__).resolve().parent.parent)
     assert not hits, "clean-room violation: " + repr(hits[:5])
+
+
+# --------------------------------------------------------------------------
+# Track B: the signal evaluator
+#
+# Nothing cross-checks this one the way the simulator cross-checks the analytic
+# evaluator, so these tests carry that weight on their own.  Each pins a
+# convention that a backtest gets wrong in its own favour by default.
+# --------------------------------------------------------------------------
+@pytest.fixture(scope="module")
+def sig_series():
+    n = 2_000
+    close = 100.0 * np.exp(np.cumsum(RNG.normal(0, 0.003, n)))
+    return close, close * 1.002, close * 0.998
+
+
+def _one_trade(n, side, enter_at, exit_at):
+    e = np.zeros(n, dtype=np.int8)
+    e[enter_at] = side
+    x = np.zeros(n, dtype=bool)
+    x[exit_at] = True
+    return e, x
+
+
+def test_long_and_short_are_exact_mirrors_without_costs(sig_series):
+    close, high, low = sig_series
+    free = SignalSpec(capital=10_000.0, fee_bps=0.0, slippage_bps=0.0)
+    out = []
+    for side in (SIG_LONG, SIG_SHORT):
+        e, x = _one_trade(close.size, side, 10, 900)
+        out.append(run_signals(close, high, low, e, x, free,
+                               symbol="BTCUSDT")["trades"][0]["gross"])
+    assert out[0] + out[1] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_short_is_paid_the_funding_a_long_pays(sig_series):
+    close, high, low = sig_series
+    fr = np.zeros(close.size)
+    fr[::8] = 0.0004                      # a persistently positive rate
+    free = SignalSpec(capital=10_000.0, fee_bps=0.0, slippage_bps=0.0)
+    paid = {}
+    for side in (SIG_LONG, SIG_SHORT):
+        e, x = _one_trade(close.size, side, 10, 900)
+        paid[side] = run_signals(close, high, low, e, x, free, funding_rate=fr,
+                                 symbol="BTCUSDT")["funding_collected"]
+    assert paid[SIG_SHORT] > 0 > paid[SIG_LONG]
+    assert paid[SIG_SHORT] + paid[SIG_LONG] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_signal_is_filled_on_the_next_bar_never_its_own(sig_series):
+    """The bar that produced the signal must not also produce the fill price."""
+    close, high, low = sig_series
+    spec = SignalSpec(capital=10_000.0, fee_bps=0.0, slippage_bps=0.0)
+    e, x = _one_trade(close.size, SIG_LONG, 10, 900)
+    t = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")["trades"][0]
+    assert t["entry_bar"] == 11
+    assert t["entry_price"] == pytest.approx(close[11])
+    assert t["entry_price"] != pytest.approx(close[10])
+
+
+def test_a_signal_on_the_last_bars_cannot_be_traded(sig_series):
+    close, high, low = sig_series
+    spec = SignalSpec(capital=10_000.0)
+    e = np.zeros(close.size, dtype=np.int8)
+    e[-1] = SIG_LONG
+    x = np.zeros(close.size, dtype=bool)
+    assert run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")["n_trades"] == 0
+
+
+def test_stop_and_target_in_one_bar_resolve_against_us():
+    """An hourly bar cannot say which came first, so the loss is taken."""
+    n = 20
+    close = np.full(n, 100.0)
+    high = close.copy()
+    low = close.copy()
+    high[5] = 130.0                       # target and stop both inside bar 5
+    low[5] = 70.0
+    e, x = _one_trade(n, SIG_LONG, 1, 15)
+    spec = SignalSpec(capital=10_000.0, leverage=1.0, fee_bps=0.0, slippage_bps=0.0,
+                      stop_loss=0.10, take_profit=0.10)
+    t = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")["trades"][0]
+    assert t["reason"] == "stop"
+    assert t["pnl"] < 0
+
+
+def test_leverage_beyond_the_tier_table_is_refused():
+    n = 20
+    close = np.full(n, 100.0)
+    e, x = _one_trade(n, SIG_LONG, 1, 15)
+    spec = SignalSpec(capital=10_000.0, leverage=500.0)
+    with pytest.raises(ValueError, match="exceeds"):
+        run_signals(close, close, close, e, x, spec, symbol="BTCUSDT")
+
+
+def test_a_liquidated_position_loses_the_whole_margin():
+    n = 30
+    close = np.full(n, 100.0)
+    high = close.copy()
+    low = close.copy()
+    low[5] = 1.0                          # far below any long liquidation level
+    e, x = _one_trade(n, SIG_LONG, 1, 25)
+    spec = SignalSpec(capital=10_000.0, leverage=10.0, fee_bps=0.0, slippage_bps=0.0)
+    r = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")
+    assert r["n_liquidations"] == 1
+    assert r["trades"][0]["pnl"] == pytest.approx(-10_000.0)
+    assert r["final_equity"] == pytest.approx(0.0)
+
+
+def test_a_short_squeeze_liquidates_the_short_side():
+    n = 30
+    close = np.full(n, 100.0)
+    high = close.copy()
+    low = close.copy()
+    high[5] = 1_000.0
+    e, x = _one_trade(n, SIG_SHORT, 1, 25)
+    spec = SignalSpec(capital=10_000.0, leverage=5.0, fee_bps=0.0, slippage_bps=0.0)
+    r = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")
+    assert r["n_liquidations"] == 1
+    assert r["final_equity"] == pytest.approx(0.0)
