@@ -1,29 +1,27 @@
 {
-  "run_id": "8b0c50c90c1e",
-  "started_utc": "2026-09-02T04:13:43.963019+00:00",
-  "finished_utc": "2026-09-02T04:13:59.678359+00:00",
+  "run_id": "a67db5d32656",
+  "started_utc": "2026-09-02T05:41:54.700431+00:00",
+  "finished_utc": "2026-09-02T05:42:00.602038+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
-  "panels": 246,
+  "panels": 253,
   "hypotheses_run": [
-    "H0001"
+    "H0002"
   ],
   "trials_before": 336,
-  "trials_after": 336,
-  "trials_added": 0,
+  "trials_after": 1308,
+  "trials_added": 972,
   "results": [
     {
-      "hypothesis_id": "H0001",
-      "family": "unconditional_dca_spot_style",
-      "run_id": "8b0c50c90c1e",
-      "configurations": 162,
-      "evaluated": 112,
-      "new_trials": 0,
-      "skipped": 50,
-      "skip_reasons": {
-        "horizon_exceeds_history": 50
-      },
-      "ledger_total_trials": 336
+      "hypothesis_id": "H0002",
+      "family": "funding_carry_short",
+      "run_id": "a67db5d32656",
+      "configurations": 972,
+      "evaluated": 972,
+      "new_trials": 972,
+      "skipped": 0,
+      "skip_reasons": {},
+      "ledger_total_trials": 1308
     }
   ]
 }

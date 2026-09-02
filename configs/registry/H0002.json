@@ -1,21 +1,51 @@
 {
   "hypothesis_id": "H0002",
-  "track": "B",
   "family": "funding_carry_short",
   "claim": "Leveraged long demand on a perpetual pays the funding rate every eight hours for as long as it stays crowded, and keeps paying because the leverage is the whole point of being there: someone who merely wanted the asset would buy spot. KT-1 measured that tax from the paying side at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTC settlements positive, and closed long perpetual accumulation over it. This stands on the receiving side of the same trade and asks the only question that side has: can the tax be collected without the directional move that produces it taking the position first? The rule shorts while the trailing mean settlement rate is rich and flattens when it decays, so it is short precisely when long crowding is most expensive - and therefore precisely when a squeeze is most likely. The grid exists to find whether any combination of stop, exposure and holding limit separates the two.",
   "kill_condition": "Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.",
-  "universe": ["ADAUSDT", "AVAXUSDT", "BNBUSDT", "BTCUSDT", "DOGEUSDT", "ETHUSDT", "LTCUSDT", "SOLUSDT", "XRPUSDT"],
+  "universe": [
+    "ADAUSDT",
+    "AVAXUSDT",
+    "BNBUSDT",
+    "BTCUSDT",
+    "DOGEUSDT",
+    "ETHUSDT",
+    "LTCUSDT",
+    "SOLUSDT",
+    "XRPUSDT"
+  ],
   "grid": {
-    "lookback_days": [7.0, 21.0, 60.0],
-    "enter_rate": [0.0001, 0.0002],
-    "stop_loss": [0.10, 0.25, null],
-    "leverage": [0.25, 1.0],
-    "max_hold_days": [7.0, 30.0, null]
+    "lookback_days": [
+      7.0,
+      21.0,
+      60.0
+    ],
+    "enter_rate": [
+      0.0001,
+      0.0002
+    ],
+    "stop_loss": [
+      0.1,
+      0.25,
+      null
+    ],
+    "leverage": [
+      0.25,
+      1.0
+    ],
+    "max_hold_days": [
+      7.0,
+      30.0,
+      null
+    ]
   },
   "fixed": {
     "rule": "carry_funding",
-    "exit_rate": 0.00005,
+    "exit_rate": 5e-05,
     "capital": 10000.0,
     "clock": "1h"
-  }
+  },
+  "track": "B",
+  "registered_utc": "2026-09-02T05:41:54.702354+00:00",
+  "prereg_hash": "0d6e7ca037976c0c24972f856f18200db83bfec536589fd90bda813547abc149"
 }
