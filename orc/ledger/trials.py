@@ -78,7 +78,15 @@ def code_hash(paths: list[Path] | None = None) -> str:
     for root in sorted(roots, key=str):
         for p in sorted(Path(root).rglob("*.py")):
             h.update(p.name.encode())
-            h.update(p.read_bytes())
+            # Normalise line endings before hashing.  git on this workstation
+            # runs with core.autocrlf=true, so a checkout rewrites these files
+            # with CRLF while the Linux runner keeps LF.  Hashing raw bytes
+            # therefore gave the same commit two different code hashes, one per
+            # platform, and trials run locally could never dedupe against the
+            # worker's -- every crossing silently added a fresh copy of the
+            # same measurement to N.  The hash has to identify the code, not
+            # the bytes a particular checkout happens to have left on disk.
+            h.update(p.read_bytes().replace(b"\r\n", b"\n"))
     return h.hexdigest()
 
 

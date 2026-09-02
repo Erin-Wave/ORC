@@ -1,0 +1,9 @@
+# The ledger hashes the evaluation code to decide whether a trial is a repeat.
+# With core.autocrlf a checkout rewrites line endings per platform, so the same
+# commit hashed differently on Windows and on the Linux runner and no trial
+# ever deduped across the two.  The hash normalises endings now, but the files
+# themselves should stop churning as well: one commit, one set of bytes.
+* text=auto eol=lf
+*.png binary
+*.parquet binary
+*.tar.gz binary
