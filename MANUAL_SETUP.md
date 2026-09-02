@@ -144,11 +144,14 @@ gh run watch
 |---|---|
 | 작업 이름 | `ORC Reasoning Cycle` |
 | 실행 | 매일 08:25 KST |
+| 실행 방식 | `wscript` 로 창 없이 (`scripts/reasoning_cycle_hidden.vbs`) |
 | 스크립트 | `scripts/reasoning_cycle.ps1` |
 | 프롬프트 | `scripts/reasoning_prompt.txt` |
 | 모델 | `claude-opus-5` |
 | 허용 도구 | `Read`, `Glob`, `Grep`, `Write`, `Edit`, `Bash(git *)` |
 | 로그 | `logs/reasoning_YYYY-MM-DD.log` (커밋 안 됨) |
+| 중복 방지 | `logs/.last_cycle` 에 날짜 기록, 하루 1회 |
+| 실패 시 | 15분 간격 2회 재시도 |
 
 **대가: 08:25 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
 `StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다.
@@ -156,6 +159,15 @@ gh run watch
 08:25인 이유: Actions 워커의 `0 */6 * * *` 는 UTC 기준이라 09:00 / 15:00 /
 21:00 / 03:00 KST에 발화합니다. 08:25에 큐를 밀어넣으면 **35분 뒤 바로**
 수거됩니다. 시각이 어긋나면 최대 6시간을 기다리게 됩니다.
+
+작업은 `wscript` 를 통해 실행되어 **콘솔 창이 뜨지 않습니다.** `powershell.exe`
+를 직접 실행하면 대화형 로그온 세션에 창이 생겼다가 숨겨지는데, 그 사이 화면을
+가리고 포커스를 뺏습니다. 창이 아예 생기지 않게 하는 다른 방법(S4U, 세션 0)은
+등록에 관리자 권한이 필요합니다.
+
+따라잡기·재시도·수동 실행이 겹쳐도 **하루에 한 번만** 돕니다. 두 번 돌면 가설이
+두 배로 등록되고, 사전등록은 되돌릴 수 없으며 모든 시행이 `N` 에 들어가 다중검정
+보정을 영구히 왜곡합니다. 일부러 다시 돌리려면 `-Force` 를 주세요.
 
 상태 확인과 수동 실행:
 
