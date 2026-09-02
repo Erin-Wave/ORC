@@ -44,6 +44,19 @@ FUNDING_HOURS = (0, 8, 16)   # UTC settlement hours
 COST_STRESS_MULTIPLIERS = (1.0, 2.0, 3.0)
 
 # --------------------------------------------------------------------------
+# What one hypothesis is allowed to cost
+# --------------------------------------------------------------------------
+# Every configuration a registered hypothesis enumerates enters the append-only
+# ledger, and that count is the denominator of the multiple-testing correction
+# applied to every result this project will ever produce.  It cannot be reduced
+# afterwards.  The only thing standing between a proposer and an arbitrarily
+# large N was a sentence in a prompt asking it to be reasonable, which is not a
+# constraint.  Frozen at roughly twice the largest grid registered before any
+# family cleared (H0002 at 972), so it binds what is proposed next without
+# retroactively rejecting anything the ledger already holds.
+MAX_CONFIGURATIONS_PER_HYPOTHESIS = 2000
+
+# --------------------------------------------------------------------------
 # Panel build
 # --------------------------------------------------------------------------
 # Bars whose entire OHLC is flat AND volume == 0 are pre-listing padding in the

@@ -196,6 +196,18 @@ class Ledger:
         """N.  The number every multiple-testing correction must consume."""
         return int(self.conn.execute("SELECT COUNT(*) FROM trials").fetchone()[0])
 
+    def newest_trial_utc(self) -> str | None:
+        """When a question nobody had asked before was last answered.
+
+        The worker re-runs the whole registry every six hours whether or not
+        anything new was proposed, so a fresh cycle report and trials_added: 0
+        are what a healthy loop and a dead one look like alike.  This moves
+        only when a genuinely new trial is inserted, which makes it the one
+        clock that can tell the two apart.
+        """
+        row = self.conn.execute("SELECT MAX(created_utc) FROM trials").fetchone()
+        return row[0] if row and row[0] else None
+
     def trials_in_family(self, family: str) -> int:
         return int(self.conn.execute(
             "SELECT COUNT(*) FROM trials WHERE family=?", (family,)).fetchone()[0])

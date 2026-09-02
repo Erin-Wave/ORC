@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import polars as pl
@@ -421,3 +421,167 @@ def test_a_best_a_random_search_matches_is_not_a_finding():
         "p=0.420 vs a random search"]
     assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1, None) == [
         "search test unmeasured"]
+
+
+# --------------------------------------------------------------------------
+# an id is a promise: what is behind it cannot be swapped out
+# --------------------------------------------------------------------------
+def test_reusing_a_registered_id_for_different_content_is_refused(tmp_path):
+    """The surface report selects trials WHERE hypothesis_id=?.  Overwriting a
+    registered id does not replace its trials, it adopts them."""
+    first = _hyp().register()
+    first.save(tmp_path / "H9999.json")
+
+    second = _hyp(family="a different family", claim="a different story").register()
+    with pytest.raises(ValueError, match="already registered"):
+        second.save(tmp_path / "H9999.json")
+
+
+def test_re_registering_the_identical_hypothesis_is_not_an_edit(tmp_path):
+    """A rebase can put the same queue file back; that is not a changed grid."""
+    h = _hyp().register()
+    h.save(tmp_path / "H9999.json")
+    again = Hypothesis(**json.loads((tmp_path / "H9999.json").read_text(encoding="utf-8")))
+    again.save(tmp_path / "H9999.json")          # must not raise
+    assert again.prereg_hash == h.prereg_hash
+
+
+def test_the_next_id_skips_one_that_was_proposed_and_killed(tmp_path):
+    """A killed proposal is filed under its id.  Reissuing the id overwrites
+    the record of why it was rejected."""
+    from orc.orchestrator.spec import next_hypothesis_id
+    registry, killed = tmp_path / "registry", tmp_path / "killed"
+    registry.mkdir(); killed.mkdir()
+    (registry / "H0001.json").write_text("{}", encoding="utf-8")
+    (killed / "H0002.json").write_text("{}", encoding="utf-8")
+
+    assert next_hypothesis_id(registry) == "H0002"        # registry alone is blind
+    import orc.config as cfg
+    old = (cfg.REGISTRY, cfg.QUEUE, cfg.CONFIGS)
+    cfg.REGISTRY, cfg.QUEUE, cfg.CONFIGS = registry, tmp_path / "queue", tmp_path
+    try:
+        assert next_hypothesis_id() == "H0003"
+    finally:
+        cfg.REGISTRY, cfg.QUEUE, cfg.CONFIGS = old
+
+
+# --------------------------------------------------------------------------
+# N can only grow, so what one hypothesis may add to it is capped
+# --------------------------------------------------------------------------
+def test_a_grid_beyond_the_ceiling_is_refused_whole(tmp_path, monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import daily_cycle
+
+    queue, registry = tmp_path / "queue", tmp_path / "registry"
+    queue.mkdir(); registry.mkdir()
+    monkeypatch.setattr(config, "QUEUE", queue)
+    monkeypatch.setattr(config, "REGISTRY", registry)
+    monkeypatch.setattr(config, "MAX_CONFIGURATIONS_PER_HYPOTHESIS", 10)
+
+    big = _hyp(grid={"stride_days": list(range(1, 12))})
+    (queue / "H9999.json").write_text(
+        json.dumps({k: v for k, v in big.__dict__.items()}), encoding="utf-8")
+
+    assert daily_cycle.intake_queue() == []
+    assert not (registry / "H9999.json").exists()
+    assert (queue / "rejected" / "H9999.json").exists()
+
+
+def test_a_grid_inside_the_ceiling_still_registers(tmp_path, monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import daily_cycle
+
+    queue, registry = tmp_path / "queue", tmp_path / "registry"
+    queue.mkdir(); registry.mkdir()
+    monkeypatch.setattr(config, "QUEUE", queue)
+    monkeypatch.setattr(config, "REGISTRY", registry)
+    monkeypatch.setattr(config, "MAX_CONFIGURATIONS_PER_HYPOTHESIS", 10)
+
+    small = _hyp(grid={"stride_days": [1.0, 7.0, 30.0]})
+    (queue / "H9999.json").write_text(
+        json.dumps({k: v for k, v in small.__dict__.items()}), encoding="utf-8")
+
+    got = daily_cycle.intake_queue()
+    assert [h.hypothesis_id for h in got] == ["H9999"]
+    assert (registry / "H9999.json").exists()
+
+
+# --------------------------------------------------------------------------
+# the loop can die without anything failing
+# --------------------------------------------------------------------------
+def test_a_ledger_that_stopped_growing_is_news(tmp_path, monkeypatch):
+    """Every other signal in the notifier stays green while the research is
+    over: the cycle is fresh, the stamp is fresh, the queue is empty."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import notify
+
+    reports, queue, logs = tmp_path / "reports", tmp_path / "queue", tmp_path / "logs"
+    for d in (reports, queue, logs):
+        d.mkdir()
+    now = datetime.now(timezone.utc)
+    (reports / "CYCLE_SUMMARY.json").write_text(
+        json.dumps({"finished_utc": now.isoformat(), "results": []}), encoding="utf-8")
+    (logs / ".last_cycle").write_text(now.strftime("%Y-%m-%d"), encoding="utf-8")
+
+    db = tmp_path / "t.sqlite"
+    monkeypatch.setattr(config, "REPORTS", reports)
+    monkeypatch.setattr(config, "QUEUE", queue)
+    monkeypatch.setattr(config, "ORC_ROOT", tmp_path)
+    monkeypatch.setattr(config, "LEDGER_DB", db)
+
+    with Ledger(db) as l:
+        l.record(**_row())
+        stale = (now - timedelta(days=9)).isoformat()
+        l.conn.execute("DROP TRIGGER trials_no_update")   # append-only, so age it by hand
+        l.conn.execute("UPDATE trials SET created_utc=?", (stale,))
+        l.conn.commit()
+
+    assert any("idle" in n for n in notify.collect())
+
+    with Ledger(db) as l:
+        l.record(**_row(cfg={"a": 2}))
+    assert not any("idle" in n for n in notify.collect())
+
+
+# --------------------------------------------------------------------------
+# a proposal that could not be judged waits -- but not forever
+# --------------------------------------------------------------------------
+def _reasoning(tmp_path, monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import reasoning
+    proposed, killed = tmp_path / "proposed", tmp_path / "killed"
+    proposed.mkdir(); killed.mkdir()
+    monkeypatch.setattr(reasoning, "PROPOSED", proposed)
+    monkeypatch.setattr(reasoning, "KILLED", killed)
+    return reasoning, proposed, killed
+
+
+def test_a_held_proposal_is_judged_before_a_new_one_is_asked_for(tmp_path, monkeypatch):
+    """Unreviewed is not approved, so it waits.  Deleting it would spend the
+    day's registration slot twice on the same report."""
+    reasoning, proposed, _ = _reasoning(tmp_path, monkeypatch)
+    (proposed / "H9999.json").write_text('{"hypothesis_id": "H9999"}', encoding="utf-8")
+
+    def _must_not_be_called(*a, **k):
+        raise AssertionError("asked the model for a new batch with one still unjudged")
+    monkeypatch.setattr(reasoning.llm, "ask", _must_not_be_called)
+
+    assert [p.name for p in reasoning.propose()] == ["H9999.json"]
+
+
+def test_a_proposal_nothing_can_review_does_not_wedge_the_pipeline(tmp_path, monkeypatch):
+    """A reply the adversary can never parse would otherwise be handed back
+    every cycle forever, and no new question would ever be asked again."""
+    import os
+    import time
+    reasoning, proposed, killed = _reasoning(tmp_path, monkeypatch)
+    stuck = proposed / "H9999.json"
+    stuck.write_text('{"hypothesis_id": "H9999"}', encoding="utf-8")
+    old = time.time() - (reasoning.HELD_PROPOSAL_MAX_DAYS + 1) * 86400
+    os.utime(stuck, (old, old))
+
+    monkeypatch.setattr(reasoning.llm, "ask", lambda *a, **k: "wrote nothing")
+    assert reasoning.propose() == []
+    assert not stuck.exists()
+    verdict = json.loads((killed / "H9999.json").read_text(encoding="utf-8"))["verdict"]
+    assert verdict["killed_by"] == "held_too_long"

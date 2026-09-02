@@ -31,7 +31,7 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -54,6 +54,14 @@ CLOSED = config.CONFIGS / "closed"
 # The proposer writes files; it must not commit or evaluate. Everything it
 # produces passes the adversary before it can reach the queue.
 PROPOSER_TOOLS = ("Read", "Glob", "Grep", "Write")
+
+# How long a proposal may sit waiting for an adversary that cannot be reached.
+# Held proposals are reviewed before new ones are asked for, which is right for
+# a transient outage and wrong for a proposal the reviewer can never parse: that
+# one would be handed back every cycle forever and no new question would ever
+# be asked again. Two days is past any outage worth waiting through, and the
+# proposal is killed on the record rather than deleted.
+HELD_PROPOSAL_MAX_DAYS = 2
 # The researcher is the only step allowed out to the network, and only to read.
 RESEARCH_TOOLS = ("WebSearch", "WebFetch", "Read")
 
@@ -63,10 +71,35 @@ def _log(msg: str) -> None:
 
 
 def propose() -> list[Path]:
-    """One pass over the cycle report. Returns the files it wrote."""
+    """One pass over the cycle report. Returns the proposals awaiting review.
+
+    A file already sitting in configs/proposed/ was written by an earlier
+    attempt whose adversary could not be reached; it was held rather than
+    registered, because unreviewed is not approved. Deleting it to make room
+    for a fresh batch, which is what this used to do, threw away a proposal
+    that had never been judged and spent the day's registration slot a second
+    time on the same report. Judge what is waiting first.
+    """
     PROPOSED.mkdir(parents=True, exist_ok=True)
-    for stale in PROPOSED.glob("*.json"):
-        stale.unlink()
+    KILLED.mkdir(parents=True, exist_ok=True)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=HELD_PROPOSAL_MAX_DAYS)
+    waiting = []
+    for held in sorted(PROPOSED.glob("*.json")):
+        written = datetime.fromtimestamp(held.stat().st_mtime, timezone.utc)
+        if written < cutoff:
+            (KILLED / held.name).write_text(json.dumps(
+                {"proposal": json.loads(held.read_text(encoding="utf-8")),
+                 "verdict": {"verdict": "KILL", "killed_by": "held_too_long",
+                             "reason": f"waited {HELD_PROPOSAL_MAX_DAYS}+ days for an "
+                                       "adversary that could not be reached"}},
+                indent=2, ensure_ascii=False), encoding="utf-8")
+            held.unlink()
+            _log(f"{held.name} KILLED    held past {HELD_PROPOSAL_MAX_DAYS} days unreviewed")
+            continue
+        waiting.append(held)
+    if waiting:
+        _log(f"{len(waiting)} proposal(s) held from an earlier attempt; reviewing those")
+        return waiting
     prompt = (config.ORC_ROOT / "scripts" / "reasoning_prompt.txt").read_text(encoding="utf-8")
     llm.ask(prompt, tools=PROPOSER_TOOLS, cwd=config.ORC_ROOT)
     return sorted(PROPOSED.glob("*.json"))
@@ -93,6 +126,13 @@ def expandable(path: Path) -> str | None:
         return f"{type(exc).__name__}: {exc}"
     if not cfgs:
         return "the grid expands to nothing"
+    # Intake refuses this too, but a proposal killed here never reaches the
+    # queue, so the reason is written into configs/killed/ next to the proposal
+    # rather than discovered by the worker six hours later.
+    if len(cfgs) > config.MAX_CONFIGURATIONS_PER_HYPOTHESIS:
+        return (f"{len(cfgs)} configurations exceeds the ceiling of "
+                f"{config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}; every one of them would "
+                "enter the ledger and raise the multiple-testing bar permanently")
     rule = h.fixed.get("rule") or (cfgs[0].rule if hasattr(cfgs[0], "rule") else None)
     if rule is not None:
         from orc.eval.signal_rules import RULES
@@ -173,6 +213,13 @@ def main() -> int:
             json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         return 1
 
+    # A step that could not reach the model has not decided anything, and the
+    # scheduler only retries a cycle that exits non-zero. Reporting success
+    # after an expired token or a rate limit stamped the day as done and put
+    # the next attempt twenty-four hours away -- the retry policy existed
+    # precisely for the failure it was unreachable for.
+    unavailable: list[str] = []
+
     print("propose")
     try:
         proposals = propose()
@@ -181,6 +228,7 @@ def main() -> int:
     except llm.LLMUnavailable as exc:
         _log(f"SKIPPED: {exc}")
         report["steps"]["propose"] = f"skipped: {exc}"
+        unavailable.append(f"propose: {exc}")
         proposals = []
 
     print("adversary")
@@ -205,6 +253,7 @@ def main() -> int:
             # waits rather than entering the ledger on the strength of silence.
             _log(f"{p.name} HELD: review unavailable ({exc})")
             report["steps"].setdefault("held", []).append(p.name)
+            unavailable.append(f"adversary {p.name}: {exc}")
             continue
         if v.get("verdict") == "REGISTER":
             shutil.move(str(p), str(config.QUEUE / p.name))
@@ -269,10 +318,30 @@ def main() -> int:
                        cwd=config.ORC_ROOT, check=False)
         subprocess.run(["git", "pull", "--rebase", "--autostash", "-q"],
                        cwd=config.ORC_ROOT, check=False)
-        subprocess.run(["git", "push", "-q"], cwd=config.ORC_ROOT, check=False)
-        print("committed and pushed")
+        pushed = subprocess.run(["git", "push", "-q"], cwd=config.ORC_ROOT,
+                                capture_output=True, text=True, check=False)
+        if pushed.returncode == 0:
+            print("committed and pushed")
+        else:
+            # Reported, but NOT retried, and the day is still stamped as spent.
+            # The hypotheses in this commit are registered: a retry would find
+            # configs/proposed/ empty, ask the model for a fresh batch and
+            # register a second one against the same report, which is the
+            # duplicate registration the once-a-day guard exists to prevent.
+            # The commit is local and safe; the next cycle pushes it before it
+            # reasons, and the notifier says so meanwhile.
+            print(f"committed, PUSH FAILED: {(pushed.stderr or '').strip()[:200]}")
+            report["steps"]["push"] = f"failed: {(pushed.stderr or '').strip()[:200]}"
+            (config.REPORTS / "REASONING_LOG.json").write_text(
+                json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     else:
         print("nothing to commit")
+
+    if unavailable:
+        print("judgement unavailable this attempt:")
+        for u in unavailable:
+            print(f"  {u}")
+        return 3
     return 0
 
 

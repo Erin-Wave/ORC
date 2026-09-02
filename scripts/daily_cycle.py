@@ -48,6 +48,29 @@ def intake_queue() -> list[Hypothesis]:
             if not h.prereg_hash:
                 h.register()
             h.verify()
+
+            # N is the denominator of every correction this project will ever
+            # apply and it can only grow.  A grid is refused whole rather than
+            # trimmed: trimming would edit a pre-registered grid, which is the
+            # one thing section 3 forbids outright.
+            if h.size() > config.MAX_CONFIGURATIONS_PER_HYPOTHESIS:
+                raise ValueError(
+                    f"{h.size()} configurations exceeds the registered ceiling of "
+                    f"{config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}. Propose a smaller "
+                    "grid under a new id; the grid of a registered hypothesis "
+                    "cannot be trimmed after the fact.")
+
+            # A queue file that is byte-identical to what is already registered
+            # is a re-drop, not an edit -- the worker and the reasoning layer
+            # both push, and a rebase can put the same file back.  Consume it
+            # and carry on; save() below refuses anything that actually differs.
+            prior = config.REGISTRY / f"{h.hypothesis_id}.json"
+            if prior.exists() and json.loads(
+                    prior.read_text(encoding="utf-8")).get("prereg_hash") == h.prereg_hash:
+                path.unlink()
+                print(f"  already registered {h.hypothesis_id}  hash {h.prereg_hash[:12]}")
+                continue
+
             h.save()
             registered.append(h)
             path.unlink()
@@ -86,6 +109,16 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False) -> dict:
         print("\nnothing to run: the queue is empty and no hypothesis was selected")
         todo = []
 
+    # Evaluate what is new; report on everything registered.  Section 9 forbids
+    # the reasoning pass from reading anything but CYCLE_REPORT.md, and on a
+    # cycle that picked up fresh hypotheses this wrote a report listing only
+    # those -- asking the next pass to decide "continue or close" for families
+    # that had vanished from the only document it may open.  It righted itself
+    # six hours later when the queue was empty again, which made it a
+    # scheduling accident rather than a guarantee.  Reporting re-reads the
+    # ledger; it does not re-run a trial.
+    to_report = todo if only else load_registry()
+
     print(f"\nexecuting {len(todo)} hypotheses")
     results, reports = [], []
     with Ledger() as led:
@@ -101,7 +134,7 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False) -> dict:
         after = led.total_trials()
 
     print("\nreports")
-    for h in todo:
+    for h in to_report:
         try:
             rep = write_report(h)
             reports.append(rep)
@@ -230,7 +263,9 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    raise SystemExit(0 if run_cycle(
-        only=args or None,
-        rerun_all="--all" in sys.argv,
-    ) else 1)
+    result = run_cycle(only=args or None, rerun_all="--all" in sys.argv)
+    # A cycle that found no panels evaluated nothing.  It used to return a dict
+    # like any other, which is truthy, so the run went green and the only trace
+    # was a line of stdout nobody reads -- a worker whose bundle failed to
+    # unpack would have reported success every six hours indefinitely.
+    raise SystemExit(1 if result.get("status") == "NO_PANELS" else 0)

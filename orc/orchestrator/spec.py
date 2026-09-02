@@ -192,6 +192,24 @@ class Hypothesis:
     def save(self, path: Path | None = None) -> Path:
         path = path or (config.REGISTRY / f"{self.hypothesis_id}.json")
         path.parent.mkdir(parents=True, exist_ok=True)
+        # The id is the only handle anything downstream has on a hypothesis:
+        # the surface report selects its trials WHERE hypothesis_id=?.  Writing
+        # a different claim or grid to an id that already has trials behind it
+        # does not replace them, it adopts them -- the next report would carry
+        # one hypothesis's claim and kill condition over two hypotheses'
+        # numbers, and the prereg hash that was supposed to make an edited grid
+        # visible would have been overwritten by the edit.  verify() cannot
+        # catch this: it only checks a hypothesis against itself.  Section 3
+        # says a changed hypothesis gets a new id; this is the line where that
+        # stops being advice.
+        if path.exists():
+            prior = json.loads(path.read_text(encoding="utf-8"))
+            if prior.get("prereg_hash") != self.prereg_hash:
+                raise ValueError(
+                    f"{self.hypothesis_id} is already registered under a different "
+                    f"pre-registration hash (on disk {str(prior.get('prereg_hash'))[:12]}, "
+                    f"offered {self.prereg_hash[:12]}). Register a NEW hypothesis id "
+                    "instead of reusing this one.")
         path.write_text(json.dumps(asdict(self), indent=2, default=str), encoding="utf-8")
         return path
 
@@ -214,12 +232,25 @@ def load_registry(directory: Path | None = None) -> list[Hypothesis]:
 
 
 def next_hypothesis_id(directory: Path | None = None) -> str:
-    d = directory or config.REGISTRY
-    existing = sorted(p.stem for p in d.glob("H*.json")) if d.exists() else []
+    """The next id no proposal has ever used.
+
+    Every directory a hypothesis id can rest in counts, not just the registry.
+    An id that was proposed and killed must not come round again: the kill is
+    filed as configs/killed/<id>.json, so reissuing the id overwrites the
+    record of why the first one was rejected, and the proposer is told to avoid
+    ids already tried on the strength of a file that no longer exists.
+    """
+    roots = [directory] if directory else [
+        config.REGISTRY, config.QUEUE, config.CONFIGS / "killed",
+        config.CONFIGS / "closed", config.CONFIGS / "proposed",
+    ]
     n = 0
-    for name in existing:
-        try:
-            n = max(n, int(name.lstrip("H")))
-        except ValueError:
+    for d in roots:
+        if not d or not d.exists():
             continue
+        for p in d.glob("H*.json"):
+            try:
+                n = max(n, int(p.stem.lstrip("H")))
+            except ValueError:
+                continue
     return f"H{n + 1:04d}"

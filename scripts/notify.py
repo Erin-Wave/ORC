@@ -1,7 +1,8 @@
 """ORC | Decide whether anything happened worth interrupting someone for.
 
-Three things are worth a notification, and they are the three ways this system
-goes quiet without going wrong-looking:
+These are the ways this system goes quiet without going wrong-looking. Every
+one of them leaves the reports fresh, the exit codes zero and the dashboard
+green, which is why each needs its own signal rather than a general health check:
 
   a survivor    A cell cleared every check. This is the one the whole apparatus
                 exists to produce, and it must not scroll past unseen.
@@ -11,6 +12,16 @@ goes quiet without going wrong-looking:
   a stall       No cycle has finished recently. The worker runs every six hours
                 and the reasoning layer daily, so silence past a day means one
                 of them stopped and nothing else will say so.
+  an idle loop  Both halves ran and neither asked anything new. Nothing fails:
+                the reasoning stamp is fresh, the cycle report is fresh, the
+                queue is empty because everything in it was consumed. The
+                ledger simply stops growing and the project quietly becomes a
+                job that re-scores its exhausted grids forever.
+  a stuck push  A hypothesis was registered locally and never reached the
+                remote. The worker collects from the remote, so the question
+                exists on exactly one machine and will never be answered.
+  a finding     An open high-severity review finding. A cycle refuses to run on
+                top of one, so it stops the research until it is dispositioned.
 
 Prints one line per item and exits 0 when there is news, 1 when there is not,
 so a scheduler can branch on the exit code without parsing anything.
@@ -43,6 +54,13 @@ STALL_AFTER = timedelta(hours=30)
 # The reasoning pass runs daily. Two missed days is past any single
 # machine-was-off explanation.
 REASONING_STALE_DAYS = 2
+
+# The reasoning pass runs daily and every hypothesis that survives the adversary
+# puts new rows in the ledger, so two days without a single new trial means the
+# proposals are not arriving, or all of them are being killed, or the registered
+# grids are exhausted. Any of those ends the research, and none of them looks
+# like a failure from the outside.
+LEDGER_IDLE_DAYS = 2
 
 
 def _load(name: str):
@@ -77,6 +95,42 @@ def collect() -> list[str]:
         if (config.QUEUE / "rejected").exists() else []
     for r in rejected:
         news.append(f"ORC rejected a queued hypothesis: {r.name}")
+
+    # The ledger's newest row, not the cycle's freshness. A cycle that re-scored
+    # the whole registry and added nothing is indistinguishable, by every other
+    # signal in this file, from one that answered a brand new question.
+    try:
+        from orc.ledger.trials import Ledger
+        with Ledger() as led:
+            newest = led.newest_trial_utc()
+        if newest:
+            last = datetime.fromisoformat(newest)
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            idle = (datetime.now(timezone.utc) - last).days
+            if idle >= LEDGER_IDLE_DAYS:
+                queued = len(list(config.QUEUE.glob("*.json")))
+                news.append(
+                    f"ORC is idle: no new trial in {idle} days, {queued} hypothesis "
+                    f"file(s) queued. The cycle keeps reporting and nothing new is "
+                    f"being asked or answered")
+    except Exception:                                              # noqa: BLE001
+        pass
+
+    # A commit that never reached the remote is a hypothesis that exists only
+    # on this workstation. The worker collects from the remote, so the reports
+    # stay fresh, the ledger keeps its count, and the question is simply never
+    # asked. Nothing else in this file can see it.
+    try:
+        import subprocess
+        r = subprocess.run(["git", "rev-list", "--count", "@{u}..HEAD"],
+                           cwd=config.ORC_ROOT, capture_output=True, text=True,
+                           check=False, timeout=30)
+        if r.returncode == 0 and int(r.stdout.strip() or 0) > 0:
+            news.append(f"ORC has {r.stdout.strip()} commit(s) that never reached "
+                        f"the remote; the worker cannot see them")
+    except Exception:                                              # noqa: BLE001
+        pass
 
     # The worker refreshes CYCLE_SUMMARY every six hours whether or not the
     # reasoning layer ran, so a reasoning pass that dies -- an expired token, a

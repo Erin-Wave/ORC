@@ -84,6 +84,17 @@ if ($LASTEXITCODE -ne 0) {
 $head = (git rev-parse --short HEAD)
 Write-Log "head $head"
 
+# A previous cycle may have committed and failed to push -- the network was
+# down, the token had expired.  Those hypotheses are registered locally and the
+# worker collects from the remote, so until this succeeds they are questions
+# nobody will ever answer.  Pushing is not retried inside the reasoning pass,
+# because a retry there would register a second batch against the same report.
+$pending = (git rev-list --count "@{u}..HEAD" 2>$null)
+if ($LASTEXITCODE -eq 0 -and [int]$pending -gt 0) {
+    Write-Log "$pending commit(s) never reached the remote; pushing before reasoning"
+    git push 2>&1 | ForEach-Object { Write-Log "push: $_" }
+}
+
 # The worker's results arrived with that pull, so this is the freshest view of
 # them there will be today.  Check before reasoning, not after: the reasoning
 # pass writes hypotheses, not results, and would leave the report unchanged.

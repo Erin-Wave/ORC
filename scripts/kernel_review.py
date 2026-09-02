@@ -38,12 +38,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from orc import config, llm                                       # noqa: E402
 
-# Exactly the directories the ledger's code hash covers, plus the two modules
-# that decide what a trial is and what counts as a finding. If a file can
-# change a recorded number, it belongs in this list.
+# Exactly the directories the ledger's code hash covers, plus the modules that
+# decide what a trial is and what counts as a finding. If a file can change a
+# number anyone will read, it belongs in this list -- which is why surface.py
+# and spec.py are here even though the code hash does not cover them: PBO and
+# the shape verdict decide whether a family lives, and the pre-registration
+# hash decides whether a grid was edited after its results were seen. Neither
+# is written to a trial row and both are read as if they were.
 REVIEWED = ("orc/eval", "orc/kernel", "orc/facts/panel.py",
             "orc/ledger/trials.py", "orc/orchestrator/runner.py",
-            "orc/orchestrator/verdict.py", "orc/holdout.py")
+            "orc/orchestrator/verdict.py", "orc/orchestrator/surface.py",
+            "orc/orchestrator/spec.py", "orc/holdout.py")
 
 
 def files_to_review() -> list[Path]:
