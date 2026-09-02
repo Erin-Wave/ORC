@@ -29,7 +29,14 @@ def disqualifiers(surface: dict, metric: str, pbo: float | None) -> list[str]:
     floor = BREAK_EVEN.get(metric)
     if floor is not None and surface["best_value"] <= floor:
         why.append(f"at or below {floor:g}")
-    if surface.get("shape_diagnostic", {}).get("shape") in SPIKE_SHAPES:
+    shape = surface.get("shape_diagnostic", {}).get("shape")
+    if shape is None:
+        # plateau_score needs an axis with at least three levels for "one step
+        # away" to exist; on a grid of two-level axes it returns no shape at
+        # all. Reading that absence as "not a spike" let a cell clear the
+        # strongest structural check by never being subjected to it.
+        why.append("shape unmeasured")
+    elif shape in SPIKE_SHAPES:
         why.append("spike")
     paths = surface.get("independent_paths_best")
     if paths is not None and paths < FEW_PATHS:

@@ -26,6 +26,11 @@ Rules:
   closed family without new evidence.
 - Read the shape column before the value. A SPIKE is not a finding no matter
   how large, and a cell resting on one independent path is not evidence.
+- Give at least one axis three or more levels, and make it the axis you expect
+  to matter. The shape diagnostic asks what happens one step either side of the
+  best cell, so an axis with only two levels has no "one step away" and the
+  diagnostic cannot run at all. A hypothesis whose every axis has two levels
+  can never be shown to be a spike, which is not the same as not being one.
 - Keep the grid small enough to be justified. Every configuration you enumerate
   enters an append-only ledger and raises the multiple-testing bar for every
   result the project will ever produce. An axis that cannot plausibly change

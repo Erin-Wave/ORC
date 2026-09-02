@@ -339,3 +339,26 @@ def test_the_code_hash_covers_everything_that_writes_a_number():
     finally:
         runner.write_bytes(original)
     assert code_hash() == base
+
+
+def test_a_shape_that_was_never_computed_is_not_a_pass():
+    """plateau_score returns no shape on a grid whose axes all have two levels,
+    and reading that absence as 'not a spike' let a cell clear the structural
+    check by never facing it."""
+    from orc.orchestrator import verdict
+
+    blind = {"best_value": 1.34, "shape_diagnostic": {"peak": 1.34,
+                                                      "plateau_ratio": float("nan")},
+             "independent_paths_best": 19.0}
+    assert verdict.disqualifiers(blind, "calmar", 0.29) == ["shape unmeasured"]
+
+
+def test_plateau_score_cannot_see_a_two_level_grid():
+    import numpy as np
+
+    from orc.kernel.inference import plateau_score
+
+    g = np.arange(8.0).reshape(2, 2, 2)
+    assert "shape" not in plateau_score(g, [False, False, False])
+    fine = np.arange(27.0).reshape(3, 3, 3)
+    assert "shape" in plateau_score(fine, [True, True, True])
