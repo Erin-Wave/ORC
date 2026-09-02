@@ -239,26 +239,33 @@ def _cell(value, shape="PLATEAU", paths=40.0):
             "independent_paths_best": paths}
 
 
+# A search test that a cell passed, for the cases whose point is a different check.
+_PASSED_SEARCH = {"status": "ok", "survives_search": True, "p_value": 0.005}
+
+
 def test_a_losing_cell_is_never_a_finding():
     from orc.orchestrator import verdict
 
-    assert verdict.disqualifiers(_cell(0.7677), "tm_q05", 0.1)[0] == "at or below 1"
-    assert verdict.disqualifiers(_cell(-0.29), "calmar", 0.1)[0] == "at or below 0"
-    assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1) == []
-    assert verdict.disqualifiers(_cell(0.31), "calmar", 0.1) == []
+    s = _PASSED_SEARCH
+    assert verdict.disqualifiers(_cell(0.7677), "tm_q05", 0.1, s)[0] == "at or below 1"
+    assert verdict.disqualifiers(_cell(-0.29), "calmar", 0.1, s)[0] == "at or below 0"
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1, s) == []
+    assert verdict.disqualifiers(_cell(0.31), "calmar", 0.1, s) == []
 
 
 def test_every_disqualifier_is_reported_not_just_the_first():
     from orc.orchestrator import verdict
 
-    why = verdict.disqualifiers(_cell(0.5, shape="SPIKE", paths=1.02), "calmar", 0.8)
+    why = verdict.disqualifiers(_cell(0.5, shape="SPIKE", paths=1.02), "calmar", 0.8,
+                                _PASSED_SEARCH)
     assert why == ["spike", "1.02 paths", "PBO 0.80"]
 
 
 def test_a_spike_is_not_a_finding_however_large():
     from orc.orchestrator import verdict
 
-    assert "spike" in verdict.disqualifiers(_cell(9.99, shape="SPIKE"), "tm_q05", None)
+    assert "spike" in verdict.disqualifiers(_cell(9.99, shape="SPIKE"), "tm_q05", None,
+                                            _PASSED_SEARCH)
 
 
 def test_survivors_reads_the_report_metric_not_a_default():
@@ -267,6 +274,7 @@ def test_survivors_reads_the_report_metric_not_a_default():
     report = {"metric": "calmar",
               "pbo": {"AAA": {"status": "ok", "pbo": 0.1},
                       "BBB": {"status": "ok", "pbo": 0.1}},
+              "search_test": {"AAA": _PASSED_SEARCH, "BBB": _PASSED_SEARCH},
               "surfaces": {"AAA": _cell(0.4), "BBB": _cell(-0.1)}}
     assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
 
@@ -318,8 +326,10 @@ def test_a_pbo_that_was_never_computed_is_not_a_pass():
     the top three could be announced as clearing PBO with PBO never run."""
     from orc.orchestrator import verdict
 
-    assert verdict.disqualifiers(_cell(1.4), "tm_q05", None) == ["PBO unmeasured"]
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", None,
+                                 _PASSED_SEARCH) == ["PBO unmeasured"]
     report = {"metric": "calmar", "pbo": {},
+              "search_test": {"AAA": _PASSED_SEARCH},
               "surfaces": {"AAA": _cell(0.4)}}
     assert verdict.survivors(report) == []
 
@@ -350,7 +360,8 @@ def test_a_shape_that_was_never_computed_is_not_a_pass():
     blind = {"best_value": 1.34, "shape_diagnostic": {"peak": 1.34,
                                                       "plateau_ratio": float("nan")},
              "independent_paths_best": 19.0}
-    assert verdict.disqualifiers(blind, "calmar", 0.29) == ["shape unmeasured"]
+    assert verdict.disqualifiers(blind, "calmar", 0.29,
+                                 _PASSED_SEARCH) == ["shape unmeasured"]
 
 
 def test_plateau_score_cannot_see_a_two_level_grid():
@@ -398,3 +409,15 @@ def test_a_surface_whose_best_cell_still_loses_gets_no_shape():
     d = plateau_score(g, [True, True])
     assert "shape" not in d
     assert np.isnan(d["plateau_ratio"])
+
+
+def test_a_best_a_random_search_matches_is_not_a_finding():
+    """The question N exists to answer, and never asked until now: given that
+    this many configurations were tried, how surprising is the best of them?"""
+    from orc.orchestrator import verdict
+
+    beaten = {"status": "ok", "survives_search": False, "p_value": 0.42}
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1, beaten) == [
+        "p=0.420 vs a random search"]
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1, None) == [
+        "search test unmeasured"]

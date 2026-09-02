@@ -23,7 +23,8 @@ FEW_PATHS = 5.0            # below this the cell rests on almost one experiment
 BREAK_EVEN = {"tm_q05": 1.0, "calmar": 0.0}
 
 
-def disqualifiers(surface: dict, metric: str, pbo: float | None) -> list[str]:
+def disqualifiers(surface: dict, metric: str, pbo: float | None,
+                  search: dict | None = None) -> list[str]:
     """Every reason this cell is not a finding.  Empty means it survives."""
     why: list[str] = []
     floor = BREAK_EVEN.get(metric)
@@ -50,6 +51,12 @@ def disqualifiers(surface: dict, metric: str, pbo: float | None) -> list[str]:
         why.append("PBO unmeasured")
     elif pbo >= PBO_USELESS:
         why.append(f"PBO {pbo:.2f}")
+    # The question N exists to answer. A best that a search of this width finds
+    # in pure noise one time in twenty is not a finding, however it scored.
+    if search is None or search.get("status") != "ok":
+        why.append("search test unmeasured")
+    elif not search.get("survives_search"):
+        why.append(f"p={search.get('p_value', float('nan')):.3f} vs a random search")
     return why
 
 
@@ -58,5 +65,6 @@ def survivors(report: dict) -> list[tuple[str, dict]]:
     metric = report.get("metric", "tm_q05")
     pbo = {s: r.get("pbo") for s, r in report.get("pbo", {}).items()
            if r.get("status") == "ok"}
+    search = report.get("search_test", {})
     return [(sym, s) for sym, s in report.get("surfaces", {}).items()
-            if not disqualifiers(s, metric, pbo.get(sym))]
+            if not disqualifiers(s, metric, pbo.get(sym), search.get(sym))]

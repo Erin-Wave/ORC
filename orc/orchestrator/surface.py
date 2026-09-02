@@ -314,6 +314,66 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) ->
 
 
 # --------------------------------------------------------------------------
+def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
+    """Is the best cell better than the best a search of this width finds in noise?
+
+    The grid is re-run in full on each synthetic history, so the null carries
+    the same search the real number came from. Anything cheaper understates the
+    null and manufactures significance.
+    """
+    from orc.orchestrator.search_test import best_of_g
+
+    p = panel_mod.load(symbol, "1h", development_only=True)
+    configs = [c for c in h.expand() if c.symbol == symbol]
+    if len(configs) < 2:
+        return {"status": "fewer than two configurations"}
+
+    if h.track == "B":
+        from orc.eval.signal import SignalSpec, run_signals
+        from orc.eval.signal_rules import build_signals
+        from orc.kernel import metrics_fc
+
+        def score(close):
+            hi, lo = close * 1.0, close * 1.0        # a bootstrap has no wick
+            best = -np.inf
+            for cfg in configs:
+                lb = p.bars(cfg.lookback_days)
+                if lb < 2 or lb >= close.size:
+                    continue
+                entry, exit_ = build_signals(cfg.rule, p, lb, cfg.enter_rate, cfg.exit_rate)
+                spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
+                                  fee_bps=cfg.effective_fee_bps,
+                                  slippage_bps=cfg.effective_slippage_bps,
+                                  stop_loss=cfg.stop_loss, take_profit=cfg.take_profit,
+                                  max_hold_bars=p.bars(cfg.max_hold_days) if cfg.max_hold_days else None)
+                r = run_signals(close, hi, lo, entry, exit_, spec,
+                                funding_rate=p.funding_rate, symbol=symbol)
+                if r["n_trades"]:
+                    v = metrics_fc.calmar(r["equity"], metrics_fc.BARS_PER_YEAR["1h"])
+                    if np.isfinite(v):
+                        best = max(best, v)
+            return best
+    else:
+        def score(close):
+            best = -np.inf
+            for cfg in configs:
+                stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
+                if stride < 1 or (cfg.n_contributions - 1) * stride + hold >= close.size:
+                    continue
+                spec = AnalyticSpec(contribution=cfg.contribution, stride_bars=stride,
+                                    n_contributions=cfg.n_contributions, hold_bars=hold,
+                                    fee_bps=cfg.effective_fee_bps,
+                                    slippage_bps=cfg.effective_slippage_bps,
+                                    exit_fee_bps=cfg.effective_fee_bps)
+                res = evaluate(close, spec)
+                if res.get("n_starts", 0):
+                    best = max(best, float(np.quantile(res["terminal_multiple"], 0.05)))
+            return best
+
+    return best_of_g(observed_best, score, p, len(configs))
+
+
+# --------------------------------------------------------------------------
 def write_report(h: Hypothesis, metric: str | None = None,
                  pbo_symbols: list[str] | None = None) -> dict:
     metric = metric or h.primary_metric
@@ -331,6 +391,14 @@ def write_report(h: Hypothesis, metric: str | None = None,
             pbo[sym] = run_pbo(h, sym)
         except (ValueError, FileNotFoundError) as exc:
             pbo[sym] = {"symbol": sym, "status": str(exc)}
+
+    # The question N exists to answer, on the cells anyone would be tempted by.
+    search = {}
+    for sym in ranked[:2]:
+        try:
+            search[sym] = search_test_for(h, sym, surfaces[sym]["best_value"])
+        except Exception as exc:                                   # noqa: BLE001
+            search[sym] = {"status": f"{type(exc).__name__}: {exc}"}
 
     with Ledger() as led:
         ledger_total = led.total_trials()
@@ -350,6 +418,7 @@ def write_report(h: Hypothesis, metric: str | None = None,
         "trials_in_project": ledger_total,
         "surfaces": surfaces,
         "pbo": pbo,
+        "search_test": search,
     }
     out = config.REPORTS / f"{h.hypothesis_id}_SURFACE.json"
     out.parent.mkdir(parents=True, exist_ok=True)
