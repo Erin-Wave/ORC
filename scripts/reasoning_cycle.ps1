@@ -11,10 +11,10 @@
 # anything - the GitHub Actions worker does that within six hours.
 
 param(
-    # Overridable so the plumbing can be smoke-tested with a harmless prompt
-    # without registering a hypothesis.  Pre-registration is irreversible, so
-    # there is no such thing as a throwaway real run.
-    [string]$PromptFile,
+    # Run the plumbing - pull, news, toast, stamp - without the pipeline, so the
+    # scheduled path can be tested end to end without proposing anything.
+    # Pre-registration is irreversible, so there is no throwaway real run.
+    [switch]$SkipPipeline,
 
     # Run even if today's cycle already happened.  Only for a deliberate manual
     # re-run; see the once-a-day guard below for why that is not the default.
@@ -24,16 +24,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$Claude   = Join-Path $env:USERPROFILE ".local\bin\claude.exe"
 $LogDir   = Join-Path $RepoRoot "logs"
-
-if ($PromptFile) { $Prompt = $PromptFile }
-else { $Prompt = Join-Path $PSScriptRoot "reasoning_prompt.txt" }
-
-# Frozen before any result was seen: the reasoning layer may read and write the
-# working tree and talk to git, and nothing else.  A scheduled job with a free
-# shell is a liability, and this one has no reason to need one.
-$AllowedTools = @("Read", "Glob", "Grep", "Write", "Edit", "Bash(git *)")
 
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 $Log = Join-Path $LogDir ("reasoning_" + (Get-Date -Format "yyyy-MM-dd") + ".log")
@@ -106,10 +97,18 @@ if ($LASTEXITCODE -eq 0) {
     Write-Log "no news"
 }
 
-$promptText = Get-Content -Raw $Prompt
-$promptText | & $Claude -p --model claude-opus-5 --allowedTools $AllowedTools 2>&1 |
-    ForEach-Object { Write-Log "claude: $_" }
-$rc = $LASTEXITCODE
+# The pipeline orchestrates several model calls -- propose, adversary,
+# mechanism, surfaces, post-mortem -- so it is driven from Python rather than
+# from inside one session. A session whose tools are restricted to reading and
+# writing cannot spawn the adversary that is supposed to judge it.
+if ($SkipPipeline) {
+    Write-Log "pipeline skipped by request"
+    $rc = 0
+} else {
+    $pipeline = Join-Path $PSScriptRoot "reasoning.py"
+    & python $pipeline 2>&1 | ForEach-Object { Write-Log "reason: $_" }
+    $rc = $LASTEXITCODE
+}
 
 if ($rc -ne 0) {
     # Deliberately no stamp: a failed cycle should be retried, not skipped.
