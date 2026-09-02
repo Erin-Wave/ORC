@@ -1,0 +1,67 @@
+{
+  "results": [
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "BTCUSDT",
+      "config": {
+        "symbol": "BTCUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 21.0,
+        "enter_rate": 0.0002,
+        "exit_rate": 5e-05,
+        "capital": 10000.0,
+        "leverage": 1.0,
+        "stop_loss": null,
+        "take_profit": null,
+        "max_hold_days": 7.0,
+        "clock": "1h",
+        "fee_bps": 4.5,
+        "slippage_bps": 1.0,
+        "cost_multiplier": 1.0
+      },
+      "hourly": {
+        "clock": "1h",
+        "bars": 39243,
+        "cagr": 0.14348387757424774,
+        "max_drawdown": 0.5897245242442437,
+        "calmar": 0.24330661465728978,
+        "sharpe": 0.3482107420329183,
+        "total_return": 0.8232742243393087,
+        "years": 4.479680365296804,
+        "n_trades": 47,
+        "n_liquidations": 0,
+        "funding_collected": 4656.469398954087,
+        "final_equity": 18232.742243393088,
+        "exit_reasons": {
+          "signal": 47,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "minute": {
+        "clock": "1m",
+        "bars": 2354273,
+        "cagr": 0.07448856577704133,
+        "max_drawdown": 0.682314314034931,
+        "calmar": 0.10917045743412016,
+        "sharpe": 0.16473286379826751,
+        "total_return": 0.37961961637079233,
+        "years": 4.479208523592085,
+        "n_trades": 47,
+        "n_liquidations": 0,
+        "funding_collected": 4194.478440786324,
+        "final_equity": 13796.196163707924,
+        "exit_reasons": {
+          "signal": 47,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "relative_drift": 0.5388904387533286,
+      "sign_agrees": true,
+      "passed": false
+    }
+  ]
+}
