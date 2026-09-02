@@ -1,0 +1,131 @@
+{
+  "kill_test": "KT-3 survivorship",
+  "run_at_utc": "2026-09-02T00:49:02.357850+00:00",
+  "threshold_frozen_before_results": 0.2,
+  "symbols_ever": 986,
+  "symbols_in_local_archive": 481,
+  "symbols_never_archived_locally": 505,
+  "symbols_currently_listed": 754,
+  "symbols_delisted": 266,
+  "sampled_delisted": [
+    "B3USDT",
+    "BLZUSDT",
+    "BONDUSDT",
+    "FTMUSDT",
+    "FUNUSDT",
+    "FXSUSDT",
+    "LEVERUSDT",
+    "LINAUSDT",
+    "MLNUSDT",
+    "SLERFUSDT",
+    "SYSUSDT",
+    "VFYUSDT"
+  ],
+  "survivor_median_terminal_multiple": 0.9067443820072628,
+  "delisted_median_terminal_multiple": 0.9631083694287531,
+  "gap": -0.05636398742149029,
+  "usable_survivors": 9,
+  "usable_delisted": 3,
+  "min_usable_per_group": 10,
+  "verdict": "INCONCLUSIVE_INSUFFICIENT_SAMPLE",
+  "survivors": [
+    {
+      "symbol": "ADAUSDT",
+      "bars": 35776,
+      "n_starts": 18472,
+      "tm_q05": 0.4597727598786618,
+      "tm_q50": 0.7296167574877689,
+      "tm_q95": 5.920384722741784
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "bars": 30113,
+      "n_starts": 12809,
+      "tm_q05": 0.4533491723393233,
+      "tm_q50": 0.6999511290041549,
+      "tm_q95": 2.2217474249012352
+    },
+    {
+      "symbol": "BNBUSDT",
+      "bars": 35536,
+      "n_starts": 18232,
+      "tm_q05": 0.6873941612963458,
+      "tm_q50": 1.0669650540238154,
+      "tm_q95": 8.787162367591318
+    },
+    {
+      "symbol": "BTCUSDT",
+      "bars": 39243,
+      "n_starts": 21939,
+      "tm_q05": 0.5231946361597621,
+      "tm_q50": 1.0557381499426735,
+      "tm_q95": 3.941256613991532
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "bars": 31911,
+      "n_starts": 14607,
+      "tm_q05": 0.6660997889148111,
+      "tm_q50": 0.8920048764450677,
+      "tm_q95": 5.280812410946486
+    },
+    {
+      "symbol": "ETHUSDT",
+      "bars": 37336,
+      "n_starts": 20032,
+      "tm_q05": 0.6565007357178226,
+      "tm_q50": 1.026127228243563,
+      "tm_q95": 8.298402128712874
+    },
+    {
+      "symbol": "LTCUSDT",
+      "bars": 36304,
+      "n_starts": 19000,
+      "tm_q05": 0.5111881717335662,
+      "tm_q50": 0.9067443820072628,
+      "tm_q95": 1.411839388417837
+    },
+    {
+      "symbol": "SOLUSDT",
+      "bars": 30329,
+      "n_starts": 13025,
+      "tm_q05": 0.4939921969414596,
+      "tm_q50": 0.7508796756646965,
+      "tm_q95": 3.759802538541125
+    },
+    {
+      "symbol": "XRPUSDT",
+      "bars": 36376,
+      "n_starts": 19072,
+      "tm_q05": 0.6435345454900785,
+      "tm_q50": 0.9521038266837042,
+      "tm_q95": 2.068637434216257
+    }
+  ],
+  "delisted_sample": [
+    {
+      "symbol": "BLZUSDT",
+      "bars": 30257,
+      "n_starts": 12953,
+      "tm_q05": 0.423617651823208,
+      "tm_q50": 0.6793436060608548,
+      "tm_q95": 3.682691750020913
+    },
+    {
+      "symbol": "FTMUSDT",
+      "bars": 29969,
+      "n_starts": 12665,
+      "tm_q05": 0.5060525456371657,
+      "tm_q50": 1.0180682683396758,
+      "tm_q95": 1.9090013913454937
+    },
+    {
+      "symbol": "LINAUSDT",
+      "bars": 25745,
+      "n_starts": 8441,
+      "tm_q05": 0.7626251418178759,
+      "tm_q50": 0.9631083694287531,
+      "tm_q95": 1.2053450020650478
+    }
+  ]
+}

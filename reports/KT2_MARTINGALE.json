@@ -1,0 +1,2711 @@
+{
+  "kill_test": "KT-2 levered averaging-down",
+  "run_at_utc": "2026-09-02T00:46:10.961412+00:00",
+  "threshold_frozen_before_results": 0.05,
+  "cells": 135,
+  "cells_closed": 119,
+  "highest_leverage_still_open": 2.0,
+  "verdict": "LEVERAGE_CAPPED_AT_2",
+  "per_cell": [
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 0.6921182266009852,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 1.0437138260919099,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 15.943704117287501,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 0.6921182266009852,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 1.0398559909549856,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 14.203162962400214,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.21456822857399435,
+        "q05": 0.24761915825074893,
+        "q50": 0.3462113000478265,
+        "q95": 1.0369976063877733,
+        "worst": 0.1927425337576739
+      },
+      "max_dd_total_q95": 1.8594345177338178,
+      "closed": false,
+      "symbol": "ADAUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 25.503913896283706,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 27.42018824060694,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.849609951559455,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 37.78861202212296,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 40.572930444579285,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.543494300083922,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 62.23698365522242,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 27.559971065618534,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.225239252520467,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 40.9957947440607,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 16.145876893741296,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 406,
+      "start_first": "2020-01-31",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.37,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.64506036033518,
+      "closed": true,
+      "symbol": "ADAUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.12760500443382025,
+        "q05": 0.13973659702242472,
+        "q50": 1.256410842999672,
+        "q95": 2.0457380785325454,
+        "worst": 0.12469151557899219
+      },
+      "max_dd_total_q95": 5.687150796454008,
+      "closed": false,
+      "symbol": "AVAXUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.10579321275571912,
+        "q05": 0.11595576702762048,
+        "q50": 1.2495662712299485,
+        "q95": 2.033543571478146,
+        "worst": 0.10186838946801637
+      },
+      "max_dd_total_q95": 6.283648414668225,
+      "closed": false,
+      "symbol": "AVAXUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.3051386580182957,
+        "q05": 0.31001177095896026,
+        "q50": 1.0579944025436436,
+        "q95": 1.709567652375307,
+        "worst": 0.30318926815513886
+      },
+      "max_dd_total_q95": 1.2031021441578202,
+      "closed": false,
+      "symbol": "AVAXUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 13.448803179916707,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 15.67636212210216,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.8407832729572777,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 20.243214582444875,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.078587238787676,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.6918378914232823,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 16.640954431391034,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 41.17642173701043,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 6.7060600476434775,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.217982887584174,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 82.88253462088674,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 170,
+      "start_first": "2020-09-23",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 1.82179522786755,
+      "closed": true,
+      "symbol": "AVAXUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 1.1003842940647939,
+        "q05": 1.1260625166054576,
+        "q50": 1.9482657216440282,
+        "q95": 5.049965791211194,
+        "worst": 1.0739059989828013
+      },
+      "max_dd_total_q95": 7.344233511887686,
+      "closed": false,
+      "symbol": "BNBUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 1.0985404713819389,
+        "q05": 1.1207547151532473,
+        "q50": 1.9599156897474328,
+        "q95": 5.020105568296926,
+        "worst": 1.0581555146960617
+      },
+      "max_dd_total_q95": 7.204615495406837,
+      "closed": false,
+      "symbol": "BNBUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.7989971216596369,
+        "q05": 0.8135539303404573,
+        "q50": 0.9617778368711601,
+        "q95": 1.1920087787371152,
+        "worst": 0.7880876709013882
+      },
+      "max_dd_total_q95": 0.9989250569370927,
+      "closed": false,
+      "symbol": "BNBUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.12878787878787878,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 2.1064453203738704,
+        "q95": 8.148933707768592,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 12.690168782687085,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.05303030303030303,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 2.9198313794948643,
+        "q95": 9.040211136593856,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 14.409230990813676,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.020202020202020204,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.6163302213313944,
+        "q50": 0.8770406262919603,
+        "q95": 1.3543041370927364,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.011899909166479,
+      "closed": false,
+      "symbol": "BNBUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.21717171717171718,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 2.659667980560805,
+        "q95": 11.723400561652884,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 19.03525317403063,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.1414141414141414,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 3.8797470692422924,
+        "q95": 13.060316704890788,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 21.613846486220492,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.125779091858947,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.40404040404040403,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 2.7296831536837205,
+        "q95": 18.872334269421472,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 31.434111861576557,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.23484848484848486,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 4.684218176210832,
+        "q95": 21.100527841484634,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 36.02307747703417,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.047438948394096,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.9015151515151515,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 6.61090989013135,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 24.60070686608796,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 0.7095959595959596,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 41.20105568296926,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 72.04615495406833,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 396,
+      "start_first": "2020-02-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.36,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.564822537285391,
+      "closed": true,
+      "symbol": "BNBUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.18475372157734327,
+        "q05": 0.23832818564419506,
+        "q50": 0.7806755994350578,
+        "q95": 1.343485314021541,
+        "worst": 0.13402781521318938
+      },
+      "max_dd_total_q95": 2.7869827911841263,
+      "closed": false,
+      "symbol": "BTCUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.18959496147691068,
+        "q05": 0.24287796509809784,
+        "q50": 0.7839627958308848,
+        "q95": 1.3429117355433864,
+        "worst": 0.13864617509771487
+      },
+      "max_dd_total_q95": 2.8022621967501062,
+      "closed": false,
+      "symbol": "BTCUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.2811875308798363,
+        "q05": 0.31266004113765566,
+        "q50": 0.7379565571279633,
+        "q95": 1.266895912149503,
+        "worst": 0.2503612812364841
+      },
+      "max_dd_total_q95": 1.1828460990769312,
+      "closed": false,
+      "symbol": "BTCUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.931689958515631,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.8743719053113237,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.0563889801464637,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.443354503540016,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.374813957923706,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.7192832575270494,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.428176411690536,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.318897466501099,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.981922740146818,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 15.741828901639513,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 16.12270317385246,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 551,
+      "start_first": "2019-09-08",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.51,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 7.79066435221076,
+      "closed": true,
+      "symbol": "BTCUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 0.6612244897959184,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.9004725852412303,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 60.880157325553505,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 0.6571428571428571,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.9020522774818307,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 66.27349889841126,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.4475207981862394,
+        "q05": 0.45321784773501744,
+        "q50": 0.5744308608165256,
+        "q95": 0.8276217044588619,
+        "worst": 0.4450674623583442
+      },
+      "max_dd_total_q95": 0.8060878355213931,
+      "closed": false,
+      "symbol": "DOGEUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 120.66545808458294,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 131.63570748781493,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 1.5214946195322894,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 182.8191755024195,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 197.18757587977493,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.185272973196744,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 249.46148858635337,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 340.7140194571022,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 0.9145669387172081,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 447.42223954527856,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 653.5342975532793,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 245,
+      "start_first": "2020-07-10",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.22,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 0.8901225471789531,
+      "closed": true,
+      "symbol": "DOGEUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 0.10828025477707007,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 1.053007807721375,
+        "q95": 1.3469711053139402,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 7.784319675082705,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 0.036093418259023353,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.6451521801572024,
+        "q50": 1.0502930249368922,
+        "q95": 1.3270342489996632,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.883434318826433,
+      "closed": false,
+      "symbol": "ETHUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.4465679579162715,
+        "q05": 0.4754007425738763,
+        "q50": 0.8619100144010267,
+        "q95": 1.1774258152818824,
+        "worst": 0.37434905720022343
+      },
+      "max_dd_total_q95": 2.0775683529879982,
+      "closed": false,
+      "symbol": "ETHUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 10.27921701498873,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 9.984334515413568,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 4.287731868568257,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 14.921102064104792,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 14.49172426580353,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.871807441011839,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.843591517802018,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.031639255921803,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 9.278973909100937,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 41.6727639733284,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 39.69099892488133,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 471,
+      "start_first": "2019-11-27",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.43,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 17.565269094955717,
+      "closed": true,
+      "symbol": "ETHUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 0.5654205607476636,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.6709295288885266,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.3045415255461443,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 0.5630841121495327,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.6742607263881724,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.3378746148878653,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 0.016355140186915886,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.48341943525755304,
+        "q50": 0.6383994421788886,
+        "q95": 0.7522045464979344,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 1.39389866373427,
+      "closed": false,
+      "symbol": "LTCUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.160372438319651,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.68652316372649,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.105356682998742,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 11.760784906061188,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 12.639606430454194,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 3.3937925470040784,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 11.631721465150106,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 10.995213546633314,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.656320911673462,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 14.147863364362628,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 13.92571865548255,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 428,
+      "start_first": "2020-01-09",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.39,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.647982406403262,
+      "closed": true,
+      "symbol": "LTCUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.8212290502793296,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 3.2298322719158294,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.519389263739306,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.8212290502793296,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 3.226128199005449,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 28.434090228072417,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 0.0,
+      "terminal_multiple": {
+        "q01": 0.4445441138339441,
+        "q05": 0.4736288095952059,
+        "q50": 1.5855386064353691,
+        "q95": 2.786439420578425,
+        "worst": 0.44005050510590316
+      },
+      "max_dd_total_q95": 1.1417771593380028,
+      "closed": false,
+      "symbol": "SOLUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 45.62240300444136,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 56.109514680759524,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 1.9036593487254723,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 34.7873779448301,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 83.3947639327767,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 2.3977978170812952,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 48.82284847327535,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 48.82148904105433,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 1.1656863024816269,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 64.59831809434867,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 64.25062211946369,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 179,
+      "start_first": "2020-09-14",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.16,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 0.7249250992015587,
+      "closed": true,
+      "symbol": "SOLUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 0.382830626450116,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.7467758939740518,
+        "q95": 1.1255945610017322,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 4.00127645734914,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 1.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 0.37354988399071926,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.7497741976181632,
+        "q95": 1.1244447061940768,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 4.097283599096405,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 0.35962877030162416,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.7555434090871697,
+        "q95": 1.1448703228834574,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 4.02712166675561,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 1.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 7.175443796166406,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 2.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.073165286105553,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 7.207450860740176,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 2.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 6.696807377028251,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 3.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 7.019299059545869,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 11.99044005033213,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 3.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 9.104126061557789,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 5.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 8.923593569185664,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 23.690844617744368,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 5.0,
+      "gate": "dip:0.25:365"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 6.217767307058846,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 10.0,
+      "gate": "none"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 5.814927754287623,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.10:90"
+    },
+    {
+      "status": "ok",
+      "n_starts": 431,
+      "start_first": "2020-01-06",
+      "start_last": "2021-03-11",
+      "effective_independent_paths": 1.4,
+      "liquidation_rate": 1.0,
+      "terminal_multiple": {
+        "q01": 0.0,
+        "q05": 0.0,
+        "q50": 0.0,
+        "q95": 0.0,
+        "worst": 0.0
+      },
+      "max_dd_total_q95": 50.9224773117474,
+      "closed": true,
+      "symbol": "XRPUSDT",
+      "leverage": 10.0,
+      "gate": "dip:0.25:365"
+    }
+  ]
+}

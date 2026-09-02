@@ -1,0 +1,39 @@
+{
+  "hypothesis_id": "H0001",
+  "family": "unconditional_dca_spot_style",
+  "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
+  "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
+  "universe": [
+    "ADAUSDT",
+    "AVAXUSDT",
+    "BNBUSDT",
+    "BTCUSDT",
+    "DOGEUSDT",
+    "ETHUSDT",
+    "LTCUSDT",
+    "SOLUSDT",
+    "XRPUSDT"
+  ],
+  "grid": {
+    "stride_days": [
+      1.0,
+      7.0,
+      30.0
+    ],
+    "n_contributions": [
+      52,
+      104,
+      156
+    ],
+    "include_funding": [
+      false,
+      true
+    ]
+  },
+  "fixed": {
+    "contribution": 100.0,
+    "clock": "1h"
+  },
+  "registered_utc": "2026-09-02T00:37:15.898197+00:00",
+  "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05"
+}

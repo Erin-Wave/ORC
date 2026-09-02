@@ -1,0 +1,113 @@
+name: orc-cycle
+
+# Free 24/7 compute.  On a PUBLIC repository GitHub-hosted runner minutes are
+# unmetered, so this can run around the clock without a bill and without the
+# workstation being switched on.  The 6-hour job ceiling is why the schedule
+# re-fires every 6 hours rather than running one long job.
+#
+# The runner receives only the development panel: the bundle it downloads was
+# truncated at the holdout seal before it was ever published.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      hypotheses:
+        description: "Space-separated hypothesis ids, blank for the queue"
+        required: false
+        default: ""
+      rerun_all:
+        description: "Re-run every registered hypothesis"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: orc-cycle
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Fetch the development panel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download panel-latest --pattern "orc-panel.tar.gz" --clobber
+          gh release download panel-latest --pattern "orc-panel.sha256" --clobber || true
+          if [ -f orc-panel.sha256 ]; then sha256sum -c orc-panel.sha256; fi
+          tar xzf orc-panel.tar.gz
+          python - <<'PY'
+          import json, sys, pathlib
+          m = json.loads(pathlib.Path("facts/MANIFEST.json").read_text())
+          assert m["contains_sealed_data"] is False, "bundle claims to carry sealed data"
+          print(f"panel: {len(m['symbols'])} symbols, sealed from {m['holdout_start']}")
+          PY
+
+      - name: Refuse to run against sealed data
+        run: |
+          python - <<'PY'
+          import sys; sys.path.insert(0, ".")
+          import polars as pl, pathlib
+          from orc import config, holdout
+          bad = []
+          for p in pathlib.Path("facts/panel_1h").glob("*.parquet"):
+              try:
+                  holdout.assert_development_only(pl.read_parquet(p))
+              except holdout.HoldoutViolation as e:
+                  bad.append(f"{p.name}: {e}")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("holdout seal verified on every panel file")
+          PY
+
+      - name: Kernel test suite
+        run: python -m pytest tests -q
+
+      - name: Research cycle
+        run: |
+          python scripts/daily_cycle.py \
+            ${{ github.event.inputs.rerun_all == 'true' && '--all' || '' }} \
+            ${{ github.event.inputs.hypotheses }}
+
+      - name: Commit results
+        run: |
+          set -euo pipefail
+          git config user.name  "orc-cycle"
+          git config user.email "orc-cycle@users.noreply.github.com"
+          git add -A reports ledger configs/registry configs/queue
+          if git diff --cached --quiet; then
+            echo "no change"
+          else
+            git commit -m "orc cycle $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase --autostash
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: orc-reports-${{ github.run_id }}
+          path: |
+            reports/
+            ledger/trials.sqlite
+          retention-days: 30

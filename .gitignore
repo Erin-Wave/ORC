@@ -1,0 +1,15 @@
+# Data is never committed.  Panels are rebuilt from the vendor archive and
+# shipped to the worker as a release asset instead.
+facts/panel_1m/
+facts/panel_1h/
+facts/funding/
+dist/
+
+# The token that opens the sealed holdout is a deliberate local act.  Committing
+# it would let any checkout consume an opening.
+FINAL_TEST_TOKEN
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

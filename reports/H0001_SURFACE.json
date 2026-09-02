@@ -1,0 +1,775 @@
+{
+  "hypothesis_id": "H0001",
+  "family": "unconditional_dca_spot_style",
+  "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
+  "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
+  "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
+  "generated_utc": "2026-09-02T00:51:38.250847+00:00",
+  "metric": "tm_q05",
+  "holdout_start": "2024-03-01",
+  "trials_in_family": 224,
+  "trials_in_project": 224,
+  "surfaces": {
+    "ADAUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.7676991144180327,
+            0.46619773840874534,
+            NaN
+          ],
+          [
+            0.6928419742382713,
+            0.4597727598786618,
+            NaN
+          ],
+          [
+            0.6241656820873914,
+            0.5958112554492814,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7559103853342708,
+            0.4315378988632958,
+            NaN
+          ],
+          [
+            0.6845912633946943,
+            0.1040451803671994,
+            NaN
+          ],
+          [
+            0.6118427131328903,
+            -0.49878563010630356,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 0.7676991144180327,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 1.0
+      },
+      "shape_diagnostic": {
+        "peak": 0.7676991144180327,
+        "peak_index": [
+          0,
+          0,
+          0
+        ],
+        "neighbour_mean": 0.5795198563235083,
+        "plateau_ratio": 0.7548788912734686,
+        "n_neighbours": 2,
+        "shape": "SLOPE"
+      }
+    },
+    "AVAXUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.643309068509114,
+            0.4463558803686808,
+            NaN
+          ],
+          [
+            0.5122081234409516,
+            0.4533491723393233,
+            NaN
+          ],
+          [
+            0.4599035583386319,
+            0.6183911094027328,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.6397818864021149,
+            0.4374112023255906,
+            NaN
+          ],
+          [
+            0.484551015334197,
+            0.30693746360757596,
+            NaN
+          ],
+          [
+            0.4236302062106935,
+            0.14097311905085536,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 0.643309068509114,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 1.0
+      },
+      "shape_diagnostic": {
+        "peak": 0.643309068509114,
+        "peak_index": [
+          0,
+          0,
+          0
+        ],
+        "neighbour_mean": 0.4792820019048162,
+        "plateau_ratio": 0.7450260308246005,
+        "n_neighbours": 2,
+        "shape": "SLOPE"
+      }
+    },
+    "BNBUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.8036933926311546,
+            0.7279711159611252,
+            NaN
+          ],
+          [
+            0.7662706606988484,
+            0.6873941612963458,
+            NaN
+          ],
+          [
+            0.7689456897694245,
+            1.025828719196712,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.8083816547300768,
+            0.7745535905255436,
+            NaN
+          ],
+          [
+            0.7739945019511555,
+            0.7891668846995188,
+            NaN
+          ],
+          [
+            0.7954844424233602,
+            1.124738072621519,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 1.124738072621519,
+      "best_config": {
+        "include_funding": true,
+        "n_contributions": 156,
+        "stride_days": 7.0
+      },
+      "shape_diagnostic": {
+        "peak": 1.124738072621519,
+        "peak_index": [
+          1,
+          2,
+          1
+        ],
+        "neighbour_mean": 0.7923256635614395,
+        "plateau_ratio": 0.7044534926382471,
+        "n_neighbours": 2,
+        "shape": "SLOPE"
+      }
+    },
+    "BTCUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.8039433735869856,
+            0.5842872846508715,
+            2.051039115127731
+          ],
+          [
+            0.735952298470838,
+            0.5231946361597621,
+            NaN
+          ],
+          [
+            0.7279699335313844,
+            0.9199516557817098,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7965532816251213,
+            0.5615805020270205,
+            1.3299527718262731
+          ],
+          [
+            0.710263888248624,
+            0.38865627967135,
+            NaN
+          ],
+          [
+            0.6815705945406053,
+            0.23792575636233573,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 14,
+      "cells_total": 18,
+      "best_value": 2.051039115127731,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 30.0
+      },
+      "shape_diagnostic": {
+        "peak": 2.051039115127731,
+        "peak_index": [
+          0,
+          0,
+          2
+        ],
+        "neighbour_mean": 0.5842872846508715,
+        "plateau_ratio": 0.28487378926192947,
+        "n_neighbours": 1,
+        "shape": "SPIKE"
+      }
+    },
+    "DOGEUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.7615734615310413,
+            0.48006070019782676,
+            NaN
+          ],
+          [
+            0.7091805784249757,
+            0.6660997889148111,
+            NaN
+          ],
+          [
+            0.6518592032754773,
+            0.8601961484914038,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7553869309782862,
+            0.43560386355853414,
+            NaN
+          ],
+          [
+            0.6971225868885121,
+            0.22732390963061266,
+            NaN
+          ],
+          [
+            0.6403416008072118,
+            0.20430168817639893,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 0.8601961484914038,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 156,
+        "stride_days": 7.0
+      },
+      "shape_diagnostic": {
+        "peak": 0.8601961484914038,
+        "peak_index": [
+          0,
+          2,
+          1
+        ],
+        "neighbour_mean": 0.6589794960951443,
+        "plateau_ratio": 0.7660805006519158,
+        "n_neighbours": 2,
+        "shape": "SLOPE"
+      }
+    },
+    "ETHUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.755100099084772,
+            0.5988201058336687,
+            3.6056116382051298
+          ],
+          [
+            0.7211629973550622,
+            0.6565007357178226,
+            NaN
+          ],
+          [
+            0.6979560041387513,
+            1.0502184053714014,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7522999426067786,
+            0.5801951799040341,
+            2.1562385140503464
+          ],
+          [
+            0.7059061994651614,
+            0.4856982122055317,
+            NaN
+          ],
+          [
+            0.6870387038870013,
+            0.705209813900978,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 14,
+      "cells_total": 18,
+      "best_value": 3.6056116382051298,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 30.0
+      },
+      "shape_diagnostic": {
+        "peak": 3.6056116382051298,
+        "peak_index": [
+          0,
+          0,
+          2
+        ],
+        "neighbour_mean": 0.5988201058336687,
+        "plateau_ratio": 0.16608003465724358,
+        "n_neighbours": 1,
+        "shape": "SPIKE"
+      }
+    },
+    "LTCUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.7402515114708725,
+            0.5036909112566084,
+            NaN
+          ],
+          [
+            0.6757305234700751,
+            0.5111881717335662,
+            NaN
+          ],
+          [
+            0.6372606177254824,
+            0.6868948254289569,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7286935021672812,
+            0.4701902248728719,
+            NaN
+          ],
+          [
+            0.6606463679729929,
+            0.09216796796950236,
+            NaN
+          ],
+          [
+            0.6067975544718064,
+            0.42517199858374183,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 0.7402515114708725,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 1.0
+      },
+      "shape_diagnostic": {
+        "peak": 0.7402515114708725,
+        "peak_index": [
+          0,
+          0,
+          0
+        ],
+        "neighbour_mean": 0.5897107173633418,
+        "plateau_ratio": 0.796635614011233,
+        "n_neighbours": 2,
+        "shape": "SLOPE"
+      }
+    },
+    "SOLUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.6558597144883775,
+            0.33151009563572587,
+            NaN
+          ],
+          [
+            0.5506787040942013,
+            0.4939921969414596,
+            NaN
+          ],
+          [
+            0.4879915483353443,
+            1.6619021758095884,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.6712472099746266,
+            0.3989384300032916,
+            NaN
+          ],
+          [
+            0.5830732094662471,
+            0.19031420461697185,
+            NaN
+          ],
+          [
+            0.5336784724060395,
+            0.8184777490297872,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 1.6619021758095884,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 156,
+        "stride_days": 7.0
+      },
+      "shape_diagnostic": {
+        "peak": 1.6619021758095884,
+        "peak_index": [
+          0,
+          2,
+          1
+        ],
+        "neighbour_mean": 0.49099187263840194,
+        "plateau_ratio": 0.29543969541962806,
+        "n_neighbours": 2,
+        "shape": "SPIKE"
+      }
+    },
+    "XRPUSDT": {
+      "axes": [
+        "include_funding",
+        "n_contributions",
+        "stride_days"
+      ],
+      "axis_values": {
+        "include_funding": [
+          false,
+          true
+        ],
+        "n_contributions": [
+          52,
+          104,
+          156
+        ],
+        "stride_days": [
+          1.0,
+          7.0,
+          30.0
+        ]
+      },
+      "grid": [
+        [
+          [
+            0.7372414155876807,
+            0.5241684429307397,
+            NaN
+          ],
+          [
+            0.6760878148586515,
+            0.6435345454900785,
+            NaN
+          ],
+          [
+            0.641844726683777,
+            0.9227769940078271,
+            NaN
+          ]
+        ],
+        [
+          [
+            0.7225924188797488,
+            0.4734884373868446,
+            NaN
+          ],
+          [
+            0.6518697639479469,
+            0.20104949292053906,
+            NaN
+          ],
+          [
+            0.6256254193532806,
+            0.30344359749744754,
+            NaN
+          ]
+        ]
+      ],
+      "cells_filled": 12,
+      "cells_total": 18,
+      "best_value": 0.9227769940078271,
+      "best_config": {
+        "include_funding": false,
+        "n_contributions": 156,
+        "stride_days": 7.0
+      },
+      "shape_diagnostic": {
+        "peak": 0.9227769940078271,
+        "peak_index": [
+          0,
+          2,
+          1
+        ],
+        "neighbour_mean": 0.6426896360869278,
+        "plateau_ratio": 0.6964734060995418,
+        "n_neighbours": 2,
+        "shape": "SPIKE"
+      }
+    }
+  },
+  "pbo": {
+    "ADAUSDT": {
+      "symbol": "ADAUSDT",
+      "status": "ok",
+      "n_configs": 12,
+      "n_common_starts": 9736,
+      "n_splits": 252,
+      "pbo": 0.0,
+      "median_logit": 2.4849066497880012,
+      "degraded_fraction": 0.5,
+      "verdict": "SELECTION_INFORMATIVE",
+      "best_config_overall": {
+        "stride_days": 7.0,
+        "n_contributions": 52,
+        "include_funding": false
+      }
+    },
+    "AVAXUSDT": {
+      "symbol": "AVAXUSDT",
+      "status": "ok",
+      "n_configs": 12,
+      "n_common_starts": 4073,
+      "n_splits": 252,
+      "pbo": 0.0,
+      "median_logit": 2.4849066497880012,
+      "degraded_fraction": 0.5,
+      "verdict": "SELECTION_INFORMATIVE",
+      "best_config_overall": {
+        "stride_days": 7.0,
+        "n_contributions": 52,
+        "include_funding": false
+      }
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "status": "ok",
+      "n_configs": 12,
+      "n_common_starts": 9496,
+      "n_splits": 252,
+      "pbo": 0.007936507936507936,
+      "median_logit": 2.4849066497880012,
+      "degraded_fraction": 0.5079365079365079,
+      "verdict": "SELECTION_INFORMATIVE",
+      "best_config_overall": {
+        "stride_days": 7.0,
+        "n_contributions": 52,
+        "include_funding": false
+      }
+    }
+  }
+}
