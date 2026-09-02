@@ -191,16 +191,87 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
 
 
 # --------------------------------------------------------------------------
+def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
+    """CSCV for Track B, where the columns are equity curves rather than start dates.
+
+    Track A gets its rows from start dates: every configuration is scored on the
+    same calendar of beginnings, so the rows line up.  A signal rule has no such
+    ensemble -- it runs once and produces one curve -- and the obvious move, one
+    row per configuration, gives CSCV nothing to split.
+
+    The rows are bars instead.  Every configuration on a symbol walks the same
+    panel, so its per-bar log return is directly comparable to every other's at
+    that bar, which is exactly the "same slicing for every column" that
+    cscv_pbo requires.  Splitting bars into blocks then asks the question CSCV
+    is for: choose the best rule on half the history, and see where it lands on
+    the half that did not choose it.
+
+    Configurations that liquidate stay in.  Dropping them would quietly raise
+    the out-of-sample median that the in-sample winner is measured against, and
+    flattering the winner is the precise failure PBO exists to catch.  The count
+    is reported so a reader knows what the median is made of.
+    """
+    from orc.eval.signal import SignalSpec, run_signals
+    from orc.eval.signal_rules import build_signals
+
+    p = panel_mod.load(symbol, "1h", development_only=True)
+    configs = [c for c in h.expand() if c.symbol == symbol]
+    if len(configs) < 2:
+        return {"symbol": symbol, "status": "fewer than two configurations"}
+
+    curves, labels, liquidated = [], [], 0
+    for cfg in configs:
+        lookback = p.bars(cfg.lookback_days)
+        if lookback < 2 or lookback >= len(p):
+            continue
+        entry, exit_ = build_signals(cfg.rule, p, lookback, cfg.enter_rate, cfg.exit_rate)
+        spec = SignalSpec(
+            capital=cfg.capital, leverage=cfg.leverage,
+            fee_bps=cfg.effective_fee_bps, slippage_bps=cfg.effective_slippage_bps,
+            stop_loss=cfg.stop_loss, take_profit=cfg.take_profit,
+            max_hold_bars=p.bars(cfg.max_hold_days) if cfg.max_hold_days else None)
+        r = run_signals(p.close, p.high, p.low, entry, exit_, spec,
+                        funding_rate=p.funding_rate, symbol=symbol)
+        if r["n_trades"] == 0:
+            continue
+        liquidated += bool(r["n_liquidations"])
+        curves.append(r["equity"])
+        labels.append({k: v for k, v in cfg.to_dict().items() if k in h.grid})
+
+    if len(curves) < 2:
+        return {"symbol": symbol, "status": "fewer than two configurations traded"}
+
+    eq = np.column_stack(curves)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mat = np.diff(np.log(np.maximum(eq, 1e-12)), axis=0)
+    mat[~np.isfinite(mat)] = 0.0
+
+    res = cscv_pbo(mat, n_blocks=n_blocks)
+    return {
+        "symbol": symbol,
+        "status": "ok",
+        "n_configs": res.n_configs,
+        "n_bars": int(mat.shape[0]),
+        "n_splits": res.n_splits,
+        "pbo": res.pbo,
+        "median_logit": res.median_logit,
+        "degraded_fraction": res.degraded_fraction,
+        "verdict": res.verdict(),
+        "n_liquidating_configs": liquidated,
+        "best_config_overall": labels[int(np.argmax(mat.mean(axis=0)))],
+    }
+
+
+# --------------------------------------------------------------------------
 def write_report(h: Hypothesis, metric: str | None = None,
                  pbo_symbols: list[str] | None = None) -> dict:
     metric = metric or h.primary_metric
     surfaces = surface_from_ledger(h, metric)
     pbo = {}
-    # CSCV needs a performance-per-slice matrix built by re-running the grid
-    # through the closed-form evaluator, which only exists for Track A shapes.
-    for sym in ([] if h.track == "B" else (pbo_symbols or list(surfaces)[:3])):
+    run_pbo = pbo_for_signal_hypothesis if h.track == "B" else pbo_for_hypothesis
+    for sym in (pbo_symbols or list(surfaces)[:3]):
         try:
-            pbo[sym] = pbo_for_hypothesis(h, sym)
+            pbo[sym] = run_pbo(h, sym)
         except (ValueError, FileNotFoundError) as exc:
             pbo[sym] = {"symbol": sym, "status": str(exc)}
 
