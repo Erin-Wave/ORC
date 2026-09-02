@@ -16,6 +16,15 @@ verdict, and every verdict is either "this is fine" or a reason it is not.
 
 Calls run through the CLI rather than an SDK so the subscription pays for them
 rather than an API key, and so this file needs no secret to exist.
+
+That is also why a second vendor fits here at all.  A second opinion is worth
+having on exactly one of these five -- the adversary, the step that spends
+judgement to PROTECT N rather than to consume it -- because two models that
+disagree about whether a payer is real is information, and one model checking
+its own homework is not.  Providers are therefore declared in
+configs/providers.json rather than hard-coded: a CLI's flags are not this
+project's business, and getting them wrong should cost a line of config rather
+than a patch.
 """
 from __future__ import annotations
 
@@ -39,31 +48,122 @@ READ_ONLY_TOOLS = ("Read", "Glob", "Grep")
 # not eat the whole scheduled window.
 DEFAULT_TIMEOUT_S = 900
 
+# The provider every step uses unless told otherwise.  Nothing about the
+# protocol depends on which vendor answers; what depends on it is that the
+# answer is written down, so every verdict records the provider that gave it.
+DEFAULT_PROVIDER = "claude"
+
+# Shipped defaults.  configs/providers.json overrides or adds to these.
+#   binary   looked up on PATH
+#   argv     the command, with {prompt} substituted if stdin is false
+#   stdin    true: the prompt goes to stdin.  false: it is an argv element
+#   tools_flag / model_flag  omitted when the CLI has no such concept
+BUILTIN_PROVIDERS: dict[str, dict] = {
+    "claude": {
+        "binary": "claude",
+        "argv": ["-p"],
+        "stdin": True,
+        "model_flag": "--model",
+        "model": DEFAULT_MODEL,
+        "tools_flag": "--allowedTools",
+        "verified": True,
+    },
+    # OpenAI's Codex CLI signs in with a ChatGPT account, so a ChatGPT
+    # subscription pays for these calls the same way the Claude subscription
+    # pays for the ones above -- no API key, no per-token bill.
+    #
+    # UNVERIFIED on this machine: the CLI is not installed here and its flags
+    # are its own business, not this project's.  Run `codex exec --help`, put
+    # what it actually wants in configs/providers.json, and set verified true.
+    # Until then availability() reports it as absent and every step degrades to
+    # the single provider, which is exactly today's behaviour.
+    "codex": {
+        "binary": "codex",
+        "argv": ["exec", "--sandbox", "read-only", "{prompt}"],
+        "stdin": False,
+        "model_flag": None,
+        "model": None,
+        "tools_flag": None,
+        "verified": False,
+    },
+}
+
 
 class LLMUnavailable(RuntimeError):
     """No CLI, no credentials, or the call failed.  Callers degrade, never guess."""
 
 
-def _binary() -> str:
-    exe = shutil.which("claude")
+def providers() -> dict[str, dict]:
+    """The built-in table, overlaid with configs/providers.json if it exists."""
+    from orc import config
+
+    out = {k: dict(v) for k, v in BUILTIN_PROVIDERS.items()}
+    p = config.ORC_ROOT / "configs" / "providers.json"
+    if p.exists():
+        try:
+            for name, spec in json.loads(p.read_text(encoding="utf-8")).items():
+                out.setdefault(name, {}).update(spec)
+        except (ValueError, OSError):
+            pass
+    return out
+
+
+def _binary(provider: str = DEFAULT_PROVIDER) -> str:
+    spec = providers().get(provider)
+    if spec is None:
+        raise LLMUnavailable(f"no provider {provider!r} in configs/providers.json")
+    name = spec.get("binary", provider)
+    exe = shutil.which(name)
     if exe:
         return exe
-    local = Path(os.environ.get("USERPROFILE", "~")).expanduser() / ".local/bin/claude.exe"
+    local = Path(os.environ.get("USERPROFILE", "~")).expanduser() / f".local/bin/{name}.exe"
     if local.exists():
         return str(local)
-    raise LLMUnavailable("the claude CLI is not on PATH; judgement steps are skipped")
+    raise LLMUnavailable(f"the {name} CLI is not on PATH; this step is skipped")
 
 
-def ask(prompt: str, *, model: str = DEFAULT_MODEL,
+def availability() -> dict[str, str]:
+    """Which providers could answer right now, and why the others could not.
+
+    A step that wants a second opinion asks this rather than assuming: an
+    absent CLI must degrade to one opinion, never to a fabricated one.
+    """
+    out = {}
+    for name, spec in providers().items():
+        try:
+            _binary(name)
+        except LLMUnavailable as exc:
+            out[name] = f"unavailable: {exc}"
+            continue
+        out[name] = "ready" if spec.get("verified") else (
+            "installed, but its invocation is unverified -- check `--help`, fix "
+            "configs/providers.json and set verified true")
+    return out
+
+
+def ask(prompt: str, *, model: str | None = None,
         tools: tuple[str, ...] = READ_ONLY_TOOLS,
         cwd: str | Path | None = None,
-        timeout_s: int = DEFAULT_TIMEOUT_S) -> str:
+        timeout_s: int = DEFAULT_TIMEOUT_S,
+        provider: str = DEFAULT_PROVIDER) -> str:
     """Run one prompt and return what came back, or raise LLMUnavailable."""
-    cmd = [_binary(), "-p", "--model", model]
-    if tools:
-        cmd += ["--allowedTools", *tools]
+    spec = providers().get(provider) or {}
+    if not spec.get("verified", False):
+        raise LLMUnavailable(
+            f"provider {provider!r} is not marked verified in "
+            "configs/providers.json; an unverified invocation would report a "
+            "CLI usage error as a model verdict")
+    cmd = [_binary(provider)]
+    argv = list(spec.get("argv", []))
+    if spec.get("model_flag") and (model or spec.get("model")):
+        cmd += [spec["model_flag"], model or spec["model"]]
+    if spec.get("tools_flag") and tools:
+        cmd += [spec["tools_flag"], *tools]
+    use_stdin = spec.get("stdin", True)
+    cmd += [a.replace("{prompt}", prompt) if not use_stdin else a for a in argv]
     try:
-        r = subprocess.run(cmd, input=prompt, capture_output=True, text=True,
+        r = subprocess.run(cmd, input=prompt if use_stdin else None,
+                           capture_output=True, text=True,
                            encoding="utf-8", errors="replace",
                            timeout=timeout_s, cwd=str(cwd) if cwd else None)
     except subprocess.TimeoutExpired as exc:
@@ -109,3 +209,8 @@ def load_prompt(name: str, **fields) -> str:
     for k, v in fields.items():
         text = text.replace("{" + k + "}", str(v))
     return text
+
+
+if __name__ == "__main__":                                         # pragma: no cover
+    for _name, _state in availability().items():
+        print(f"{_name:10s} {_state}")

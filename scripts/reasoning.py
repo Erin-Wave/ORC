@@ -147,13 +147,62 @@ def expandable(path: Path) -> str | None:
 
 
 def review(path: Path) -> dict:
-    """The adversary. A proposal reaches the queue only by surviving this."""
+    """The adversary. A proposal reaches the queue only by surviving ALL of them.
+
+    Every available provider gets a veto, and a veto is the only thing a second
+    vendor is allowed to add here. That asymmetry is deliberate and it is the
+    whole design: a second opinion that can only KILL can only slow the growth
+    of N, while a second PROPOSER would raise it -- more ideas mean more
+    registrations mean a higher multiple-testing bar for every result the
+    project will ever produce, and N cannot be reduced. Ideas are not the scarce
+    thing here. Ledger rows are.
+
+    Two models are also worth more against a claim than for one. The step asks
+    who is structurally paying and refuses "this backtests well"; a mechanism
+    that only one vendor's priors find plausible is exactly the kind of story
+    this is supposed to catch.
+
+    A provider that cannot be reached is skipped, never assumed to have agreed.
+    If none can be reached the caller holds the proposal, because unreviewed is
+    not approved.
+    """
     raw = json.loads(path.read_text(encoding="utf-8"))
     raw.pop("registered_utc", None)
     raw.pop("prereg_hash", None)
-    return llm.ask_json(
-        llm.load_prompt("adversary", proposal=json.dumps(raw, indent=2, ensure_ascii=False)),
-        cwd=config.ORC_ROOT)
+    prompt = llm.load_prompt(
+        "adversary", proposal=json.dumps(raw, indent=2, ensure_ascii=False))
+
+    ready = [n for n, s in llm.availability().items() if s == "ready"]
+    if not ready:
+        raise llm.LLMUnavailable("no provider is available to review")
+
+    verdicts, unreachable = {}, {}
+    for name in ready:
+        try:
+            verdicts[name] = llm.ask_json(prompt, cwd=config.ORC_ROOT, provider=name)
+        except llm.LLMUnavailable as exc:
+            unreachable[name] = str(exc)
+    if not verdicts:
+        raise llm.LLMUnavailable(
+            "; ".join(f"{k}: {v}" for k, v in unreachable.items()))
+
+    killers = {n: v for n, v in verdicts.items() if v.get("verdict") != "REGISTER"}
+    agreed = sorted(verdicts)
+    if killers:
+        first = sorted(killers)[0]
+        out = dict(killers[first])
+        out["verdict"] = "KILL"
+        out["reason"] = " | ".join(
+            f"[{n}] {v.get('reason', '')}" for n, v in sorted(killers.items()))
+        out["killed_by"] = f"adversary:{','.join(sorted(killers))}"
+    else:
+        out = dict(verdicts[agreed[0]])
+        out["reason"] = " | ".join(
+            f"[{n}] {v.get('reason', '')}" for n, v in sorted(verdicts.items()))
+    out["reviewed_by"] = agreed
+    if unreachable:
+        out["not_reviewed_by"] = unreachable
+    return out
 
 
 def research(claim: str) -> dict:

@@ -966,3 +966,88 @@ def test_the_null_routes_a_cell_the_way_a_real_trial_does():
     assert np.isfinite(tm_q05_on_path(plain, p, close))
     assert np.isfinite(tm_q05_on_path(levered, p, close))
     assert tm_q05_on_path(levered, p, close) > tm_q05_on_path(plain, p, close)
+
+
+# --------------------------------------------------------------------------
+# a second vendor gets a veto and nothing else
+# --------------------------------------------------------------------------
+def test_an_unverified_provider_is_never_called(monkeypatch):
+    """A CLI whose flags have not been checked would report a usage error on
+    stderr and a non-zero exit, which LLMUnavailable is right to raise on --
+    but a provider that half-works could return help text and have it parsed
+    as a verdict. It is not called at all until it is marked verified."""
+    from orc import llm
+
+    monkeypatch.setattr(llm, "providers", lambda: {
+        "claude": dict(llm.BUILTIN_PROVIDERS["claude"]),
+        "codex": {**llm.BUILTIN_PROVIDERS["codex"], "verified": False}})
+    with pytest.raises(llm.LLMUnavailable, match="not marked verified"):
+        llm.ask("anything", provider="codex")
+    state = llm.availability()["codex"]
+    assert "unverified" in state or "unavailable" in state
+
+
+def test_a_second_adversary_can_only_kill(monkeypatch, tmp_path):
+    """The asymmetry is the whole design. A second opinion that can only veto
+    can only slow the growth of N; a second PROPOSER would raise it, and N is
+    the denominator of every correction this project will ever apply."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import reasoning
+    from orc import llm
+
+    p = tmp_path / "H9100.json"
+    p.write_text(json.dumps({"hypothesis_id": "H9100", "family": "f", "claim": "c",
+                             "kill_condition": "k", "universe": ["BTCUSDT"],
+                             "grid": {"stride_days": [1.0, 7.0, 30.0]}}), encoding="utf-8")
+
+    monkeypatch.setattr(llm, "availability", lambda: {"claude": "ready", "codex": "ready"})
+    monkeypatch.setattr(llm, "load_prompt", lambda *a, **k: "prompt")
+
+    answers = {"claude": {"verdict": "REGISTER", "reason": "the payer is real"},
+               "codex": {"verdict": "REGISTER", "reason": "agreed"}}
+    monkeypatch.setattr(llm, "ask_json",
+                        lambda prompt, provider="claude", **kw: answers[provider])
+    v = reasoning.review(p)
+    assert v["verdict"] == "REGISTER"
+    assert v["reviewed_by"] == ["claude", "codex"]
+    assert "[codex] agreed" in v["reason"]
+
+    # One veto is enough, whichever vendor casts it, and the record says who.
+    answers["codex"] = {"verdict": "KILL", "reason": "nobody is structurally paying"}
+    v = reasoning.review(p)
+    assert v["verdict"] == "KILL"
+    assert v["killed_by"] == "adversary:codex"
+    assert "nobody is structurally paying" in v["reason"]
+
+    # A provider that cannot be reached is skipped, never counted as agreeing.
+    def one_down(prompt, provider="claude", **kw):
+        if provider == "codex":
+            raise llm.LLMUnavailable("not on PATH")
+        return {"verdict": "REGISTER", "reason": "the payer is real"}
+
+    monkeypatch.setattr(llm, "ask_json", one_down)
+    v = reasoning.review(p)
+    assert v["verdict"] == "REGISTER"
+    assert v["reviewed_by"] == ["claude"]
+    assert "codex" in v["not_reviewed_by"]
+
+    # None reachable is not approval.
+    monkeypatch.setattr(llm, "availability", lambda: {"claude": "unavailable: x"})
+    with pytest.raises(llm.LLMUnavailable):
+        reasoning.review(p)
+
+
+def test_the_handoff_lists_only_fields_the_evaluator_has():
+    """Three of the first five proposals named parameters the config types do
+    not have. The hand-off carries the real field names for exactly that
+    reason, so it must be generated from the dataclasses, never typed out."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import handoff
+    from orc.orchestrator.spec import SignalTrialConfig, TrialConfig
+
+    a, b = handoff._axes(TrialConfig), handoff._axes(SignalTrialConfig)
+    assert "stride_days" in a and "gate" in a and "symbol" not in a
+    assert "enter_rate" in b and "lookback_days" in b and "symbol" not in b
+    # the axes that killed H0003, H0004 and H0005
+    for ghost in ("side", "spread_enter", "gate_rate", "oi_lookback_days"):
+        assert ghost not in a and ghost not in b
