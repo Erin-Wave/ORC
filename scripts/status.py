@@ -9,6 +9,13 @@ creeps back in.
 Because of that, a value never appears on its own.  Every best cell is printed
 with the three things that decide whether it means anything:
 
+  tm_q05  terminal multiple at the 5th percentile of start dates: what you
+          hold at the end per unit contributed, on a start date worse than 95%
+          of them.  1.0 is breaking even.  It grows with the horizon, so it is
+          only comparable between cells that hold for the same length of time.
+  IRR/yr  the same outcome annualised (money-weighted, so the deposits are
+          time-weighted properly).  This is the number that compares across
+          horizons; CAGR cannot, because DCA has no single starting capital.
   shape   SPIKE is a corner of the grid, not a mechanism.
   paths   how many genuinely independent experiments are under it.  Start
           offsets overlap; six years of history is a handful of experiments.
@@ -63,7 +70,8 @@ def main() -> int:
 
         pbo = {s: r.get("pbo") for s, r in rep.get("pbo", {}).items()
                if r.get("status") == "ok"}
-        print(f"  {'symbol':10s} {'best':>9s} {'shape':8s} {'paths':>7s} {'PBO':>6s}   verdict")
+        print(f"  {'symbol':10s} {'tm_q05':>8s} {'IRR/yr':>8s} {'horizon':>8s} "
+              f"{'shape':8s} {'paths':>7s} {'PBO':>6s}   verdict")
         for sym, s in sorted(rep["surfaces"].items(),
                              key=lambda kv: -kv[1]["best_value"]):
             shape = s["shape_diagnostic"].get("shape", "?")
@@ -80,7 +88,11 @@ def main() -> int:
             verdict = "not a finding: " + ", ".join(why) if why else "survives these checks"
             survivors += not why
 
-            print(f"  {sym:10s} {s['best_value']:+9.4f} {shape:8s} "
+            irr, hz = s.get("mwrr_q05_best"), s.get("horizon_days_best")
+            print(f"  {sym:10s} {s['best_value']:8.4f} "
+                  f"{'n/a' if irr is None else format(irr * 100, '+.1f') + '%':>8s} "
+                  f"{'n/a' if hz is None else format(hz / 365.0, '.2f') + 'y':>8s} "
+                  f"{shape:8s} "
                   f"{'n/a' if paths is None else format(paths, 'g'):>7s} "
                   f"{'n/a' if p is None else format(p, '.3f'):>6s}   {verdict}")
 

@@ -202,6 +202,13 @@ def build_symbol(symbol: str, out_1m: Path, out_1h: Path, con=None) -> SymbolQA:
 
 def build_all(symbols=None, limit=None):
     config.ensure_dirs()
+    # The store lists three perpetuals with Chinese names.  A Windows console
+    # is cp949 here, so printing one raised UnicodeEncodeError and killed the
+    # build after 807 of 810 symbols -- losing the run over a progress line.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, OSError):                              # pragma: no cover
+        pass
     con = source_duckdb.connect()
     syms = symbols or list_symbols(con)
     if limit:
@@ -224,6 +231,19 @@ def build_all(symbols=None, limit=None):
 
     (config.FACTS / "QA_PANEL.json").write_text(
         json.dumps([asdict(r) for r in report], indent=2, default=str), encoding="utf-8")
+
+    # A full build owns the panel directory.  Symbols this run rejected may
+    # still have a file from an earlier run against a different source, and
+    # available_symbols() globs the directory, so a stale file walks straight
+    # into the research universe and the cloud bundle with no QA record behind
+    # it.  The directory has to say the same thing QA_PANEL.json says.
+    if symbols is None and limit is None:
+        keep = {r.symbol for r in report if r.usable}
+        for d in (d1m, d1h):
+            for f in d.glob("*.parquet"):
+                if f.stem not in keep:
+                    print(f"  pruned stale panel {d.name}/{f.name}", flush=True)
+                    f.unlink()
     return report
 
 

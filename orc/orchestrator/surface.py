@@ -59,6 +59,13 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             "n_starts": int(n_starts),
             # Absent on trials from code revisions predating the span figure.
             "effective_independent_paths": met.get("effective_independent_paths"),
+            # tm_q05 is a multiple of contributed capital, so it grows with the
+            # horizon and cannot be compared across cells that hold for
+            # different lengths of time.  The annualised money-weighted return
+            # can, and the horizon says which comparison is even being made.
+            "mwrr_q05": met.get("mwrr_q05"),
+            "mwrr_q50": met.get("mwrr_q50"),
+            "horizon_days": met.get("horizon_days"),
         }
 
     # An axis is ordinal only if its values are numeric and it has enough
@@ -96,6 +103,9 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             # thousands.
             "n_starts_best": ctx.get("n_starts"),
             "independent_paths_best": ctx.get("effective_independent_paths"),
+            "mwrr_q05_best": ctx.get("mwrr_q05"),
+            "mwrr_q50_best": ctx.get("mwrr_q50"),
+            "horizon_days_best": ctx.get("horizon_days"),
         }
     return out
 
