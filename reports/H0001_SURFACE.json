@@ -5,7 +5,7 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T08:38:53.389437+00:00",
+  "generated_utc": "2026-09-02T10:15:20.026827+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 560,
