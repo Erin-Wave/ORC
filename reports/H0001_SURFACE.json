@@ -5,7 +5,7 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T06:26:38.206708+00:00",
+  "generated_utc": "2026-09-02T06:28:13.025628+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 448,
@@ -823,47 +823,47 @@
     }
   },
   "pbo": {
-    "ADAUSDT": {
-      "symbol": "ADAUSDT",
+    "ETHUSDT": {
+      "symbol": "ETHUSDT",
       "status": "ok",
-      "n_configs": 12,
-      "n_common_starts": 9736,
+      "n_configs": 14,
+      "n_common_starts": 616,
       "n_splits": 252,
       "pbo": 0.0,
-      "median_logit": 2.4849066497880012,
+      "median_logit": 2.639057329615259,
       "degraded_fraction": 0.5,
       "verdict": "SELECTION_INFORMATIVE",
       "best_config_overall": {
         "stride_days": 7.0,
-        "n_contributions": 52,
+        "n_contributions": 104,
         "include_funding": false
       }
     },
-    "AVAXUSDT": {
-      "symbol": "AVAXUSDT",
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
       "status": "ok",
-      "n_configs": 12,
-      "n_common_starts": 4073,
+      "n_configs": 14,
+      "n_common_starts": 2523,
       "n_splits": 252,
       "pbo": 0.0,
-      "median_logit": 2.4849066497880012,
+      "median_logit": 2.639057329615259,
       "degraded_fraction": 0.5,
       "verdict": "SELECTION_INFORMATIVE",
       "best_config_overall": {
         "stride_days": 7.0,
-        "n_contributions": 52,
+        "n_contributions": 104,
         "include_funding": false
       }
     },
-    "BNBUSDT": {
-      "symbol": "BNBUSDT",
+    "SOLUSDT": {
+      "symbol": "SOLUSDT",
       "status": "ok",
       "n_configs": 12,
-      "n_common_starts": 9496,
+      "n_common_starts": 4289,
       "n_splits": 252,
-      "pbo": 0.007936507936507936,
+      "pbo": 0.0,
       "median_logit": 2.4849066497880012,
-      "degraded_fraction": 0.5079365079365079,
+      "degraded_fraction": 0.5,
       "verdict": "SELECTION_INFORMATIVE",
       "best_config_overall": {
         "stride_days": 7.0,

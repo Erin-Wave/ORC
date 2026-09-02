@@ -1,6 +1,6 @@
 # ORC cycle report
 
-- run `2b7010ac8089` finished 2026-09-02T06:26:42.729891+00:00
+- run `bc4eecfb8893` finished 2026-09-02T06:28:15.434280+00:00
 - trials in project: **1420** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
@@ -31,9 +31,9 @@ Trials in this family: 448. Pre-registration hash `16461da7e4b64a49`.
 
 | PBO symbol | PBO | verdict | configs | splits |
 |---|---:|---|---:|---:|
-| ADAUSDT | 0.000 | SELECTION_INFORMATIVE | 12 | 252 |
-| AVAXUSDT | 0.000 | SELECTION_INFORMATIVE | 12 | 252 |
-| BNBUSDT | 0.008 | SELECTION_INFORMATIVE | 12 | 252 |
+| ETHUSDT | 0.000 | SELECTION_INFORMATIVE | 14 | 252 |
+| BTCUSDT | 0.000 | SELECTION_INFORMATIVE | 14 | 252 |
+| SOLUSDT | 0.000 | SELECTION_INFORMATIVE | 12 | 252 |
 
 ## H0002 — funding_carry_short (track B, metric `calmar`)
 
@@ -59,9 +59,9 @@ Trials in this family: 972. Pre-registration hash `0d6e7ca037976c0c`.
 
 | PBO symbol | PBO | verdict | configs | splits |
 |---|---:|---|---:|---:|
-| ADAUSDT | 0.726 | SELECTION_IS_NOISE | 108 | 252 |
-| AVAXUSDT | 0.694 | SELECTION_IS_NOISE | 108 | 252 |
-| BNBUSDT | 0.687 | SELECTION_IS_NOISE | 108 | 252 |
+| BTCUSDT | 0.321 | SELECTION_WEAK | 108 | 252 |
+| LTCUSDT | 0.357 | SELECTION_WEAK | 108 | 252 |
+| XRPUSDT | 0.647 | SELECTION_IS_NOISE | 108 | 252 |
 
 ## What the next pass must do
 
