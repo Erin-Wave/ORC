@@ -267,3 +267,45 @@ def test_survivors_reads_the_report_metric_not_a_default():
     report = {"metric": "calmar", "pbo": {},
               "surfaces": {"AAA": _cell(0.4), "BBB": _cell(-0.1)}}
     assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
+
+
+# --------------------------------------------------------------------------
+# the robustness gate
+# --------------------------------------------------------------------------
+def test_an_unmeasured_check_is_not_a_pass_and_not_a_failure():
+    from orc.orchestrator import robustness
+
+    v = robustness.verdict([{"check": "cost", "passed": True},
+                            {"check": "regime", "passed": None}])
+    assert v["passed"] is False
+    assert v["failed"] == []
+    assert v["unmeasured"] == ["regime"]
+
+
+def test_blocks_too_short_to_judge_are_refused():
+    from orc.orchestrator import robustness
+
+    with pytest.raises(ValueError, match="would not be evidence"):
+        robustness.walk_forward_blocks(1000, n_blocks=4)
+
+
+def test_walk_forward_blocks_are_contiguous_and_do_not_overlap():
+    from orc.orchestrator import robustness
+
+    blocks = robustness.walk_forward_blocks(40_000, n_blocks=4)
+    assert blocks[0][0] == 0 and blocks[-1][1] == 40_000
+    for (_, end), (start, _) in zip(blocks, blocks[1:]):
+        assert end == start
+
+
+def test_the_regime_label_never_looks_forward():
+    """A bar's label must depend only on bars at or before it."""
+    import numpy as np
+    from orc.orchestrator import robustness
+
+    close = np.concatenate([np.linspace(100, 200, 500), np.linspace(200, 50, 500)])
+    a = robustness.regime_split(close, window_bars=100)
+    bumped = close.copy()
+    bumped[700:] = 1e6
+    b = robustness.regime_split(bumped, window_bars=100)
+    assert np.array_equal(a[:700], b[:700])

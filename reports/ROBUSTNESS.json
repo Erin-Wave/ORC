@@ -1,0 +1,117 @@
+{
+  "results": [
+    {
+      "passed": false,
+      "failed": [],
+      "unmeasured": [
+        "regime"
+      ],
+      "checks": [
+        {
+          "check": "cost",
+          "multiplier": 2.0,
+          "base": 3.6056116382051298,
+          "stressed": 3.6016476432021394,
+          "passed": true
+        },
+        {
+          "check": "walk_forward",
+          "n_blocks": 4,
+          "train_blocks": 2,
+          "chosen": {
+            "symbol": "ETHUSDT",
+            "contribution": 100.0,
+            "stride_days": 7.0,
+            "n_contributions": 52,
+            "hold_days": 0.0,
+            "leverage": 1.0,
+            "gate": "none",
+            "take_profit": null,
+            "stop_loss": null,
+            "include_funding": false,
+            "clock": "1h",
+            "fee_bps": 4.5,
+            "slippage_bps": 1.0,
+            "cost_multiplier": 1.0
+          },
+          "in_sample": 1.7284592280720057,
+          "out_of_sample": 0.9916317042239609,
+          "passed": true
+        },
+        {
+          "check": "regime",
+          "window_bars": 720,
+          "rising": NaN,
+          "falling": NaN,
+          "passed": null,
+          "reason": "the cell could not be scored in rising and falling"
+        }
+      ],
+      "hypothesis_id": "H0001",
+      "symbol": "ETHUSDT",
+      "metric": "tm_q05",
+      "config": {
+        "include_funding": false,
+        "n_contributions": 52,
+        "stride_days": 30.0
+      }
+    },
+    {
+      "passed": false,
+      "failed": [
+        "regime"
+      ],
+      "unmeasured": [],
+      "checks": [
+        {
+          "check": "cost",
+          "multiplier": 2.0,
+          "base": 0.24330661465728978,
+          "stressed": 0.2188939667681102,
+          "passed": true
+        },
+        {
+          "check": "walk_forward",
+          "n_blocks": 4,
+          "train_blocks": 2,
+          "chosen": {
+            "symbol": "BTCUSDT",
+            "rule": "carry_funding",
+            "lookback_days": 21.0,
+            "enter_rate": 0.0002,
+            "exit_rate": 5e-05,
+            "capital": 10000.0,
+            "leverage": 1.0,
+            "stop_loss": null,
+            "take_profit": null,
+            "max_hold_days": 7.0,
+            "clock": "1h",
+            "fee_bps": 4.5,
+            "slippage_bps": 1.0,
+            "cost_multiplier": 1.0
+          },
+          "in_sample": 1.7901204812135765,
+          "out_of_sample": 0.15917058609258017,
+          "passed": true
+        },
+        {
+          "check": "regime",
+          "window_bars": 720,
+          "rising": -0.33046088375430677,
+          "falling": 1.2291597066485425,
+          "passed": false
+        }
+      ],
+      "hypothesis_id": "H0002",
+      "symbol": "BTCUSDT",
+      "metric": "calmar",
+      "config": {
+        "enter_rate": 0.0002,
+        "leverage": 1.0,
+        "lookback_days": 21.0,
+        "max_hold_days": 7.0,
+        "stop_loss": null
+      }
+    }
+  ]
+}
