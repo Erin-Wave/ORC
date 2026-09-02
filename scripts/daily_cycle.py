@@ -155,13 +155,29 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
         L.append(f"Trials in this family: {rep['trials_in_family']}. "
                  f"Pre-registration hash `{rep['prereg_hash'][:16]}`.")
         L.append("")
-        L.append("| symbol | best | shape | neighbour/peak | best cell |")
-        L.append("|---|---:|---|---:|---|")
+        L.append("| symbol | best | shape | neighbour/peak | start offsets | "
+                 "indep. paths | best cell |")
+        L.append("|---|---:|---|---:|---:|---:|---|")
         for sym, s in sorted(rep["surfaces"].items(), key=lambda kv: -kv[1]["best_value"]):
             d = s["shape_diagnostic"]
+            starts = s.get("n_starts_best")
+            paths = s.get("independent_paths_best")
             L.append(f"| {sym} | {s['best_value']:+.4f} | {d.get('shape', '?')} | "
                      f"{d.get('plateau_ratio', float('nan')):.3f} | "
+                     f"{'n/a' if starts is None else format(starts, ',')} | "
+                     f"{'n/a' if paths is None else format(paths, 'g')} | "
                      f"`{s['best_config']}` |")
+        L.append("")
+        # Section 6 of the constitution requires this number to be read, and
+        # section 9 forbids the reasoning pass from opening anything but this
+        # file.  It therefore has to be stated here, next to the value it
+        # qualifies, or the rule cannot be obeyed.
+        L.append("`start offsets` is how many start dates the evaluator scored. "
+                 "`indep. paths` is a generous upper bound on how many of those "
+                 "are genuinely separate experiments, since overlapping windows "
+                 "over the same history are not independent draws. When the two "
+                 "differ by three orders of magnitude, the second is the honest "
+                 "sample size.")
         L.append("")
         ok = [r for r in rep["pbo"].values() if r.get("status") == "ok"]
         if ok:
@@ -180,7 +196,10 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
              "already enumerated exhaustively. Propose a different RULE SHAPE, and "
              "state who is structurally paying for it.")
     L.append("3. Every proposal needs a kill condition written before results exist.")
-    L.append("4. The holdout stays sealed. Nothing in this document justifies opening it.")
+    L.append("4. Say the independent-path count out loud when you argue from a "
+             "number. Millions of start offsets over six years of history are "
+             "still only a handful of independent experiments.")
+    L.append("5. The holdout stays sealed. Nothing in this document justifies opening it.")
     L.append("")
     (config.REPORTS / "CYCLE_REPORT.md").write_text("\n".join(L), encoding="utf-8")
 

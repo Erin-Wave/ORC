@@ -40,17 +40,26 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
     axes = sorted(h.grid)
     with Ledger() as led:
         rows = led.conn.execute(
-            "SELECT symbol, config_json, metrics_json FROM trials WHERE hypothesis_id=?",
+            "SELECT symbol, config_json, metrics_json, n_starts "
+            "FROM trials WHERE hypothesis_id=?",
             (h.hypothesis_id,)).fetchall()
 
     values: dict[str, dict[tuple, float]] = {}
-    for sym, cfg_json, met_json in rows:
+    # How much evidence each cell actually rests on, carried alongside the
+    # metric so the winning cell can be reported with its denominator.
+    context: dict[str, dict[tuple, dict]] = {}
+    for sym, cfg_json, met_json, n_starts in rows:
         cfg = json.loads(cfg_json)
         met = json.loads(met_json)
         if metric not in met:
             continue
         key = tuple(cfg[a] for a in axes)
         values.setdefault(sym, {})[key] = float(met[metric])
+        context.setdefault(sym, {})[key] = {
+            "n_starts": int(n_starts),
+            # Absent on trials from code revisions predating the span figure.
+            "effective_independent_paths": met.get("effective_independent_paths"),
+        }
 
     # An axis is ordinal only if its values are numeric and it has enough
     # levels for 'one step away' to mean a small change.
@@ -68,6 +77,8 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             continue
         best_flat = int(np.nanargmax(grid))
         best_idx = np.unravel_index(best_flat, grid.shape)
+        best_key = tuple(h.grid[a][best_idx[i]] for i, a in enumerate(axes))
+        ctx = context.get(sym, {}).get(best_key, {})
         out[sym] = {
             "axes": axes,
             "axis_values": {a: h.grid[a] for a in axes},
@@ -77,6 +88,14 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             "best_value": float(grid[best_idx]),
             "best_config": {a: h.grid[a][best_idx[i]] for i, a in enumerate(axes)},
             "shape_diagnostic": plateau_score(grid, ordinal),
+            # The denominator behind the winning cell.  n_starts counts start
+            # offsets, which overlap almost completely; independent_paths is the
+            # generous upper bound on how many genuinely separate experiments
+            # those offsets amount to.  Reporting the first without the second
+            # is how a handful of experiments gets mistaken for tens of
+            # thousands.
+            "n_starts_best": ctx.get("n_starts"),
+            "independent_paths_best": ctx.get("effective_independent_paths"),
         }
     return out
 
@@ -186,8 +205,11 @@ def summarise(report: dict) -> str:
                          key=lambda kv: -kv[1]["best_value"]):
         shape = s["shape_diagnostic"].get("shape", "?")
         ratio = s["shape_diagnostic"].get("plateau_ratio", float("nan"))
+        paths = s.get("independent_paths_best")
+        paths_txt = "n/a" if paths is None else f"{paths:g}"
         lines.append(f"  {sym:10s} best {s['best_value']:+.4f}  {shape:8s} "
-                     f"(neighbour/peak {ratio:.3f})  {s['best_config']}")
+                     f"(neighbour/peak {ratio:.3f})  indep paths {paths_txt}  "
+                     f"{s['best_config']}")
     for sym, r in report["pbo"].items():
         if r.get("status") == "ok":
             lines.append(f"  PBO {sym:10s} {r['pbo']:.3f}  {r['verdict']}"
