@@ -5,11 +5,11 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T06:28:13.025628+00:00",
+  "generated_utc": "2026-09-02T08:31:35.349873+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 448,
-  "trials_in_project": 1420,
+  "trials_in_family": 560,
+  "trials_in_project": 2756,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -826,47 +826,53 @@
     "ETHUSDT": {
       "symbol": "ETHUSDT",
       "status": "ok",
-      "n_configs": 14,
-      "n_common_starts": 616,
+      "horizon_bars": 1224,
+      "span_over_horizon": 29.503,
+      "n_configs": 2,
+      "n_common_starts": 36112,
       "n_splits": 252,
       "pbo": 0.0,
-      "median_logit": 2.639057329615259,
+      "median_logit": 0.6931471805599452,
       "degraded_fraction": 0.5,
       "verdict": "SELECTION_INFORMATIVE",
       "best_config_overall": {
-        "stride_days": 7.0,
-        "n_contributions": 104,
+        "stride_days": 1.0,
+        "n_contributions": 52,
         "include_funding": false
       }
     },
     "BTCUSDT": {
       "symbol": "BTCUSDT",
       "status": "ok",
-      "n_configs": 14,
-      "n_common_starts": 2523,
+      "horizon_bars": 1224,
+      "span_over_horizon": 31.061,
+      "n_configs": 2,
+      "n_common_starts": 38019,
       "n_splits": 252,
       "pbo": 0.0,
-      "median_logit": 2.639057329615259,
+      "median_logit": 0.6931471805599452,
       "degraded_fraction": 0.5,
       "verdict": "SELECTION_INFORMATIVE",
       "best_config_overall": {
-        "stride_days": 7.0,
-        "n_contributions": 104,
+        "stride_days": 1.0,
+        "n_contributions": 52,
         "include_funding": false
       }
     },
     "SOLUSDT": {
       "symbol": "SOLUSDT",
       "status": "ok",
-      "n_configs": 12,
-      "n_common_starts": 4289,
+      "horizon_bars": 1224,
+      "span_over_horizon": 23.779,
+      "n_configs": 2,
+      "n_common_starts": 29105,
       "n_splits": 252,
-      "pbo": 0.0,
-      "median_logit": 2.4849066497880012,
-      "degraded_fraction": 0.5,
-      "verdict": "SELECTION_INFORMATIVE",
+      "pbo": 0.5158730158730159,
+      "median_logit": -0.6931471805599454,
+      "degraded_fraction": 0.5119047619047619,
+      "verdict": "SELECTION_IS_NOISE",
       "best_config_overall": {
-        "stride_days": 7.0,
+        "stride_days": 1.0,
         "n_contributions": 52,
         "include_funding": false
       }
