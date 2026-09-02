@@ -43,6 +43,27 @@ function Write-Log($msg) {
     Add-Content -Path $Log -Value $line -Encoding utf8
 }
 
+function Show-Toast($title, $text) {
+    # A desktop toast, with no module to install.  It borrows PowerShell's own
+    # registered application id because a toast raised without one is accepted
+    # and then silently never drawn - which for a notifier is the worst of both
+    # worlds.  Failure here must never take the cycle down with it: the point
+    # of the run is the research, not the announcement.
+    try {
+        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime]
+        $xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
+            [Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+        $nodes = $xml.GetElementsByTagName("text")
+        [void]$nodes.Item(0).AppendChild($xml.CreateTextNode($title))
+        [void]$nodes.Item(1).AppendChild($xml.CreateTextNode($text))
+        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+        $appId = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe"
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+    } catch {
+        Write-Log "toast failed: $($_.Exception.Message)"
+    }
+}
+
 Set-Location $RepoRoot
 Write-Log "=== cycle start ==="
 
@@ -71,6 +92,19 @@ if ($LASTEXITCODE -ne 0) {
 
 $head = (git rev-parse --short HEAD)
 Write-Log "head $head"
+
+# The worker's results arrived with that pull, so this is the freshest view of
+# them there will be today.  Check before reasoning, not after: the reasoning
+# pass writes hypotheses, not results, and would leave the report unchanged.
+$newsText = & python "$PSScriptRoot\notify.py" 2>&1
+if ($LASTEXITCODE -eq 0) {
+    foreach ($line in $newsText) { Write-Log "NEWS: $line" }
+    Show-Toast "ORC" ($newsText -join "`n")
+    Add-Content -Path (Join-Path $LogDir "NEWS.md") -Encoding utf8 `
+        -Value ("## {0}`n{1}`n" -f (Get-Date -Format "yyyy-MM-dd HH:mm"), ($newsText -join "`n"))
+} else {
+    Write-Log "no news"
+}
 
 $promptText = Get-Content -Raw $Prompt
 $promptText | & $Claude -p --model claude-opus-5 --allowedTools $AllowedTools 2>&1 |

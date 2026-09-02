@@ -32,19 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from orc import config, holdout                                    # noqa: E402
-
-# Frozen before results were seen.  A cell has to clear all three to be worth a
-# sentence, and these are the same lines drawn in CLAUDE.md sections 4 and 6.
-PBO_USELESS = 0.5
-SPIKE_SHAPES = ("SPIKE",)
-FEW_PATHS = 5.0
-
-# The bar a cell has to clear before "not disqualified" means anything.  Track
-# A's terminal multiple is a multiple of contributed capital, so 1.0 is getting
-# the money back; Track B's Calmar is return over drawdown, so 0.0 is not
-# losing.  Without these a cell that loses a third of the capital reads as
-# "survives these checks", which is true and completely misleading.
-BREAK_EVEN = {"tm_q05": 1.0, "calmar": 0.0}
+from orc.orchestrator.verdict import BREAK_EVEN, disqualifiers    # noqa: E402
 
 
 def _load(name: str):
@@ -79,7 +67,6 @@ def main() -> int:
                if r.get("status") == "ok"}
         metric = rep.get("metric", "tm_q05")
         track_b = rep.get("track") == "B"
-        floor = BREAK_EVEN.get(metric)
         second, third = ("CAGR", "MDD") if track_b else ("IRR/yr", "horizon")
         print(f"  {'symbol':10s} {metric:>8s} {second:>8s} {third:>8s} "
               f"{'shape':8s} {'paths':>7s} {'PBO':>6s}   verdict")
@@ -89,15 +76,7 @@ def main() -> int:
             paths = s.get("independent_paths_best")
             p = pbo.get(sym)
 
-            why = []
-            if floor is not None and s["best_value"] <= floor:
-                why.append(f"at or below {floor:g}")
-            if shape in SPIKE_SHAPES:
-                why.append("spike")
-            if paths is not None and paths < FEW_PATHS:
-                why.append(f"{paths:g} paths")
-            if p is not None and p >= PBO_USELESS:
-                why.append(f"PBO {p:.2f}")
+            why = disqualifiers(s, metric, p)
             verdict = "not a finding: " + ", ".join(why) if why else "survives these checks"
             survivors += not why
 

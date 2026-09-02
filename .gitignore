@@ -14,5 +14,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 
-# Reasoning-cycle logs are local operational noise, not research output.
+# Reasoning-cycle logs and the local NEWS.md the notifier appends to are
+# operational noise, not research output.
 logs/

@@ -225,3 +225,45 @@ def test_funding_past_the_panel_end_is_not_charged():
     assert fr[8] == pytest.approx(0.0001)
     assert fr[23] == pytest.approx(0.0002), "a settlement inside the last bar still counts"
     assert fr.sum() == pytest.approx(0.0003), "nothing past the end may be charged"
+
+
+# --------------------------------------------------------------------------
+# what counts as a finding
+#
+# One rule, shared by the status screen and the notifier, because the copy that
+# drifts is always the one that decides whether to wake somebody up.
+# --------------------------------------------------------------------------
+def _cell(value, shape="PLATEAU", paths=40.0):
+    return {"best_value": value,
+            "shape_diagnostic": {"shape": shape},
+            "independent_paths_best": paths}
+
+
+def test_a_losing_cell_is_never_a_finding():
+    from orc.orchestrator import verdict
+
+    assert verdict.disqualifiers(_cell(0.7677), "tm_q05", None) == ["at or below 1"]
+    assert verdict.disqualifiers(_cell(-0.29), "calmar", None) == ["at or below 0"]
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", None) == []
+    assert verdict.disqualifiers(_cell(0.31), "calmar", None) == []
+
+
+def test_every_disqualifier_is_reported_not_just_the_first():
+    from orc.orchestrator import verdict
+
+    why = verdict.disqualifiers(_cell(0.5, shape="SPIKE", paths=1.02), "calmar", 0.8)
+    assert why == ["spike", "1.02 paths", "PBO 0.80"]
+
+
+def test_a_spike_is_not_a_finding_however_large():
+    from orc.orchestrator import verdict
+
+    assert "spike" in verdict.disqualifiers(_cell(9.99, shape="SPIKE"), "tm_q05", None)
+
+
+def test_survivors_reads_the_report_metric_not_a_default():
+    from orc.orchestrator import verdict
+
+    report = {"metric": "calmar", "pbo": {},
+              "surfaces": {"AAA": _cell(0.4), "BBB": _cell(-0.1)}}
+    assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
