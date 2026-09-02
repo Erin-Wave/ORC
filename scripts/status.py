@@ -39,6 +39,13 @@ PBO_USELESS = 0.5
 SPIKE_SHAPES = ("SPIKE",)
 FEW_PATHS = 5.0
 
+# The bar a cell has to clear before "not disqualified" means anything.  Track
+# A's terminal multiple is a multiple of contributed capital, so 1.0 is getting
+# the money back; Track B's Calmar is return over drawdown, so 0.0 is not
+# losing.  Without these a cell that loses a third of the capital reads as
+# "survives these checks", which is true and completely misleading.
+BREAK_EVEN = {"tm_q05": 1.0, "calmar": 0.0}
+
 
 def _load(name: str):
     p = config.REPORTS / name
@@ -70,7 +77,11 @@ def main() -> int:
 
         pbo = {s: r.get("pbo") for s, r in rep.get("pbo", {}).items()
                if r.get("status") == "ok"}
-        print(f"  {'symbol':10s} {'tm_q05':>8s} {'IRR/yr':>8s} {'horizon':>8s} "
+        metric = rep.get("metric", "tm_q05")
+        track_b = rep.get("track") == "B"
+        floor = BREAK_EVEN.get(metric)
+        second, third = ("CAGR", "MDD") if track_b else ("IRR/yr", "horizon")
+        print(f"  {'symbol':10s} {metric:>8s} {second:>8s} {third:>8s} "
               f"{'shape':8s} {'paths':>7s} {'PBO':>6s}   verdict")
         for sym, s in sorted(rep["surfaces"].items(),
                              key=lambda kv: -kv[1]["best_value"]):
@@ -79,6 +90,8 @@ def main() -> int:
             p = pbo.get(sym)
 
             why = []
+            if floor is not None and s["best_value"] <= floor:
+                why.append(f"at or below {floor:g}")
             if shape in SPIKE_SHAPES:
                 why.append("spike")
             if paths is not None and paths < FEW_PATHS:
@@ -88,17 +101,23 @@ def main() -> int:
             verdict = "not a finding: " + ", ".join(why) if why else "survives these checks"
             survivors += not why
 
-            irr, hz = s.get("mwrr_q05_best"), s.get("horizon_days_best")
-            print(f"  {sym:10s} {s['best_value']:8.4f} "
-                  f"{'n/a' if irr is None else format(irr * 100, '+.1f') + '%':>8s} "
-                  f"{'n/a' if hz is None else format(hz / 365.0, '.2f') + 'y':>8s} "
+            if track_b:
+                a, b = s.get("cagr_best"), s.get("max_drawdown_best")
+                a_txt = "n/a" if a is None else format(a * 100, "+.1f") + "%"
+                b_txt = "n/a" if b is None else format(b * 100, ".1f") + "%"
+            else:
+                a, b = s.get("mwrr_q05_best"), s.get("horizon_days_best")
+                a_txt = "n/a" if a is None else format(a * 100, "+.1f") + "%"
+                b_txt = "n/a" if b is None else format(b / 365.0, ".2f") + "y"
+            print(f"  {sym:10s} {s['best_value']:8.4f} {a_txt:>8s} {b_txt:>8s} "
                   f"{shape:8s} "
                   f"{'n/a' if paths is None else format(paths, 'g'):>7s} "
                   f"{'n/a' if p is None else format(p, '.3f'):>6s}   {verdict}")
 
     print(f"\n{survivors} cell(s) clear shape, path count and PBO together.")
     if not survivors:
-        print("Nothing here is a result. That is a finding about DCA, not a delay.")
+        print("Nothing here is a result. Closing a family is what this is for, "
+              "and a family that closes has answered its question.")
     return 0
 
 
