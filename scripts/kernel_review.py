@@ -70,6 +70,18 @@ def files_to_review() -> list[Path]:
     return out
 
 
+def _review(names: list[str]) -> dict | None:
+    """One batch. None means the call could not be made, which is not the same
+    as a batch with no findings."""
+    try:
+        return llm.ask_json(llm.load_prompt("kernel_review",
+                                            files=chr(10).join(names)),
+                            cwd=config.ORC_ROOT)
+    except llm.LLMUnavailable as exc:
+        print(f"  UNAVAILABLE ({len(names)} file(s)): {exc}")
+        return None
+
+
 def main() -> int:
     paths = files_to_review()
     print(f"reviewing {len(paths)} files in batches of {REVIEW_BATCH}")
@@ -81,15 +93,11 @@ def main() -> int:
     for i in range(0, len(paths), REVIEW_BATCH):
         batch = paths[i:i + REVIEW_BATCH]
         names = [str(q.relative_to(config.ORC_ROOT)).replace(chr(92), '/') for q in batch]
-        try:
-            r = llm.ask_json(llm.load_prompt("kernel_review",
-                                             files=chr(10).join(names)),
-                             cwd=config.ORC_ROOT)
-        except llm.LLMUnavailable as exc:
+        r = _review(names)
+        if r is None:
             # A batch nobody could read is not a batch with no findings. Record
             # it as unreviewed so an empty result cannot be mistaken for a clean
             # one, which is the same mistake the gate already refuses to make.
-            print(f"  batch {i // REVIEW_BATCH + 1} UNAVAILABLE: {exc}")
             unreviewed.extend(names)
             continue
         got = r.get("findings", [])
@@ -98,6 +106,28 @@ def main() -> int:
         confidences.append(str(r.get("confidence", "unknown")))
         print(f"  batch {i // REVIEW_BATCH + 1}: {len(got)} finding(s) over "
               f"{len(names)} file(s)")
+
+    # One retry over what could not be read, in smaller pieces. The batch that
+    # timed out held simulate.py and inference.py together, the two largest
+    # files in the set; four of those in one prompt is more than the call window
+    # allows. Splitting is the adaptation the file sizes ask for, and it costs
+    # only the failed batch -- the scheduler's whole-run retry would re-read the
+    # four batches that succeeded.
+    if unreviewed:
+        retry, unreviewed = unreviewed, []
+        smaller = max(1, REVIEW_BATCH // 2)
+        print(f"retrying {len(retry)} unread file(s) in batches of {smaller}")
+        for i in range(0, len(retry), smaller):
+            names = retry[i:i + smaller]
+            r = _review(names)
+            if r is None:
+                unreviewed.extend(names)
+                continue
+            got = r.get("findings", [])
+            findings.extend(got)
+            reviewed.extend(r.get("reviewed", names))
+            confidences.append(str(r.get("confidence", "unknown")))
+            print(f"  retry: {len(got)} finding(s) over {len(names)} file(s)")
 
     if not reviewed:
         print("review unavailable: no batch could be read")
