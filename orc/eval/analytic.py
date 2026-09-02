@@ -19,8 +19,11 @@ sums, so funding is also O(N).
 
 LIMITS -- this evaluator is exact only when:
   * entry is unconditional and on a fixed stride,
-  * the position is never liquidated (enforce by leverage == 1, or by checking
-    the simulator), and
+  * the position is never liquidated.  leverage == 1 is NOT sufficient for
+    that once funding is charged: the bill accrues against a wallet that this
+    evaluator will happily take negative.  The router therefore sends any
+    funded configuration to the simulator, and what is left here is the shape
+    the two are cross-checked on.
   * there is no path-dependent exit.
 Anything else must go through orc.eval.simulate.
 """

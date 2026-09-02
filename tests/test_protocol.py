@@ -125,10 +125,21 @@ def test_expansion_is_exhaustive_and_deterministic():
 
 
 def test_analytic_routing_is_exact_about_what_it_can_express():
-    assert TrialConfig(symbol="X").uses_analytic
+    assert TrialConfig(symbol="X", include_funding=False).uses_analytic
     assert not TrialConfig(symbol="X", leverage=3.0).uses_analytic
     assert not TrialConfig(symbol="X", gate="dip:0.1:30").uses_analytic
     assert not TrialConfig(symbol="X", take_profit=0.4).uses_analytic
+
+
+def test_a_funded_position_is_not_sent_where_ruin_cannot_be_expressed():
+    """The closed form keeps charging funding to an account it will take
+    negative, and writes liquidation_rate 0.0 beside the result. H0001's funded
+    ADAUSDT cell reported tm_q05 -0.4988 -- an unlevered long owing more than it
+    deposited -- with a liquidation rate nobody had measured."""
+    assert not TrialConfig(symbol="X", include_funding=True).uses_analytic, (
+        "funding is part of the shape, not a detail of it")
+    assert TrialConfig(symbol="X", include_funding=False).uses_analytic, (
+        "unlevered and unfunded is the shape the two evaluators agree on")
 
 
 # --------------------------------------------------------------------------

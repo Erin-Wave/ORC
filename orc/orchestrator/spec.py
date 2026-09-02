@@ -44,9 +44,23 @@ class TrialConfig:
 
     @property
     def uses_analytic(self) -> bool:
-        """The closed-form evaluator is exact only for this shape."""
+        """The closed-form evaluator is exact only for this shape.
+
+        include_funding is part of the shape, not a detail of it.  The closed
+        form has no concept of ruin: it keeps subtracting the funding bill from
+        a position that a real account would have been liquidated out of, and
+        the row it writes carries liquidation_rate 0.0 -- a number nobody
+        measured, sitting where a measurement belongs.  H0001's funded ADAUSDT
+        cell at 156 weekly deposits reports tm_q05 -0.4988 and tm_worst -0.7317:
+        an unlevered long ending owing more than it deposited, which cannot
+        happen.  Run on the simulator the same shape liquidates on 0.692 of its
+        start dates, and turning funding off takes that to 0.000, which is how
+        the cause is isolated.  Unlevered and unfunded still has no ruin to
+        express, and that is the shape the two evaluators are cross-checked on.
+        """
         return (self.gate == "none" and self.leverage == 1.0
-                and self.take_profit is None and self.stop_loss is None)
+                and self.take_profit is None and self.stop_loss is None
+                and not self.include_funding)
 
     def to_dict(self) -> dict:
         return asdict(self)

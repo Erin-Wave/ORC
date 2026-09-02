@@ -116,30 +116,17 @@ def simulate(
         px = close[idx]
         lo = low[idx]
 
-        # 1. scheduled deposit (every path shares the elapsed schedule)
-        if e % k == 0 and deposits_done < n:
-            add = np.where(act, spec.contribution, 0.0)
-            wallet += add
-            contributed += add
-            powder += add
-            deposits_done += 1
-
-        # 2. deployment, subject to the gate
-        open_gate = np.ones(M, dtype=bool) if gate is None else gate[idx]
-        dep = act & (powder > 0.0) & open_gate
-        if dep.any():
-            fill = px * (1.0 + c_in)
-            notional = powder * L
-            qty += np.where(dep, notional / fill, 0.0)
-            basis += np.where(dep, notional, 0.0)
-            powder = np.where(dep, 0.0, powder)
-
-        # 3. funding on the mark notional (a long pays when the rate is positive)
-        pay = np.where(act, qty * px * fr[idx], 0.0)
-        wallet -= pay
-        funding_paid += pay
-
-        # 4. liquidation at the worst mark inside the bar
+        # 1. liquidation at the worst mark inside the bar, against the account
+        #    as it stood ENTERING it. This used to run after the bar's deposit
+        #    and its close fill, so margin that arrives later in time rescued a
+        #    position from a low that had already printed, and quantity bought
+        #    at the close took a loss at a low it was never exposed to. The two
+        #    do not cancel: the rescue is worth `powder` and the phantom loss
+        #    `powder*L*(1 - lo/px)`, so a deposit bar always errs towards
+        #    survival. close=[100,55,55,55] low=[100,49,55,55] at 2x reported
+        #    terminal_multiple 0.6981 and not liquidated for an account whose
+        #    margin balance at that low was -2.05. liquidation_rate is the only
+        #    number KT-2 reads.
         has_pos = act & (qty > 0.0)
         ep = np.where(qty > 0.0, basis / np.maximum(qty, 1e-300), 0.0)
         margin = wallet if spec.undeployed_counts_as_margin else wallet - powder
@@ -158,7 +145,32 @@ def simulate(
             closed |= liq_now
             act = ~closed
 
-        # 5. mark to market; drawdown is tracked against invested capital
+        # 2. scheduled deposit (every path shares the elapsed schedule)
+        if e % k == 0 and deposits_done < n:
+            add = np.where(act, spec.contribution, 0.0)
+            wallet += add
+            contributed += add
+            powder += add
+            deposits_done += 1
+
+        # 3. deployment, subject to the gate
+        open_gate = np.ones(M, dtype=bool) if gate is None else gate[idx]
+        dep = act & (powder > 0.0) & open_gate
+        if dep.any():
+            fill = px * (1.0 + c_in)
+            notional = powder * L
+            qty += np.where(dep, notional / fill, 0.0)
+            basis += np.where(dep, notional, 0.0)
+            powder = np.where(dep, 0.0, powder)
+
+        # 4. funding on the mark notional (a long pays when the rate is positive)
+        pay = np.where(act, qty * px * fr[idx], 0.0)
+        wallet -= pay
+        funding_paid += pay
+
+        # 5. mark to market; drawdown is tracked against invested capital.
+        # ep above was read before this bar's deployment, so recompute it.
+        ep = np.where(qty > 0.0, basis / np.maximum(qty, 1e-300), 0.0)
         equity = wallet + qty * (px - ep)
         pnl = equity - contributed
         peak_pnl = np.where(act, np.maximum(peak_pnl, pnl), peak_pnl)

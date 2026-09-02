@@ -73,6 +73,10 @@ class PBOResult:
     median_logit: float
     oos_rank_of_is_best: np.ndarray
     degraded_fraction: float   # how often OOS performance fell below IS
+    # Configurations that could not be ranked at all and were left out of the
+    # comparison. Not zero means this PBO describes a smaller grid than the one
+    # that was searched, which is a weaker statement than it looks.
+    n_dropped_non_finite: int = 0
 
     def verdict(self) -> str:
         if self.pbo >= 0.5:
@@ -93,8 +97,23 @@ def cscv_pbo(perf: np.ndarray, n_blocks: int = 10) -> PBOResult:
     if perf.ndim != 2:
         raise ValueError("perf must be 2-D (time, config)")
     T, G = perf.shape
+    # np.argmax elects NaN as the maximum and np.argsort sorts it last, so one
+    # non-finite column is the in-sample winner of every split and the worst
+    # out-of-sample rank in every split: PBO 0.0, degraded_fraction 0.0, verdict
+    # SELECTION_INFORMATIVE. On a (60, 8) matrix of normals, blanking one column
+    # moves PBO from 0.457 to 0.000 -- a broken cell makes the project's central
+    # overfitting guard report that the selection carries full information, which
+    # is the most reassuring direction a failure can take. A column that cannot
+    # be ranked is dropped and said to have been dropped.
+    finite = np.isfinite(perf).all(axis=0)
+    n_dropped = int((~finite).sum())
+    if n_dropped:
+        perf = perf[:, finite]
+        T, G = perf.shape
     if G < 2:
-        raise ValueError("PBO needs at least two configurations to choose between")
+        raise ValueError(
+            "PBO needs at least two configurations to choose between"
+            + (f" ({n_dropped} dropped as non-finite)" if n_dropped else ""))
     if n_blocks % 2:
         n_blocks -= 1
     if n_blocks < 4 or T < n_blocks:
@@ -125,6 +144,7 @@ def cscv_pbo(perf: np.ndarray, n_blocks: int = 10) -> PBOResult:
         pbo=float(np.mean(logits_a <= 0.0)),
         n_splits=int(logits_a.size),
         n_configs=int(G),
+        n_dropped_non_finite=n_dropped,
         median_logit=float(np.median(logits_a)),
         oos_rank_of_is_best=np.asarray(ranks),
         degraded_fraction=degraded / float(logits_a.size),
