@@ -97,7 +97,7 @@
         {
           "check": "regime",
           "window_bars": 720,
-          "rising": -0.33046088375430677,
+          "rising": -0.3304608837543067,
           "falling": 1.2291597066485425,
           "passed": false
         }
