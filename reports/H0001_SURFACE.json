@@ -5,8 +5,8 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T13:25:19.144983+00:00",
-  "metric": "tm_q05",
+  "generated_utc": "2026-09-02T13:43:14.603270+00:00",
+  "metric": "mwrr_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 896,
   "trials_in_project": 6386,
@@ -36,74 +36,74 @@
       "grid": [
         [
           [
-            0.7676991144180327,
-            0.46619773840874534,
+            -0.9812129194251594,
+            -0.8410968554851944,
             NaN
           ],
           [
-            0.6928419742382713,
-            0.4597727598786618,
+            -0.9383212501599026,
+            -0.6042753832647777,
             NaN
           ],
           [
-            0.6241656820873914,
-            0.5958112554492814,
+            -0.9119255191698812,
+            -0.31971005364131944,
             NaN
           ]
         ],
         [
           [
-            0.7541826472259472,
-            0.43827277969103784,
+            -0.985832175384585,
+            -0.8676215492914394,
             NaN
           ],
           [
-            0.6821791752297396,
-            0.0,
+            -0.9456827367311271,
+            -1.0,
             NaN
           ],
           [
-            0.6142633436045626,
-            0.0,
+            -0.9196031139551393,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 0.7676991144180327,
+      "best_value": -0.31971005364131944,
       "best_config": {
         "include_funding": false,
-        "n_contributions": 52,
-        "stride_days": 1.0
+        "n_contributions": 156,
+        "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 0.7676991144180327,
-        "peak_index": [
-          0,
-          0,
-          0
-        ],
-        "neighbour_mean": 0.5795198563235083,
-        "plateau_ratio": 0.7548788912734686,
-        "n_neighbours": 2,
-        "shape": "SLOPE"
+        "peak": -0.31971005364131944,
+        "plateau_ratio": NaN,
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 8,
         "panel_revisions": 4
       },
-      "n_starts_best": 34552,
-      "independent_paths_best": 29.23,
-      "mwrr_q05_best": -0.9812129194251594,
-      "mwrr_q50_best": -0.05757619776503087,
-      "horizon_days_best": 51.0,
+      "n_starts_best": 9736,
+      "independent_paths_best": 1.37,
+      "mwrr_q05_best": -0.31971005364131944,
+      "mwrr_q50_best": -0.008274274879996657,
+      "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.31971005364131944,
+        "return_pa_median": -0.008274274879996657,
+        "mdd": 4.188287848680771,
+        "mdd_kind": "invested"
+      }
     },
     "AVAXUSDT": {
       "axes": [
@@ -130,74 +130,74 @@
       "grid": [
         [
           [
-            0.643309068509114,
-            0.4463558803686808,
+            -0.9989748802099305,
+            -0.8601730288988971,
             NaN
           ],
           [
-            0.5122081234409516,
-            0.4533491723393233,
+            -0.9956452954543658,
+            -0.6122203917192641,
             NaN
           ],
           [
-            0.4599035583386319,
-            0.6183911094027328,
+            -0.9864934715846907,
+            -0.2985760826081987,
             NaN
           ]
         ],
         [
           [
-            0.6351360671943834,
-            0.4376327299945462,
+            -0.9991768534434471,
+            -0.8682054395236681,
             NaN
           ],
           [
-            0.48153394594267096,
-            0.30714502430367024,
+            -0.9975960444423265,
+            -0.7955567684866833,
             NaN
           ],
           [
-            0.42639458722621776,
-            0.13973659702242472,
+            -0.9919287811975107,
+            -0.9134415788400218,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 0.643309068509114,
+      "best_value": -0.2985760826081987,
       "best_config": {
         "include_funding": false,
-        "n_contributions": 52,
-        "stride_days": 1.0
+        "n_contributions": 156,
+        "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 0.643309068509114,
-        "peak_index": [
-          0,
-          0,
-          0
-        ],
-        "neighbour_mean": 0.4792820019048162,
-        "plateau_ratio": 0.7450260308246005,
-        "n_neighbours": 2,
-        "shape": "SLOPE"
+        "peak": -0.2985760826081987,
+        "plateau_ratio": NaN,
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 8,
         "panel_revisions": 4
       },
-      "n_starts_best": 28889,
-      "independent_paths_best": 24.6,
-      "mwrr_q05_best": -0.9989748802099305,
-      "mwrr_q50_best": -0.17957368642810462,
-      "horizon_days_best": 51.0,
+      "n_starts_best": 4073,
+      "independent_paths_best": 1.16,
+      "mwrr_q05_best": -0.2985760826081987,
+      "mwrr_q50_best": 0.277038243291185,
+      "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.2985760826081987,
+        "return_pa_median": 0.277038243291185,
+        "mdd": 3.1104963249707556,
+        "mdd_kind": "invested"
+      }
     },
     "BNBUSDT": {
       "axes": [
@@ -224,58 +224,58 @@
       "grid": [
         [
           [
-            0.8036933926311546,
-            0.7279711159611252,
+            -0.9614635479786897,
+            -0.4980757055703104,
             NaN
           ],
           [
-            0.7662706606988484,
-            0.6873941612963458,
+            -0.8620122869964174,
+            -0.3344887056671791,
             NaN
           ],
           [
-            0.7689456897694245,
-            1.025828719196712,
+            -0.7268124434509757,
+            0.017230750172939235,
             NaN
           ]
         ],
         [
           [
-            0.8053383981920903,
-            0.7776511793716471,
+            -0.9602081220634744,
+            -0.41652375048015866,
             NaN
           ],
           [
-            0.7755840570845243,
-            0.7887372979157341,
+            -0.8483625143274435,
+            -0.22183704157573114,
             NaN
           ],
           [
-            0.7963880590858435,
-            1.1260625166054576,
+            -0.6726983182016426,
+            0.08149180566628228,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 1.1260625166054576,
+      "best_value": 0.08149180566628228,
       "best_config": {
         "include_funding": true,
         "n_contributions": 156,
         "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 1.1260625166054576,
+        "peak": 0.08149180566628228,
         "peak_index": [
           1,
           2,
           1
         ],
-        "neighbour_mean": 0.7925626785007889,
-        "plateau_ratio": 0.7038354148311303,
+        "neighbour_mean": -0.4472676798886869,
+        "plateau_ratio": -5.488498827971688,
         "n_neighbours": 2,
-        "shape": "SLOPE"
+        "shape": "SPIKE"
       },
       "assembled_from": {
         "code_revisions": 8,
@@ -288,10 +288,17 @@
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 2.7186634661249833,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": 0.08149180566628228,
+        "return_pa_median": 0.5031021923189007,
+        "mdd": 2.7186634661249833,
+        "mdd_kind": "invested"
+      }
     },
     "BTCUSDT": {
       "axes": [
@@ -318,56 +325,56 @@
       "grid": [
         [
           [
-            0.8039433735869856,
-            0.5842872846508715,
-            2.051039115127731
+            -0.9612769528258928,
+            -0.706010612631689,
+            0.361581638555348
           ],
           [
-            0.735952298470838,
-            0.5231946361597621,
+            -0.8996604300550796,
+            -0.5267469997685399,
             NaN
           ],
           [
-            0.7279699335313844,
-            0.9199516557817098,
+            -0.7950544507064445,
+            -0.055357742387571685,
             NaN
           ]
         ],
         [
           [
-            0.798546733881037,
-            0.560451574963918,
-            1.3295129476178158
+            -0.9651277241131074,
+            -0.7360872480643031,
+            0.13858938971785384
           ],
           [
-            0.7110632328663175,
-            0.3896444793072763,
+            -0.9238438013153675,
+            -0.6917618919449335,
             NaN
           ],
           [
-            0.6844049882332657,
-            0.23832818564419506,
+            -0.8529409256891796,
+            -0.7533562444106382,
             NaN
           ]
         ]
       ],
       "cells_filled": 14,
       "cells_total": 18,
-      "best_value": 2.051039115127731,
+      "best_value": 0.361581638555348,
       "best_config": {
         "include_funding": false,
         "n_contributions": 52,
         "stride_days": 30.0
       },
       "shape_diagnostic": {
-        "peak": 2.051039115127731,
+        "peak": 0.361581638555348,
         "peak_index": [
           0,
           0,
           2
         ],
-        "neighbour_mean": 0.5842872846508715,
-        "plateau_ratio": 0.28487378926192947,
+        "neighbour_mean": -0.706010612631689,
+        "plateau_ratio": -1.9525621252574157,
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
@@ -382,10 +389,17 @@
       "horizon_days_best": 1530.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": 0.361581638555348,
+        "return_pa_median": 0.42193768761835704,
+        "mdd": 1.9341115827478386,
+        "mdd_kind": "invested"
+      }
     },
     "DOGEUSDT": {
       "axes": [
@@ -412,58 +426,51 @@
       "grid": [
         [
           [
-            0.7615734615310413,
-            0.48006070019782676,
+            -0.9834538398111554,
+            -0.8271185929878673,
             NaN
           ],
           [
-            0.7091805784249757,
-            0.6660997889148111,
+            -0.9254601186472585,
+            -0.3587264751659169,
             NaN
           ],
           [
-            0.6518592032754773,
-            0.8601961484914038,
+            -0.887562263668725,
+            -0.0988066126163582,
             NaN
           ]
         ],
         [
           [
-            0.756089656435316,
-            0.43594820634122466,
+            -0.9852503763481417,
+            -0.8697313335611682,
             NaN
           ],
           [
-            0.6956375407635514,
-            0.0,
+            -0.9362600409974856,
+            -1.0,
             NaN
           ],
           [
-            0.6402882309760541,
-            0.0,
+            -0.8982775378351318,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 0.8601961484914038,
+      "best_value": -0.0988066126163582,
       "best_config": {
         "include_funding": false,
         "n_contributions": 156,
         "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 0.8601961484914038,
-        "peak_index": [
-          0,
-          2,
-          1
-        ],
-        "neighbour_mean": 0.6589794960951443,
-        "plateau_ratio": 0.7660805006519158,
-        "n_neighbours": 2,
-        "shape": "SLOPE"
+        "peak": -0.0988066126163582,
+        "plateau_ratio": NaN,
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 8,
@@ -476,10 +483,17 @@
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.0988066126163582,
+        "return_pa_median": 0.4830447612277634,
+        "mdd": 13.449197457031906,
+        "mdd_kind": "invested"
+      }
     },
     "ETHUSDT": {
       "axes": [
@@ -506,56 +520,56 @@
       "grid": [
         [
           [
-            0.755100099084772,
-            0.5988201058336687,
-            3.6056116382051298
+            -0.9855550700346672,
+            -0.6870187654593647,
+            0.6789141697407873
           ],
           [
-            0.7211629973550622,
-            0.6565007357178226,
+            -0.9146885245254169,
+            -0.3697188918932227,
             NaN
           ],
           [
-            0.6979560041387513,
-            1.0502184053714014,
+            -0.8364297995508256,
+            0.03323870901831261,
             NaN
           ]
         ],
         [
           [
-            0.7582835256073177,
-            0.5799252259370673,
-            0.0
+            -0.984548691388498,
+            -0.7116144569438517,
+            -1.0
           ],
           [
-            0.7084310338475592,
-            0.4868661225591493,
+            -0.92608606660085,
+            -0.5709462506363668,
             NaN
           ],
           [
-            0.6858041336481447,
-            0.0,
+            -0.8512955902841486,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 14,
       "cells_total": 18,
-      "best_value": 3.6056116382051298,
+      "best_value": 0.6789141697407873,
       "best_config": {
         "include_funding": false,
         "n_contributions": 52,
         "stride_days": 30.0
       },
       "shape_diagnostic": {
-        "peak": 3.6056116382051298,
+        "peak": 0.6789141697407873,
         "peak_index": [
           0,
           0,
           2
         ],
-        "neighbour_mean": 0.5988201058336687,
-        "plateau_ratio": 0.16608003465724358,
+        "neighbour_mean": -0.6870187654593647,
+        "plateau_ratio": -1.011937585161423,
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
@@ -570,10 +584,17 @@
       "horizon_days_best": 1530.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": 0.6789141697407873,
+        "return_pa_median": 0.7500426413546053,
+        "mdd": 4.815366523898309,
+        "mdd_kind": "invested"
+      }
     },
     "LTCUSDT": {
       "axes": [
@@ -600,74 +621,74 @@
       "grid": [
         [
           [
-            0.7402515114708725,
-            0.5036909112566084,
+            -0.9894885286552396,
+            -0.8020932676372964,
             NaN
           ],
           [
-            0.6757305234700751,
-            0.5111881717335662,
+            -0.9497717579491876,
+            -0.5412903323313494,
             NaN
           ],
           [
-            0.6372606177254824,
-            0.6868948254289569,
+            -0.9009533410791464,
+            -0.23739920078441465,
             NaN
           ]
         ],
         [
           [
-            0.7275411674114534,
-            0.47240466195516995,
+            -0.9920509743519901,
+            -0.8349028016546733,
             NaN
           ],
           [
-            0.6609813412319421,
-            0.0,
+            -0.9581767883165065,
+            -1.0,
             NaN
           ],
           [
-            0.6062339935802156,
-            0.0,
+            -0.9254539095015343,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 0.7402515114708725,
+      "best_value": -0.23739920078441465,
       "best_config": {
         "include_funding": false,
-        "n_contributions": 52,
-        "stride_days": 1.0
+        "n_contributions": 156,
+        "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 0.7402515114708725,
-        "peak_index": [
-          0,
-          0,
-          0
-        ],
-        "neighbour_mean": 0.5897107173633418,
-        "plateau_ratio": 0.796635614011233,
-        "n_neighbours": 2,
-        "shape": "SLOPE"
+        "peak": -0.23739920078441465,
+        "plateau_ratio": NaN,
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 8,
         "panel_revisions": 4
       },
-      "n_starts_best": 35080,
-      "independent_paths_best": 29.66,
-      "mwrr_q05_best": -0.9894885286552396,
-      "mwrr_q50_best": 0.1602268794844457,
-      "horizon_days_best": 51.0,
+      "n_starts_best": 10264,
+      "independent_paths_best": 1.39,
+      "mwrr_q05_best": -0.23739920078441465,
+      "mwrr_q50_best": -0.06955329111148184,
+      "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.23739920078441465,
+        "return_pa_median": -0.06955329111148184,
+        "mdd": 1.305562845777864,
+        "mdd_kind": "invested"
+      }
     },
     "SOLUSDT": {
       "axes": [
@@ -694,56 +715,56 @@
       "grid": [
         [
           [
-            0.6558597144883775,
-            0.33151009563572587,
+            -0.99857508062148,
+            -0.9474655324792784,
             NaN
           ],
           [
-            0.5506787040942013,
-            0.4939921969414596,
+            -0.9914720136884687,
+            -0.5622308371637799,
             NaN
           ],
           [
-            0.4879915483353443,
-            1.6619021758095884,
+            -0.9800898151693435,
+            0.3726884486782851,
             NaN
           ]
         ],
         [
           [
-            0.6748497102150512,
-            0.40016005646905156,
+            -0.9976945950634932,
+            -0.9001710625210104,
             NaN
           ],
           [
-            0.5823735147098785,
-            0.0,
+            -0.9859053379921467,
+            -1.0,
             NaN
           ],
           [
-            0.5298649634054324,
-            0.0,
+            -0.9665642101787697,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 1.6619021758095884,
+      "best_value": 0.3726884486782851,
       "best_config": {
         "include_funding": false,
         "n_contributions": 156,
         "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 1.6619021758095884,
+        "peak": 0.3726884486782851,
         "peak_index": [
           0,
           2,
           1
         ],
-        "neighbour_mean": 0.49099187263840194,
-        "plateau_ratio": 0.29543969541962806,
+        "neighbour_mean": -0.7711603261665616,
+        "plateau_ratio": -2.0691822590730427,
         "n_neighbours": 2,
         "shape": "SPIKE"
       },
@@ -758,10 +779,17 @@
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": 0.3726884486782851,
+        "return_pa_median": 0.9683629406627341,
+        "mdd": 8.49677819282286,
+        "mdd_kind": "invested"
+      }
     },
     "XRPUSDT": {
       "axes": [
@@ -788,58 +816,51 @@
       "grid": [
         [
           [
-            0.7372414155876807,
-            0.5241684429307397,
+            -0.9901554560478548,
+            -0.7792193238797859,
             NaN
           ],
           [
-            0.6760878148586515,
-            0.6435345454900785,
+            -0.9495520749453239,
+            -0.38463344862170057,
             NaN
           ],
           [
-            0.641844726683777,
-            0.9227769940078271,
+            -0.8968832016370347,
+            -0.05335045602927216,
             NaN
           ]
         ],
         [
           [
-            0.7277454857122128,
-            0.4758504006302398,
+            -0.9920147233922104,
+            -0.8314191209080442,
             NaN
           ],
           [
-            0.6529680273233155,
-            0.2047532672601372,
+            -0.9622328950706214,
+            -0.9171001981723065,
             NaN
           ],
           [
-            0.630888711505494,
-            0.0,
+            -0.9064116168941474,
+            -1.0,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 0.9227769940078271,
+      "best_value": -0.05335045602927216,
       "best_config": {
         "include_funding": false,
         "n_contributions": 156,
         "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 0.9227769940078271,
-        "peak_index": [
-          0,
-          2,
-          1
-        ],
-        "neighbour_mean": 0.6426896360869278,
-        "plateau_ratio": 0.6964734060995418,
-        "n_neighbours": 2,
-        "shape": "SPIKE"
+        "peak": -0.05335045602927216,
+        "plateau_ratio": NaN,
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 8,
@@ -852,10 +873,17 @@
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": null,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.05335045602927216,
+        "return_pa_median": 0.03920185603346393,
+        "mdd": 1.3907801792863541,
+        "mdd_kind": "invested"
+      }
     }
   },
   "pbo": {
@@ -863,34 +891,34 @@
       "symbol": "ETHUSDT",
       "status": "fewer than two configurations share a horizon"
     },
-    "BTCUSDT": {
-      "symbol": "BTCUSDT",
-      "status": "fewer than two configurations share a horizon"
-    },
     "SOLUSDT": {
       "symbol": "SOLUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
       "status": "fewer than two configurations share a horizon"
     }
   },
   "search_test": {
     "ETHUSDT": {
       "status": "ok",
-      "observed_best": 3.6056116382051298,
-      "null_mean": 24.73242713742485,
-      "null_q95": 71.99974358332842,
-      "p_value": 0.72,
+      "observed_best": 0.6789141697407873,
+      "null_mean": 24.732427137424843,
+      "null_q95": 71.9997435833285,
+      "p_value": 1.0,
       "n_null": 199,
       "n_configs": 18,
       "block_bars": 24,
       "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
       "survives_search": false
     },
-    "BTCUSDT": {
+    "SOLUSDT": {
       "status": "ok",
-      "observed_best": 2.051039115127731,
-      "null_mean": 3.488429416551672,
-      "null_q95": 9.793056417816414,
-      "p_value": 0.555,
+      "observed_best": 0.3726884486782851,
+      "null_mean": 21.16476391595448,
+      "null_q95": 102.76174024678913,
+      "p_value": 1.0,
       "n_null": 199,
       "n_configs": 18,
       "block_bars": 24,

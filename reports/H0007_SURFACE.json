@@ -5,8 +5,8 @@
   "claim": "H0001 is unconditional by construction and its own claim says nobody is structurally paying it; its 448 trials vary how often and how many times money arrives, never whether a given bar is a bar worth buying. This proposes the axis H0001 has never held: a gate. Who pays: the liquidated leveraged long. On a perpetual venue a position that breaches maintenance margin is closed by the exchange at whatever price the book offers, in size, at a moment the seller did not choose and cannot decline - and because the liquidation of one position moves price into the maintenance level of the next, the selling arrives in cascades rather than smoothly. They keep doing it because leverage is the entire reason to be on this venue instead of buying spot, so the leveraged long base rebuilds after every flush; the venue's own fee schedule and insurance fund are built on the assumption that it will. A depositor with no urgency is the natural counterparty to a seller with no choice about timing, and the gate is the only way a scheduled depositor expresses that: contribute on bars that follow a drawdown of the gated depth, hold the cash otherwise. Two gate depths at two timescales are enumerated rather than a ladder, because they ask different questions - a 10 percent drawdown inside 7 days is a cascade, a 20 percent drawdown inside 30 days is a regime, and if only one pays then the answer names which. This does not and cannot repeal KT-1. Deferring a deposit changes the price at which it lands, not the fact that the perpetual charges the holder funding for as long as it is held, and the tax is therefore carried on the grid as include_funding so that it is measured rather than assumed away. If the gate beats its control only with funding switched off, the honest reading is that the dislocation exists but a perpetual cannot host the trade that harvests it, which is a finding about the venue and not about the gate. gate none is enumerated as an internal control rather than compared against H0001 across hypotheses, because the gate defers contributions and therefore moves the horizon: tm_q05 is a multiple of contributed capital and grows with holding time, so the comparison that decides this hypothesis is the annualised IRR, with tm_q05 reported beside it.",
   "kill_condition": "Closed if, with include_funding true, no gated cell's annualised IRR exceeds the gate none cell at the same symbol, stride and contribution count on at least five of the nine symbols. Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. Closed also if every cell that clears the first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms, then the gate never fired often enough to change anything and the family has not been tested.",
   "prereg_hash": "5c39d5b986fce8ca9ef1c612a63da3f96b240925e3246435445f5d08625ea912",
-  "generated_utc": "2026-09-02T13:27:57.019273+00:00",
-  "metric": "tm_q05",
+  "generated_utc": "2026-09-02T13:44:58.935806+00:00",
+  "metric": "mwrr_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 270,
   "trials_in_project": 6386,
@@ -29,29 +29,29 @@
       },
       "grid": [
         [
-          0.43827277969103784,
-          0.46619773840874534
+          -0.8676215492914394,
+          -0.8410968554851944
         ],
         [
-          0.4373180448355644,
-          0.4701654412270541
+          -0.8684901647428692,
+          -0.8371495206388688
         ],
         [
-          0.44897336618679906,
-          0.47748850128265874
+          -0.8577151028125866,
+          -0.8297519680918217
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.47748850128265874,
+      "best_value": -0.8297519680918217,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.47748850128265874,
+        "peak": -0.8297519680918217,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -64,10 +64,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.5602654657263269,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.8297519680918217,
+        "return_pa_median": -0.1483761468694062,
+        "mdd": 0.5602654657263269,
+        "mdd_kind": "invested"
+      }
     },
     "AVAXUSDT": {
       "axes": [
@@ -87,29 +94,29 @@
       },
       "grid": [
         [
-          0.4376327299945462,
-          0.4463558803686808
+          -0.8682054395236681,
+          -0.8601730288988971
         ],
         [
-          0.4413089760402333,
-          0.45058374098442605
+          -0.8648469792706899,
+          -0.8562015153629422
         ],
         [
-          0.43830538269303493,
-          0.4440651974918658
+          -0.8675937974126386,
+          -0.8623034617232394
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.45058374098442605,
+      "best_value": -0.8562015153629422,
       "best_config": {
         "gate": "dip:0.10:7",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.45058374098442605,
+        "peak": -0.8562015153629422,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -122,10 +129,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.6767146799766519,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.8562015153629422,
+        "return_pa_median": -0.25152612514361805,
+        "mdd": 0.6767146799766519,
+        "mdd_kind": "invested"
+      }
     },
     "BNBUSDT": {
       "axes": [
@@ -145,29 +159,29 @@
       },
       "grid": [
         [
-          0.7776511793716471,
-          0.7279711159611252
+          -0.41652375048015866,
+          -0.4980757055703104
         ],
         [
-          0.7809267340493824,
-          0.733686402970979
+          -0.41098649774922086,
+          -0.4889291812183782
         ],
         [
-          0.8095002969260762,
-          0.7614550978875627
+          -0.3618686564588635,
+          -0.4436154169804883
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.8095002969260762,
+      "best_value": -0.3618686564588635,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": true
       },
       "shape_diagnostic": {
-        "peak": 0.8095002969260762,
+        "peak": -0.3618686564588635,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -180,10 +194,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.46721292545735704,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.3618686564588635,
+        "return_pa_median": 0.16990372556904787,
+        "mdd": 0.46721292545735704,
+        "mdd_kind": "invested"
+      }
     },
     "BTCUSDT": {
       "axes": [
@@ -203,29 +224,29 @@
       },
       "grid": [
         [
-          0.560451574963918,
-          0.5842872846508715
+          -0.7360872480643031,
+          -0.706010612631689
         ],
         [
-          0.577375246975689,
-          0.6005055287402541
+          -0.7148707513017503,
+          -0.6847841241749849
         ],
         [
-          0.598820033078025,
-          0.619857310992426
+          -0.6870187953131688,
+          -0.6586734526213125
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.619857310992426,
+      "best_value": -0.6586734526213125,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.619857310992426,
+        "peak": -0.6586734526213125,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -238,10 +259,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.40060344953198024,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.6586734526213125,
+        "return_pa_median": 0.5002743944449695,
+        "mdd": 0.40060344953198024,
+        "mdd_kind": "invested"
+      }
     },
     "DOGEUSDT": {
       "axes": [
@@ -261,29 +289,29 @@
       },
       "grid": [
         [
-          0.43594820634122466,
-          0.48006070019782676
+          -0.8697313335611682,
+          -0.8271185929878673
         ],
         [
-          0.44084134952752707,
-          0.4848448072055935
+          -0.8652760422749817,
+          -0.8221722751028367
         ],
         [
-          0.44321316651269493,
-          0.48709490378050774
+          -0.8630919768336045,
+          -0.8198253490996608
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.48709490378050774,
+      "best_value": -0.8198253490996608,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.48709490378050774,
+        "peak": -0.8198253490996608,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -296,10 +324,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.6765491020720842,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.8198253490996608,
+        "return_pa_median": -0.11231186047872005,
+        "mdd": 0.6765491020720842,
+        "mdd_kind": "invested"
+      }
     },
     "ETHUSDT": {
       "axes": [
@@ -319,29 +354,29 @@
       },
       "grid": [
         [
-          0.5799252259370673,
-          0.5988201058336687
+          -0.7116144569438517,
+          -0.6870187654593647
         ],
         [
-          0.5857441767739059,
-          0.6060703444183895
+          -0.7041286500260286,
+          -0.6773626573058583
         ],
         [
-          0.5986092050211873,
-          0.6163507275820567
+          -0.687297695405586,
+          -0.6634672286793175
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.6163507275820567,
+      "best_value": -0.6634672286793175,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.6163507275820567,
+        "peak": -0.6634672286793175,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -354,10 +389,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.527050395620896,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.6634672286793175,
+        "return_pa_median": 0.3135226655445488,
+        "mdd": 0.527050395620896,
+        "mdd_kind": "invested"
+      }
     },
     "LTCUSDT": {
       "axes": [
@@ -377,29 +419,29 @@
       },
       "grid": [
         [
-          0.47240466195516995,
-          0.5036909112566084
+          -0.8349028016546733,
+          -0.8020932676372964
         ],
         [
-          0.4715995864661916,
-          0.5072489709425394
+          -0.8357125561725988,
+          -0.7981966892373686
         ],
         [
-          0.4778987149311679,
-          0.5111289136987266
+          -0.8293330626937959,
+          -0.7939103815132036
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.5111289136987266,
+      "best_value": -0.7939103815132036,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.5111289136987266,
+        "peak": -0.7939103815132036,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -412,10 +454,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.655991539783126,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.7939103815132036,
+        "return_pa_median": 0.1334418289725363,
+        "mdd": 0.655991539783126,
+        "mdd_kind": "invested"
+      }
     },
     "SOLUSDT": {
       "axes": [
@@ -435,29 +484,29 @@
       },
       "grid": [
         [
-          0.40016005646905156,
-          0.33151009563572587
+          -0.9001710625210104,
+          -0.9474655324792784
         ],
         [
-          0.39847085846028085,
-          0.33264444345631894
+          -0.9015125554825545,
+          -0.9468076711131899
         ],
         [
-          0.3943476390141641,
-          0.33646253034827306
+          -0.9047509096138946,
+          -0.9445593698325662
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.40016005646905156,
+      "best_value": -0.9001710625210104,
       "best_config": {
         "gate": "none",
         "include_funding": true
       },
       "shape_diagnostic": {
-        "peak": 0.40016005646905156,
+        "peak": -0.9001710625210104,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -470,10 +519,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.7816090747615293,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.9001710625210104,
+        "return_pa_median": 0.09170661857451268,
+        "mdd": 0.7816090747615293,
+        "mdd_kind": "invested"
+      }
     },
     "XRPUSDT": {
       "axes": [
@@ -493,29 +549,29 @@
       },
       "grid": [
         [
-          0.4758504006302398,
-          0.5241684429307397
+          -0.8314191209080442,
+          -0.7792193238797859
         ],
         [
-          0.47494777405834876,
-          0.5266876594858573
+          -0.8323353381410844,
+          -0.7763308516445916
         ],
         [
-          0.49313396967139056,
-          0.5359024728428993
+          -0.8134562320871975,
+          -0.7656286341016307
         ]
       ],
       "cells_filled": 6,
       "cells_total": 6,
-      "best_value": 0.5359024728428993,
+      "best_value": -0.7656286341016307,
       "best_config": {
         "gate": "dip:0.20:30",
         "include_funding": false
       },
       "shape_diagnostic": {
-        "peak": 0.5359024728428993,
+        "peak": -0.7656286341016307,
         "plateau_ratio": NaN,
-        "n_neighbours": 0
+        "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
         "code_revisions": 5,
@@ -528,10 +584,17 @@
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
+      "dd_q50_best": 0.5694187880925824,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
-      "funding_frac_best": null
+      "funding_frac_best": null,
+      "headline": {
+        "return_pa": -0.7656286341016307,
+        "return_pa_median": 0.18923669289192946,
+        "mdd": 0.5694187880925824,
+        "mdd_kind": "invested"
+      }
     }
   },
   "pbo": {
@@ -551,10 +614,10 @@
   "search_test": {
     "BNBUSDT": {
       "status": "ok",
-      "observed_best": 0.8095002969260762,
-      "null_mean": 0.740315994700335,
+      "observed_best": -0.3618686564588635,
+      "null_mean": 0.7403159947003352,
       "null_q95": 1.1611930984312908,
-      "p_value": 0.33,
+      "p_value": 1.0,
       "n_null": 199,
       "n_configs": 6,
       "block_bars": 24,
@@ -563,10 +626,10 @@
     },
     "BTCUSDT": {
       "status": "ok",
-      "observed_best": 0.619857310992426,
+      "observed_best": -0.6586734526213125,
       "null_mean": 0.7384304714577538,
       "null_q95": 1.0123459477981185,
-      "p_value": 0.77,
+      "p_value": 1.0,
       "n_null": 199,
       "n_configs": 6,
       "block_bars": 24,

@@ -5,7 +5,7 @@
   "claim": "H0002 closed the short side of the funding trade for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, because the rate is rich exactly when leveraged long demand is strongest, which is exactly when price is rising. Six of nine symbols had no positive cell anywhere in 972 trials. This is the leg that was never tested, and it is the leg where the two point the same way. Negative funding means the shorts are paying the longs. It appears when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and a crowded short base is the same condition that produces upward squeezes, so the coupon is collected while the directional move, when it comes, is in the position's favour rather than against it. Who pays: the leveraged bear, and the desk holding spot that needs protection now. They keep paying because the demand to be short in a drawdown is a demand for immediacy - a hedge deferred until the rate normalises is not a hedge, and a bear who waits for cheap funding has missed the move they are positioning for - so the rate stays negative until the crowd unwinds. This does not re-open KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the tax at a median 36 percent of contributed capital; this rule holds the perpetual only while that tax is a rebate and flattens once the trailing rate crosses back above the 0.01 percent baseline at which the tax resumes. The real deliverable is the asymmetry. The evaluator's own note on this rule is that if the mirror pays as well as the original then what is being harvested is not the funding tax but something else; H0002 established that the original does not pay, so a mirror that also fails would say that the funding level carries no tradable information on either side, and a mirror that pays would locate the effect in the rarity and depth of the negative case rather than in carry as such. Either outcome closes a question rather than opening one.",
   "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.",
   "prereg_hash": "d6b50b9b2c14f44ff898a4c5523fc950e4379b22460ff1b3683e597ba1c24ea8",
-  "generated_utc": "2026-09-02T13:27:54.440482+00:00",
+  "generated_utc": "2026-09-02T13:44:57.041291+00:00",
   "metric": "calmar",
   "holdout_start": "2024-03-01",
   "trials_in_family": 360,
@@ -77,10 +77,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.24599969129416444,
       "max_drawdown_best": 0.6963551171602598,
+      "dd_q50_best": null,
       "sharpe_best": 0.41765646516248256,
       "n_trades_best": 12,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.06664070663409563
+      "funding_frac_best": -0.06664070663409563,
+      "headline": {
+        "return_pa": 0.24599969129416444,
+        "mdd": 0.6963551171602598,
+        "mdd_kind": "equity"
+      }
     },
     "AVAXUSDT": {
       "axes": [
@@ -148,10 +154,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.2124529644242641,
       "max_drawdown_best": 0.7703511329684293,
+      "dd_q50_best": null,
       "sharpe_best": 0.2755763656471753,
       "n_trades_best": 5,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.03874206589082711
+      "funding_frac_best": -0.03874206589082711,
+      "headline": {
+        "return_pa": 0.2124529644242641,
+        "mdd": 0.7703511329684293,
+        "mdd_kind": "equity"
+      }
     },
     "BNBUSDT": {
       "axes": [
@@ -219,10 +231,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.8808064893023353,
       "max_drawdown_best": 0.6398633581943552,
+      "dd_q50_best": null,
       "sharpe_best": 1.0352095062499964,
       "n_trades_best": 21,
       "n_liquidations_best": 0,
-      "funding_frac_best": 3.0044650977699083
+      "funding_frac_best": 3.0044650977699083,
+      "headline": {
+        "return_pa": 0.8808064893023353,
+        "mdd": 0.6398633581943552,
+        "mdd_kind": "equity"
+      }
     },
     "BTCUSDT": {
       "axes": [
@@ -290,10 +308,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.14652119019261844,
       "max_drawdown_best": 0.11444240105214232,
+      "dd_q50_best": null,
       "sharpe_best": 1.1116455651319506,
       "n_trades_best": 2,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.012742182598900137
+      "funding_frac_best": -0.012742182598900137,
+      "headline": {
+        "return_pa": 0.14652119019261844,
+        "mdd": 0.11444240105214232,
+        "mdd_kind": "equity"
+      }
     },
     "DOGEUSDT": {
       "axes": [
@@ -361,10 +385,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.251847866235549,
       "max_drawdown_best": 0.21344522154676004,
+      "dd_q50_best": null,
       "sharpe_best": 0.710357844142258,
       "n_trades_best": 4,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.05346324330345243
+      "funding_frac_best": -0.05346324330345243,
+      "headline": {
+        "return_pa": 0.251847866235549,
+        "mdd": 0.21344522154676004,
+        "mdd_kind": "equity"
+      }
     },
     "ETHUSDT": {
       "axes": [
@@ -432,10 +462,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.21079629258028243,
       "max_drawdown_best": 0.5821842920213216,
+      "dd_q50_best": null,
       "sharpe_best": 0.43092658481811114,
       "n_trades_best": 8,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.05484837113325768
+      "funding_frac_best": -0.05484837113325768,
+      "headline": {
+        "return_pa": 0.21079629258028243,
+        "mdd": 0.5821842920213216,
+        "mdd_kind": "equity"
+      }
     },
     "LTCUSDT": {
       "axes": [
@@ -503,10 +539,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.12122629078003322,
       "max_drawdown_best": 0.5069576192098098,
+      "dd_q50_best": null,
       "sharpe_best": 0.26093035246825946,
       "n_trades_best": 6,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.05547561946979912
+      "funding_frac_best": -0.05547561946979912,
+      "headline": {
+        "return_pa": 0.12122629078003322,
+        "mdd": 0.5069576192098098,
+        "mdd_kind": "equity"
+      }
     },
     "SOLUSDT": {
       "axes": [
@@ -574,10 +616,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.9338815525304167,
       "max_drawdown_best": 0.6667165174873233,
+      "dd_q50_best": null,
       "sharpe_best": 1.0461405601257088,
       "n_trades_best": 12,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.521984704112146
+      "funding_frac_best": 0.521984704112146,
+      "headline": {
+        "return_pa": 0.9338815525304167,
+        "mdd": 0.6667165174873233,
+        "mdd_kind": "equity"
+      }
     },
     "XRPUSDT": {
       "axes": [
@@ -645,10 +693,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.13119689932341938,
       "max_drawdown_best": 0.5835298563309675,
+      "dd_q50_best": null,
       "sharpe_best": 0.25193482525159416,
       "n_trades_best": 10,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.022967639016323635
+      "funding_frac_best": -0.022967639016323635,
+      "headline": {
+        "return_pa": 0.13119689932341938,
+        "mdd": 0.5835298563309675,
+        "mdd_kind": "equity"
+      }
     }
   },
   "pbo": {
@@ -711,8 +765,8 @@
     "SOLUSDT": {
       "status": "ok",
       "observed_best": 1.400717588413689,
-      "null_mean": 2.5643968698418615,
-      "null_q95": 7.023176546647796,
+      "null_mean": 2.564396869841861,
+      "null_q95": 7.023176546647791,
       "p_value": 0.65,
       "n_null": 199,
       "n_configs": 8,

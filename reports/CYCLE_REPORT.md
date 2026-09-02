@@ -7,7 +7,52 @@
 
 Every number below is development data only. The ranking is not a result; the shape column and PBO are what decide whether it means anything.
 
-## H0001 — unconditional_dca_spot_style (track A, metric `tm_q05`)
+## Headline
+
+Best cell per family per symbol, ranked on the metric that survives a horizon change. `return p.a.` is the annualised money-weighted return at the 5th percentile of start dates on track A, and the CAGR of the single equity curve on track B. `max drawdown` is drawdown on invested capital on track A -- peak-to-trough of profit over contributed capital, so it can exceed 100% -- and conventional equity drawdown on track B. The two are not comparable and are labelled.
+
+| family | symbol | return p.a. | max drawdown | basis | not a finding because |
+|---|---|---:|---:|---|---|
+| H0001 | ETHUSDT | +67.9% | 481.5% | invested | spike, 1.02 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0001 | SOLUSDT | +37.3% | 849.7% | invested | spike, 1.16 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0001 | BTCUSDT | +36.2% | 193.4% | invested | spike, 1.07 paths, PBO unmeasured, search test unmeasured |
+| H0001 | BNBUSDT | +8.1% | 271.9% | invested | spike, 1.36 paths, PBO unmeasured, search test unmeasured |
+| H0001 | XRPUSDT | -5.3% | 139.1% | invested | at or below 0, shape unmeasured, 1.4 paths, PBO unmeasured, search test unmeasured |
+| H0001 | DOGEUSDT | -9.9% | 1344.9% | invested | at or below 0, shape unmeasured, 1.23 paths, PBO unmeasured, search test unmeasured |
+| H0001 | LTCUSDT | -23.7% | 130.6% | invested | at or below 0, shape unmeasured, 1.39 paths, PBO unmeasured, search test unmeasured |
+| H0001 | AVAXUSDT | -29.9% | 311.0% | invested | at or below 0, shape unmeasured, 1.16 paths, PBO unmeasured, search test unmeasured |
+| H0001 | ADAUSDT | -32.0% | 418.8% | invested | at or below 0, shape unmeasured, 1.37 paths, PBO unmeasured, search test unmeasured |
+| H0002 | BTCUSDT | +14.3% | 59.0% | equity | spike, p=0.360 vs a random search |
+| H0002 | LTCUSDT | +3.4% | 37.4% | equity | spike, p=0.705 vs a random search |
+| H0002 | XRPUSDT | +1.7% | 44.4% | equity | spike, PBO 0.65, search test unmeasured |
+| H0002 | AVAXUSDT | -2.2% | 35.5% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | SOLUSDT | -2.5% | 62.7% | equity | at or below 0, shape unmeasured, 2 paths, PBO unmeasured, search test unmeasured |
+| H0002 | BNBUSDT | -7.4% | 59.6% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | ETHUSDT | -7.9% | 46.7% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | ADAUSDT | -10.3% | 61.4% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | DOGEUSDT | -21.0% | 71.8% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0006 | SOLUSDT | +93.4% | 66.7% | equity | shape unmeasured, PBO 0.52, p=0.650 vs a random search |
+| H0006 | BNBUSDT | +88.1% | 64.0% | equity | shape unmeasured, p=0.615 vs a random search |
+| H0006 | DOGEUSDT | +25.2% | 21.3% | equity | shape unmeasured, 4 paths, PBO unmeasured, search test unmeasured |
+| H0006 | ADAUSDT | +24.6% | 69.6% | equity | shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0006 | AVAXUSDT | +21.2% | 77.0% | equity | shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0006 | ETHUSDT | +21.1% | 58.2% | equity | shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0006 | BTCUSDT | +14.7% | 11.4% | equity | shape unmeasured, 2 paths, PBO 0.82, search test unmeasured |
+| H0006 | XRPUSDT | +13.1% | 58.4% | equity | shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0006 | LTCUSDT | +12.1% | 50.7% | equity | shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0007 | BNBUSDT | -36.2% | 46.7% | invested | at or below 0, shape unmeasured, 4.15 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0007 | BTCUSDT | -65.9% | 40.1% | invested | at or below 0, shape unmeasured, 4.58 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0007 | ETHUSDT | -66.3% | 52.7% | invested | at or below 0, shape unmeasured, 4.36 paths, PBO unmeasured, search test unmeasured |
+| H0007 | XRPUSDT | -76.6% | 56.9% | invested | at or below 0, shape unmeasured, 4.24 paths, PBO unmeasured, search test unmeasured |
+| H0007 | LTCUSDT | -79.4% | 65.6% | invested | at or below 0, shape unmeasured, 4.24 paths, PBO unmeasured, search test unmeasured |
+| H0007 | DOGEUSDT | -82.0% | 67.7% | invested | at or below 0, shape unmeasured, 3.72 paths, PBO unmeasured, search test unmeasured |
+| H0007 | ADAUSDT | -83.0% | 56.0% | invested | at or below 0, shape unmeasured, 4.17 paths, PBO unmeasured, search test unmeasured |
+| H0007 | AVAXUSDT | -85.6% | 67.7% | invested | at or below 0, shape unmeasured, 3.51 paths, PBO unmeasured, search test unmeasured |
+| H0007 | SOLUSDT | -90.0% | 78.2% | invested | at or below 0, shape unmeasured, 3.54 paths, PBO unmeasured, search test unmeasured |
+
+No cell clears every check. Nothing in this table is a result.
+
+## H0001 — unconditional_dca_spot_style (track A, metric `mwrr_q05`)
 
 **Claim.** Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.
 
@@ -17,21 +62,21 @@ Trials in this family: 896. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
-| ETHUSDT | +3.6056 | SPIKE | 0.166 | 616 | 1.02 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
-| BTCUSDT | +2.0510 | SPIKE | 0.285 | 2,523 | 1.07 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
-| SOLUSDT | +1.6619 | SPIKE | 0.295 | 4,289 | 1.16 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
-| BNBUSDT | +1.1261 | SLOPE | 0.704 | 396 | 1.36 | `{'include_funding': True, 'n_contributions': 156, 'stride_days': 7.0}` |
-| XRPUSDT | +0.9228 | SPIKE | 0.696 | 10,336 | 1.4 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
-| DOGEUSDT | +0.8602 | SLOPE | 0.766 | 5,871 | 1.23 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
-| ADAUSDT | +0.7677 | SLOPE | 0.755 | 34,552 | 29.23 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 1.0}` |
-| LTCUSDT | +0.7403 | SLOPE | 0.797 | 35,080 | 29.66 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 1.0}` |
-| AVAXUSDT | +0.6433 | SLOPE | 0.745 | 28,889 | 24.6 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 1.0}` |
+| ETHUSDT | +0.6789 | SPIKE | -1.012 | 616 | 1.02 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
+| SOLUSDT | +0.3727 | SPIKE | -2.069 | 4,289 | 1.16 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
+| BTCUSDT | +0.3616 | SPIKE | -1.953 | 2,523 | 1.07 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
+| BNBUSDT | +0.0815 | SPIKE | -5.488 | 396 | 1.36 | `{'include_funding': True, 'n_contributions': 156, 'stride_days': 7.0}` |
+| XRPUSDT | -0.0534 | ? | nan | 10,336 | 1.4 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
+| DOGEUSDT | -0.0988 | ? | nan | 5,871 | 1.23 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
+| LTCUSDT | -0.2374 | ? | nan | 10,264 | 1.39 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
+| AVAXUSDT | -0.2986 | ? | nan | 4,073 | 1.16 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
+| ADAUSDT | -0.3197 | ? | nan | 9,736 | 1.37 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
 - PBO on **ETHUSDT** could not be computed: fewer than two configurations share a horizon
-- PBO on **BTCUSDT** could not be computed: fewer than two configurations share a horizon
 - PBO on **SOLUSDT** could not be computed: fewer than two configurations share a horizon
+- PBO on **BTCUSDT** could not be computed: fewer than two configurations share a horizon
 
 ## H0002 — funding_carry_short (track B, metric `calmar`)
 
@@ -89,7 +134,7 @@ Trials in this family: 360. Pre-registration hash `d6b50b9b2c14f44f`.
 | BNBUSDT | 0.278 | SELECTION_WEAK | yes | 8 | 252 |
 | BTCUSDT | 0.821 | SELECTION_IS_NOISE | yes | 8 | 252 |
 
-## H0007 — dislocation_gated_dca (track A, metric `tm_q05`)
+## H0007 — dislocation_gated_dca (track A, metric `mwrr_q05`)
 
 **Claim.** H0001 is unconditional by construction and its own claim says nobody is structurally paying it; its 448 trials vary how often and how many times money arrives, never whether a given bar is a bar worth buying. This proposes the axis H0001 has never held: a gate. Who pays: the liquidated leveraged long. On a perpetual venue a position that breaches maintenance margin is closed by the exchange at whatever price the book offers, in size, at a moment the seller did not choose and cannot decline - and because the liquidation of one position moves price into the maintenance level of the next, the selling arrives in cascades rather than smoothly. They keep doing it because leverage is the entire reason to be on this venue instead of buying spot, so the leveraged long base rebuilds after every flush; the venue's own fee schedule and insurance fund are built on the assumption that it will. A depositor with no urgency is the natural counterparty to a seller with no choice about timing, and the gate is the only way a scheduled depositor expresses that: contribute on bars that follow a drawdown of the gated depth, hold the cash otherwise. Two gate depths at two timescales are enumerated rather than a ladder, because they ask different questions - a 10 percent drawdown inside 7 days is a cascade, a 20 percent drawdown inside 30 days is a regime, and if only one pays then the answer names which. This does not and cannot repeal KT-1. Deferring a deposit changes the price at which it lands, not the fact that the perpetual charges the holder funding for as long as it is held, and the tax is therefore carried on the grid as include_funding so that it is measured rather than assumed away. If the gate beats its control only with funding switched off, the honest reading is that the dislocation exists but a perpetual cannot host the trade that harvests it, which is a finding about the venue and not about the gate. gate none is enumerated as an internal control rather than compared against H0001 across hypotheses, because the gate defers contributions and therefore moves the horizon: tm_q05 is a multiple of contributed capital and grows with holding time, so the comparison that decides this hypothesis is the annualised IRR, with tm_q05 reported beside it.
 
@@ -99,15 +144,15 @@ Trials in this family: 270. Pre-registration hash `5c39d5b986fce8ca`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
-| BNBUSDT | +0.8095 | ? | nan | 1,124 | 4.15 | `{'gate': 'dip:0.20:30', 'include_funding': True}` |
-| BTCUSDT | +0.6199 | ? | nan | 1,279 | 4.58 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| ETHUSDT | +0.6164 | ? | nan | 1,199 | 4.36 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| XRPUSDT | +0.5359 | ? | nan | 1,159 | 4.24 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| LTCUSDT | +0.5111 | ? | nan | 1,156 | 4.24 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| DOGEUSDT | +0.4871 | ? | nan | 973 | 3.72 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| ADAUSDT | +0.4775 | ? | nan | 1,134 | 4.17 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
-| AVAXUSDT | +0.4506 | ? | nan | 898 | 3.51 | `{'gate': 'dip:0.10:7', 'include_funding': False}` |
-| SOLUSDT | +0.4002 | ? | nan | 907 | 3.54 | `{'gate': 'none', 'include_funding': True}` |
+| BNBUSDT | -0.3619 | ? | nan | 1,124 | 4.15 | `{'gate': 'dip:0.20:30', 'include_funding': True}` |
+| BTCUSDT | -0.6587 | ? | nan | 1,279 | 4.58 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| ETHUSDT | -0.6635 | ? | nan | 1,199 | 4.36 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| XRPUSDT | -0.7656 | ? | nan | 1,159 | 4.24 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| LTCUSDT | -0.7939 | ? | nan | 1,156 | 4.24 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| DOGEUSDT | -0.8198 | ? | nan | 973 | 3.72 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| ADAUSDT | -0.8298 | ? | nan | 1,134 | 4.17 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
+| AVAXUSDT | -0.8562 | ? | nan | 898 | 3.51 | `{'gate': 'dip:0.10:7', 'include_funding': False}` |
+| SOLUSDT | -0.9002 | ? | nan | 907 | 3.54 | `{'gate': 'none', 'include_funding': True}` |
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 

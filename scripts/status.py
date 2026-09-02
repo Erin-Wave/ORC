@@ -71,11 +71,13 @@ def main() -> int:
               f"({rep['trials_in_family']} trials)")
         print(f"  kill: {rep['kill_condition']}")
 
+        # Same rule as verdict.survivors: a PBO measured on a horizon group that
+        # does not contain this cell says nothing about it.
         pbo = {s: r.get("pbo") for s, r in rep.get("pbo", {}).items()
-               if r.get("status") == "ok"}
+               if r.get("status") == "ok" and r.get("covers_reported_best")}
         metric = rep.get("metric", "tm_q05")
         track_b = rep.get("track") == "B"
-        second, third = ("CAGR", "MDD") if track_b else ("IRR/yr", "horizon")
+        second, third = ("CAGR", "MDD") if track_b else ("IRR/yr", "MDD")
         print(f"  {'symbol':10s} {metric:>8s} {second:>8s} {third:>8s} "
               f"{'shape':8s} {'paths':>7s} {'PBO':>6s}   verdict")
         for sym, s in sorted(rep["surfaces"].items(),
@@ -93,9 +95,13 @@ def main() -> int:
                 a_txt = "n/a" if a is None else format(a * 100, "+.1f") + "%"
                 b_txt = "n/a" if b is None else format(b * 100, ".1f") + "%"
             else:
-                a, b = s.get("mwrr_q05_best"), s.get("horizon_days_best")
+                hd = s.get("headline", {})
+                a, b = s.get("mwrr_q05_best"), hd.get("mdd")
                 a_txt = "n/a" if a is None else format(a * 100, "+.1f") + "%"
-                b_txt = "n/a" if b is None else format(b / 365.0, ".2f") + "y"
+                # Drawdown on invested capital: peak-to-trough of profit over
+                # contributed capital, so above 100% is possible and means the
+                # paper profit given back exceeded the money put in.
+                b_txt = "n/a" if b is None else format(b * 100, ".0f") + "%"
             print(f"  {sym:10s} {s['best_value']:8.4f} {a_txt:>8s} {b_txt:>8s} "
                   f"{shape:8s} "
                   f"{'n/a' if paths is None else format(paths, 'g'):>7s} "

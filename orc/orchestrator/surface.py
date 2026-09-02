@@ -46,6 +46,64 @@ MIN_SPAN_OVER_HORIZON = 1.0
 
 
 # --------------------------------------------------------------------------
+def ranking_metric(h: Hypothesis) -> str:
+    """What decides which cell of a grid is called the best one.
+
+    A different question from what the family is judged against.  Section 4
+    says tm_q05 is a multiple of contributed capital, grows with the horizon and
+    may not be compared between cells that hold for different lengths of time --
+    and the surface ranked cells by exactly that, so the argmax was decided
+    mostly by which cell held longest and plateau_score measured holding time
+    rather than parameter sensitivity.  The annualised IRR is the comparison
+    section 4 names as surviving a horizon change, and its fifth percentile
+    keeps the left tail this project decides on.
+
+    Hypothesis.primary_metric is untouched and still reported: the kill
+    conditions were pre-registered against it, and a threshold is a per-cell
+    test rather than a ranking.
+
+    This lives here and not on the Hypothesis because spec.py is inside the
+    ledger's code hash: a reporting choice defined there would give every trial
+    in the project a new identity and add 1210 rows to N without a single
+    recorded number changing.
+    """
+    return "calmar" if h.track == "B" else "mwrr_q05"
+
+
+def drawdown_for(cfg, p=None) -> float | None:
+    """Max drawdown on invested capital for one Track A cell.
+
+    Section 4 asks for this figure and the closed-form evaluator cannot produce
+    it: drawdown is peak-to-trough along an equity curve, and a curve is exactly
+    what an O(1)-per-start closed form does not build.  So the cell is measured
+    once on the simulator, which does.  One call per reported cell, not per grid
+    point -- the ranking still comes from the fast evaluator.
+    """
+    from orc.eval.simulate import SimSpec, simulate
+    from orc.kernel.liquidation import tier_table_for
+    from orc.orchestrator.runner import SIM_START_STRIDE_DAYS, build_gate
+
+    p = p or panel_mod.load(cfg.symbol, cfg.clock, development_only=True)
+    stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
+    horizon = (cfg.n_contributions - 1) * stride + hold
+    if stride < 1 or horizon >= len(p):
+        return None
+    step = max(p.bars(SIM_START_STRIDE_DAYS), 1)
+    starts = np.arange(0, len(p) - horizon - 1, step, dtype=np.int64)
+    if starts.size == 0:
+        return None
+    sim = SimSpec(contribution=cfg.contribution, stride_bars=stride,
+                  n_contributions=cfg.n_contributions, hold_bars=hold,
+                  leverage=cfg.leverage, fee_bps=cfg.effective_fee_bps,
+                  slippage_bps=cfg.effective_slippage_bps,
+                  exit_fee_bps=cfg.effective_fee_bps,
+                  take_profit=cfg.take_profit, stop_loss=cfg.stop_loss)
+    out = simulate(p.close, p.low, starts, sim,
+                   funding_rate=p.funding_rate if cfg.include_funding else None,
+                   gate=build_gate(cfg.gate, p), table=tier_table_for(cfg.symbol))
+    return float(np.median(out["max_dd_total"]))
+
+
 def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     """Assemble the metric over the hypothesis grid, per symbol.
 
@@ -94,6 +152,12 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             # different lengths of time.  The annualised money-weighted return
             # can, and the horizon says which comparison is even being made.
             "mwrr_q05": met.get("mwrr_q05"),
+            # Drawdown on invested capital, section 4's replacement for equity
+            # drawdown. Only the simulator produces it: the closed form has no
+            # equity curve, and a peak-to-trough figure cannot be recovered from
+            # terminal values. Absent means unmeasured, and the report says so.
+            "dd_q50": met.get("dd_q50"),
+            "dd_q95": met.get("dd_q95"),
             "mwrr_q50": met.get("mwrr_q50"),
             "horizon_days": met.get("horizon_days"),
             # Track B judges the same cell on fixed-capital ratios; carrying
@@ -159,6 +223,7 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             "horizon_days_best": ctx.get("horizon_days"),
             "cagr_best": ctx.get("cagr"),
             "max_drawdown_best": ctx.get("max_drawdown"),
+            "dd_q50_best": ctx.get("dd_q50"),
             "sharpe_best": ctx.get("sharpe"),
             "n_trades_best": ctx.get("n_trades"),
             "n_liquidations_best": ctx.get("n_liquidations"),
@@ -416,8 +481,41 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
 # --------------------------------------------------------------------------
 def write_report(h: Hypothesis, metric: str | None = None,
                  pbo_symbols: list[str] | None = None) -> dict:
-    metric = metric or h.primary_metric
+    # Ranked on the metric that survives a horizon change, judged on the one the
+    # kill conditions were pre-registered against. Section 4 asks for both.
+    metric = metric or ranking_metric(h)
     surfaces = surface_from_ledger(h, metric)
+
+    # The two numbers a reader actually wants, for the cell being reported.
+    # Return is annualised so cells of different horizons can be read against
+    # each other; drawdown is the section 4 definition for the track.  A Track A
+    # cell scored by the closed form has no drawdown in the ledger, so it is
+    # measured once here on the simulator rather than left blank.
+    for sym, srf in surfaces.items():
+
+        if h.track == "B":
+            srf["headline"] = {
+                "return_pa": srf.get("cagr_best"),
+                "mdd": srf.get("max_drawdown_best"),
+                "mdd_kind": "equity",
+            }
+            continue
+        mdd = srf.get("dd_q50_best")
+        if mdd is None:
+            try:
+                from orc.orchestrator.spec import TrialConfig
+                params = dict(h.fixed)
+                params.update(srf["best_config"])
+                params.pop("symbol", None)
+                mdd = drawdown_for(TrialConfig(symbol=sym, **params))
+            except Exception:                                      # noqa: BLE001
+                mdd = None
+        srf["headline"] = {
+            "return_pa": srf.get("mwrr_q05_best"),
+            "return_pa_median": srf.get("mwrr_q50_best"),
+            "mdd": mdd,
+            "mdd_kind": "invested",
+        }
     pbo = {}
     run_pbo = pbo_for_signal_hypothesis if h.track == "B" else pbo_for_hypothesis
     # The overfitting check has to run on the cells someone would actually be

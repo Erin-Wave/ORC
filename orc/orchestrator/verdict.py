@@ -20,7 +20,9 @@ FEW_PATHS = 5.0            # below this the cell rests on almost one experiment
 # terminal multiple is a multiple of contributed capital, so 1.0 is getting the
 # money back; Track B's Calmar is return over drawdown, so 0.0 is not losing.
 # Without these a cell that loses a third of the capital reads as surviving.
-BREAK_EVEN = {"tm_q05": 1.0, "calmar": 0.0}
+# mwrr_q05 is the annualised money-weighted return at the fifth percentile of
+# start dates, so 0.0 is "the worst realistic path did not lose money".
+BREAK_EVEN = {"tm_q05": 1.0, "calmar": 0.0, "mwrr_q05": 0.0}
 
 
 def disqualifiers(surface: dict, metric: str, pbo: float | None,

@@ -5,7 +5,7 @@
   "claim": "Leveraged long demand on a perpetual pays the funding rate every eight hours for as long as it stays crowded, and keeps paying because the leverage is the whole point of being there: someone who merely wanted the asset would buy spot. KT-1 measured that tax from the paying side at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTC settlements positive, and closed long perpetual accumulation over it. This stands on the receiving side of the same trade and asks the only question that side has: can the tax be collected without the directional move that produces it taking the position first? The rule shorts while the trailing mean settlement rate is rich and flattens when it decays, so it is short precisely when long crowding is most expensive - and therefore precisely when a squeeze is most likely. The grid exists to find whether any combination of stop, exposure and holding limit separates the two.",
   "kill_condition": "Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.",
   "prereg_hash": "0d6e7ca037976c0c24972f856f18200db83bfec536589fd90bda813547abc149",
-  "generated_utc": "2026-09-02T13:27:47.691770+00:00",
+  "generated_utc": "2026-09-02T13:44:52.337155+00:00",
   "metric": "calmar",
   "holdout_start": "2024-03-01",
   "trials_in_family": 4860,
@@ -288,10 +288,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.10302266058346865,
       "max_drawdown_best": 0.614441139641855,
+      "dd_q50_best": null,
       "sharpe_best": -0.5778972266309013,
       "n_trades_best": 23,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.10059381650599322
+      "funding_frac_best": 0.10059381650599322,
+      "headline": {
+        "return_pa": -0.10302266058346865,
+        "mdd": 0.614441139641855,
+        "mdd_kind": "equity"
+      }
     },
     "AVAXUSDT": {
       "axes": [
@@ -570,10 +576,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.021711079219634333,
       "max_drawdown_best": 0.3548145396822362,
+      "dd_q50_best": null,
       "sharpe_best": -0.1224547436622584,
       "n_trades_best": 5,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.06078331009962734
+      "funding_frac_best": 0.06078331009962734,
+      "headline": {
+        "return_pa": -0.021711079219634333,
+        "mdd": 0.3548145396822362,
+        "mdd_kind": "equity"
+      }
     },
     "BNBUSDT": {
       "axes": [
@@ -852,10 +864,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.07440563377687759,
       "max_drawdown_best": 0.5957936233941084,
+      "dd_q50_best": null,
       "sharpe_best": -0.2484520005203009,
       "n_trades_best": 17,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.131222534397993
+      "funding_frac_best": 0.131222534397993,
+      "headline": {
+        "return_pa": -0.07440563377687759,
+        "mdd": 0.5957936233941084,
+        "mdd_kind": "equity"
+      }
     },
     "BTCUSDT": {
       "axes": [
@@ -1143,10 +1161,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.14348387757424774,
       "max_drawdown_best": 0.5897245242442437,
+      "dd_q50_best": null,
       "sharpe_best": 0.3482107420329183,
       "n_trades_best": 47,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.46564693989540873
+      "funding_frac_best": 0.46564693989540873,
+      "headline": {
+        "return_pa": 0.14348387757424774,
+        "mdd": 0.5897245242442437,
+        "mdd_kind": "equity"
+      }
     },
     "DOGEUSDT": {
       "axes": [
@@ -1425,10 +1449,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.210314428542125,
       "max_drawdown_best": 0.7182101656192146,
+      "dd_q50_best": null,
       "sharpe_best": -0.9984981479602222,
       "n_trades_best": 21,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.046599960603070124
+      "funding_frac_best": 0.046599960603070124,
+      "headline": {
+        "return_pa": -0.210314428542125,
+        "mdd": 0.7182101656192146,
+        "mdd_kind": "equity"
+      }
     },
     "ETHUSDT": {
       "axes": [
@@ -1707,10 +1737,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.07900126755172776,
       "max_drawdown_best": 0.4673236849596316,
+      "dd_q50_best": null,
       "sharpe_best": -0.5835450765588299,
       "n_trades_best": 56,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.10474847205049105
+      "funding_frac_best": 0.10474847205049105,
+      "headline": {
+        "return_pa": -0.07900126755172776,
+        "mdd": 0.4673236849596316,
+        "mdd_kind": "equity"
+      }
     },
     "LTCUSDT": {
       "axes": [
@@ -1998,10 +2034,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.03394048545701578,
       "max_drawdown_best": 0.3740711373807879,
+      "dd_q50_best": null,
       "sharpe_best": 0.173076207642035,
       "n_trades_best": 17,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.16590576078435784
+      "funding_frac_best": 0.16590576078435784,
+      "headline": {
+        "return_pa": 0.03394048545701578,
+        "mdd": 0.3740711373807879,
+        "mdd_kind": "equity"
+      }
     },
     "SOLUSDT": {
       "axes": [
@@ -2280,10 +2322,16 @@
       "horizon_days_best": null,
       "cagr_best": -0.025021374722832723,
       "max_drawdown_best": 0.627061981265296,
+      "dd_q50_best": null,
       "sharpe_best": -0.04699877189166219,
       "n_trades_best": 2,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.07340894756591693
+      "funding_frac_best": 0.07340894756591693,
+      "headline": {
+        "return_pa": -0.025021374722832723,
+        "mdd": 0.627061981265296,
+        "mdd_kind": "equity"
+      }
     },
     "XRPUSDT": {
       "axes": [
@@ -2571,10 +2619,16 @@
       "horizon_days_best": null,
       "cagr_best": 0.01710973928021753,
       "max_drawdown_best": 0.4438533059760874,
+      "dd_q50_best": null,
       "sharpe_best": 0.08936807797104607,
       "n_trades_best": 21,
       "n_liquidations_best": 0,
-      "funding_frac_best": 0.12442109633526593
+      "funding_frac_best": 0.12442109633526593,
+      "headline": {
+        "return_pa": 0.01710973928021753,
+        "mdd": 0.4438533059760874,
+        "mdd_kind": "equity"
+      }
     }
   },
   "pbo": {
@@ -2655,8 +2709,8 @@
     "LTCUSDT": {
       "status": "ok",
       "observed_best": 0.09073270312877912,
-      "null_mean": 0.38439042467200496,
-      "null_q95": 1.3642891609977612,
+      "null_mean": 0.38439042467200485,
+      "null_q95": 1.3642891609977608,
       "p_value": 0.705,
       "n_null": 199,
       "n_configs": 108,

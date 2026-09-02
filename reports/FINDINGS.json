@@ -1057,31 +1057,31 @@
     },
     "ec6dc090f0e7": {
       "id": "ec6dc090f0e7",
-      "status": "deferred",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "this needs a decision, not a fix. Section 4 says tm_q05 may not be compared between cells holding for different lengths of time and that the annualised IRR is the comparison that survives, while PRIMARY_METRIC is tm_q05 and the surface ranks on it. Changing what the surface ranks on changes what 'best cell' means in every report and every conclusion already drawn. That is the project owner's call.",
+      "disposition": "the surface is now ranked on the annualised IRR at the 5th percentile, which section 4 names as the comparison that survives a horizon change; tm_q05 is still reported and its pre-registered kill conditions still evaluated against it",
       "file": "orc/orchestrator/surface.py",
       "line": 129,
       "severity": "high",
       "what": "The winning cell of a surface is chosen by `np.nanargmax` over raw `tm_q05`, a metric section 4 forbids comparing between cells that hold for different lengths of time, so the argmax is decided mostly by which cell holds longest (or, when long horizons lose, by which holds shortest) rather than by which rule is better.",
       "trigger": "H0001 as registered (`n_contributions [52,104,156]` x `stride_days [1,7,30]`, horizons 51d..4650d in one grid). BTCUSDT: the cell (52, 30d, horizon 1530d) reports tm_q05 2.0510 and wins over (156, 7d, horizon 1085d) at 0.9200. ADAUSDT: the winner is (52, 1d, horizon 51d) at tm_q05 0.7677 while its `mwrr_q05_best` is -0.98/yr, beating the 1085d cell at 0.5958 whose annualised return is far better. The same `best_value` then sets `ranked`, i.e. which symbols get a PBO (ranked[:3]) and a search test (ranked[:2]), and is the number verdict.py applies BREAK_EVEN to; `_span`'s `effective_independent_paths = span/horizon + 1` also rewards the short-horizon winner (ADAUSDT 29.23 paths), so both gates line up behind the same horizon artefact.",
       "why_silent": "tm_q05 is a real, correctly computed number for each cell; only the comparison between cells is undefined. The report shows a plausible ordering and even carries `horizon_days_best` beside it, so the ranking reads as a result rather than as a horizon sort. pbo_for_hypothesis (lines 213-232) explicitly implements the horizon guard for its own columns, which makes the two code paths disagree about whether cross-horizon comparison is allowed.",
-      "decided_utc": "2026-09-02T13:21:59.543621+00:00"
+      "decided_utc": "2026-09-02T13:45:18.370724+00:00"
     },
     "afaedd09504f": {
       "id": "afaedd09504f",
-      "status": "deferred",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "the same decision as ec6dc090f0e7: plateau_score reads whatever grid the surface hands it, so the shape verdict follows the ranking metric and cannot be fixed separately from it.",
+      "disposition": "plateau_score now receives the annualised grid, so the neighbour/peak ratio measures parameter sensitivity rather than holding time",
       "file": "orc/orchestrator/surface.py",
       "line": 141,
       "severity": "high",
       "what": "`plateau_score` is handed the raw cross-horizon `tm_q05` grid, so the neighbour/peak ratio that decides SPIKE vs PLATEAU divides a long-horizon peak by shorter-horizon neighbours and measures holding time instead of parameter sensitivity.",
       "trigger": "H0001/BTCUSDT on disk: peak 2.0510 at (52 contributions, 30d stride, horizon 1530d); the only non-NaN neighbour is 0.5843 at (52, 7d, horizon 357d) — a 4.3x shorter holding period — giving plateau_ratio 0.2849 and the label SPIKE from `n_neighbours: 1`. The bias runs both ways: on values 52->0.90, 104->0.50, 156->0.95 along `n_contributions` (where the horizon grows toward the peak) the ratio would be inflated and the cell labelled PLATEAU, which is the strongest structural check in the project clearing on a horizon difference.",
       "why_silent": "The ratio is a finite number between 0 and 1 and the label is one of the three legitimate ones, so a wrongly-labelled surface is indistinguishable from a correctly-labelled one. verdict.py only asks whether `shape` is absent or in SPIKE_SHAPES; it never checks `n_neighbours` or `cells_filled` (12 of 18 on every H0001 symbol), so a label resting on one neighbour of a different horizon carries the same weight as a full neighbourhood.",
-      "decided_utc": "2026-09-02T13:21:59.926398+00:00"
+      "decided_utc": "2026-09-02T13:45:18.797058+00:00"
     },
     "abbca0c3d7c5": {
       "id": "abbca0c3d7c5",

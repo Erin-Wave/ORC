@@ -32,6 +32,7 @@ from orc.ledger.trials import Ledger
 from orc.orchestrator.runner import run_hypothesis
 from orc.orchestrator.spec import Hypothesis, load_registry
 from orc.orchestrator.surface import summarise, write_report
+from orc.orchestrator.verdict import disqualifiers
 
 import notify                                                     # noqa: E402
 from robustness import main as robustness_main                    # noqa: E402
@@ -210,6 +211,48 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
     L.append("Every number below is development data only. The ranking is not a "
              "result; the shape column and PBO are what decide whether it means "
              "anything.")
+    L.append("")
+
+    # The two figures anyone reading this actually wants, in one place, with
+    # the reason each one is not yet a result attached to it. Putting them at
+    # the top is not a concession to impatience: a return quoted without its
+    # drawdown and its disqualifiers is the exact shape of a bad decision.
+    L.append("## Headline")
+    L.append("")
+    L.append("Best cell per family per symbol, ranked on the metric that "
+             "survives a horizon change. `return p.a.` is the annualised "
+             "money-weighted return at the 5th percentile of start dates on "
+             "track A, and the CAGR of the single equity curve on track B. "
+             "`max drawdown` is drawdown on invested capital on track A -- "
+             "peak-to-trough of profit over contributed capital, so it can "
+             "exceed 100% -- and conventional equity drawdown on track B. The "
+             "two are not comparable and are labelled.")
+    L.append("")
+    L.append("| family | symbol | return p.a. | max drawdown | basis | not a finding because |")
+    L.append("|---|---|---:|---:|---|---|")
+    any_clear = False
+    for rep in reports:
+        m = rep["metric"]
+        pbo_ok = {sy: r.get("pbo") for sy, r in rep.get("pbo", {}).items()
+                  if r.get("status") == "ok" and r.get("covers_reported_best")}
+        search = rep.get("search_test", {})
+        rows = sorted(rep["surfaces"].items(),
+                      key=lambda kv: -(kv[1].get("headline", {}).get("return_pa") or -9e9))
+        for sym, srf in rows:
+            hd = srf.get("headline", {})
+            why = disqualifiers(srf, m, pbo_ok.get(sym), search.get(sym))
+            if not why:
+                any_clear = True
+            r_pa, mdd = hd.get("return_pa"), hd.get("mdd")
+            L.append(
+                f"| {rep['hypothesis_id']} | {sym} | "
+                f"{'n/a' if r_pa is None else format(r_pa * 100, '+.1f') + '%'} | "
+                f"{'n/a' if mdd is None else format(mdd * 100, '.1f') + '%'} | "
+                f"{hd.get('mdd_kind', '?')} | "
+                f"{'**CLEARS EVERY CHECK**' if not why else ', '.join(why)} |")
+    L.append("")
+    if not any_clear:
+        L.append("No cell clears every check. Nothing in this table is a result.")
     L.append("")
 
     for rep in reports:
