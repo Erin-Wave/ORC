@@ -5,11 +5,11 @@
   "claim": "H0002 closed the short side of the funding trade for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, because the rate is rich exactly when leveraged long demand is strongest, which is exactly when price is rising. Six of nine symbols had no positive cell anywhere in 972 trials. This is the leg that was never tested, and it is the leg where the two point the same way. Negative funding means the shorts are paying the longs. It appears when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and a crowded short base is the same condition that produces upward squeezes, so the coupon is collected while the directional move, when it comes, is in the position's favour rather than against it. Who pays: the leveraged bear, and the desk holding spot that needs protection now. They keep paying because the demand to be short in a drawdown is a demand for immediacy - a hedge deferred until the rate normalises is not a hedge, and a bear who waits for cheap funding has missed the move they are positioning for - so the rate stays negative until the crowd unwinds. This does not re-open KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the tax at a median 36 percent of contributed capital; this rule holds the perpetual only while that tax is a rebate and flattens once the trailing rate crosses back above the 0.01 percent baseline at which the tax resumes. The real deliverable is the asymmetry. The evaluator's own note on this rule is that if the mirror pays as well as the original then what is being harvested is not the funding tax but something else; H0002 established that the original does not pay, so a mirror that also fails would say that the funding level carries no tradable information on either side, and a mirror that pays would locate the effect in the rarity and depth of the negative case rather than in carry as such. Either outcome closes a question rather than opening one.",
   "kill_condition": "Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.",
   "prereg_hash": "d6b50b9b2c14f44ff898a4c5523fc950e4379b22460ff1b3683e597ba1c24ea8",
-  "generated_utc": "2026-09-02T10:25:21.897885+00:00",
+  "generated_utc": "2026-09-02T11:51:42.988883+00:00",
   "metric": "calmar",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 144,
-  "trials_in_project": 2756,
+  "trials_in_family": 216,
+  "trials_in_project": 3966,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -65,6 +65,10 @@
         "peak": 0.3532675860807236,
         "plateau_ratio": NaN,
         "n_neighbours": 0
+      },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
       },
       "n_starts_best": 1,
       "independent_paths_best": 12.0,
@@ -133,6 +137,10 @@
         "plateau_ratio": NaN,
         "n_neighbours": 0
       },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
+      },
       "n_starts_best": 1,
       "independent_paths_best": 5.0,
       "mwrr_q05_best": null,
@@ -168,49 +176,53 @@
       "grid": [
         [
           [
-            1.0366283538927579,
-            1.203344112106357
+            1.023246524081538,
+            1.0691119790697594
           ],
           [
-            0.5259289954577677,
-            0.5515981194460083
+            0.4627458567857764,
+            0.5011461234830926
           ]
         ],
         [
           [
-            1.1777885733923883,
-            1.3364321743931256
+            1.3765540377056484,
+            1.3301295988259731
           ],
           [
-            0.271582797255236,
-            0.4336051819747759
+            0.14471705180921632,
+            0.2284756232221074
           ]
         ]
       ],
       "cells_filled": 8,
       "cells_total": 8,
-      "best_value": 1.3364321743931256,
+      "best_value": 1.3765540377056484,
       "best_config": {
         "enter_rate": -0.0001,
         "lookback_days": 7,
-        "stop_loss": null
+        "stop_loss": 0.15
       },
       "shape_diagnostic": {
-        "peak": 1.3364321743931256,
+        "peak": 1.3765540377056484,
         "plateau_ratio": NaN,
         "n_neighbours": 0
       },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
+      },
       "n_starts_best": 1,
-      "independent_paths_best": 19.0,
+      "independent_paths_best": 21.0,
       "mwrr_q05_best": null,
       "mwrr_q50_best": null,
       "horizon_days_best": null,
-      "cagr_best": 0.876665608937057,
-      "max_drawdown_best": 0.6559746358509748,
-      "sharpe_best": 1.0428636754958294,
-      "n_trades_best": 19,
+      "cagr_best": 0.8808064893023353,
+      "max_drawdown_best": 0.6398633581943552,
+      "sharpe_best": 1.0352095062499964,
+      "n_trades_best": 21,
       "n_liquidations_best": 0,
-      "funding_frac_best": 2.7998471005412147
+      "funding_frac_best": 3.0044650977699083
     },
     "BTCUSDT": {
       "axes": [
@@ -266,6 +278,10 @@
         "peak": 1.2803051041008862,
         "plateau_ratio": NaN,
         "n_neighbours": 0
+      },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
       },
       "n_starts_best": 1,
       "independent_paths_best": 2.0,
@@ -334,6 +350,10 @@
         "plateau_ratio": NaN,
         "n_neighbours": 0
       },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
+      },
       "n_starts_best": 1,
       "independent_paths_best": 4.0,
       "mwrr_q05_best": null,
@@ -401,6 +421,10 @@
         "plateau_ratio": NaN,
         "n_neighbours": 0
       },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
+      },
       "n_starts_best": 1,
       "independent_paths_best": 8.0,
       "mwrr_q05_best": null,
@@ -436,49 +460,53 @@
       "grid": [
         [
           [
-            -0.2511783737907154,
-            -0.09668669605997066
+            -0.19989057796676743,
+            -0.026317493473765954
           ],
           [
-            0.12232310188985164,
-            -0.019833826934614017
+            0.11861125654052454,
+            -0.02251002648932452
           ]
         ],
         [
           [
-            0.1684263211514481,
-            -0.037651835694234075
+            0.23912509879817476,
+            0.012917593054570803
           ],
           [
-            0.010920184861533563,
-            0.0015294771407376028
+            -0.11761528429021213,
+            -0.06260199898839883
           ]
         ]
       ],
       "cells_filled": 8,
       "cells_total": 8,
-      "best_value": 0.1684263211514481,
+      "best_value": 0.23912509879817476,
       "best_config": {
         "enter_rate": -0.0001,
         "lookback_days": 7,
         "stop_loss": 0.15
       },
       "shape_diagnostic": {
-        "peak": 0.1684263211514481,
+        "peak": 0.23912509879817476,
         "plateau_ratio": NaN,
         "n_neighbours": 0
+      },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
       },
       "n_starts_best": 1,
       "independent_paths_best": 6.0,
       "mwrr_q05_best": null,
       "mwrr_q50_best": null,
       "horizon_days_best": null,
-      "cagr_best": 0.08538500678320493,
-      "max_drawdown_best": 0.5069576192098096,
-      "sharpe_best": 0.18791664995886445,
+      "cagr_best": 0.12122629078003322,
+      "max_drawdown_best": 0.5069576192098098,
+      "sharpe_best": 0.26093035246825946,
       "n_trades_best": 6,
       "n_liquidations_best": 0,
-      "funding_frac_best": -0.04642021061929064
+      "funding_frac_best": -0.05547561946979912
     },
     "SOLUSDT": {
       "axes": [
@@ -534,6 +562,10 @@
         "peak": 1.400717588413689,
         "plateau_ratio": NaN,
         "n_neighbours": 0
+      },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
       },
       "n_starts_best": 1,
       "independent_paths_best": 12.0,
@@ -602,6 +634,10 @@
         "plateau_ratio": NaN,
         "n_neighbours": 0
       },
+      "assembled_from": {
+        "code_revisions": 3,
+        "panel_revisions": 3
+      },
       "n_starts_best": 1,
       "independent_paths_best": 10.0,
       "mwrr_q05_best": null,
@@ -631,7 +667,8 @@
         "lookback_days": 21,
         "enter_rate": -0.0001,
         "stop_loss": 0.15
-      }
+      },
+      "covers_reported_best": true
     },
     "BNBUSDT": {
       "symbol": "BNBUSDT",
@@ -639,7 +676,7 @@
       "n_configs": 8,
       "n_bars": 35535,
       "n_splits": 252,
-      "pbo": 0.2896825396825397,
+      "pbo": 0.2777777777777778,
       "median_logit": 0.22314355131420993,
       "degraded_fraction": 0.626984126984127,
       "verdict": "SELECTION_WEAK",
@@ -647,8 +684,9 @@
       "best_config_overall": {
         "lookback_days": 7,
         "enter_rate": -0.0001,
-        "stop_loss": null
-      }
+        "stop_loss": 0.15
+      },
+      "covers_reported_best": true
     },
     "BTCUSDT": {
       "symbol": "BTCUSDT",
@@ -665,15 +703,16 @@
         "lookback_days": 7,
         "enter_rate": -0.0001,
         "stop_loss": null
-      }
+      },
+      "covers_reported_best": true
     }
   },
   "search_test": {
     "SOLUSDT": {
       "status": "ok",
       "observed_best": 1.400717588413689,
-      "null_mean": 2.5643968698418615,
-      "null_q95": 7.023176546647796,
+      "null_mean": 2.564396869841861,
+      "null_q95": 7.023176546647791,
       "p_value": 0.65,
       "n_null": 199,
       "n_configs": 8,
@@ -683,10 +722,10 @@
     },
     "BNBUSDT": {
       "status": "ok",
-      "observed_best": 1.3364321743931256,
-      "null_mean": 2.013895516196827,
-      "null_q95": 4.7471458885197935,
-      "p_value": 0.61,
+      "observed_best": 1.3765540377056484,
+      "null_mean": 2.0347737940640345,
+      "null_q95": 4.844825388430768,
+      "p_value": 0.615,
       "n_null": 199,
       "n_configs": 8,
       "block_bars": 24,

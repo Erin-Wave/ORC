@@ -5,11 +5,11 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T10:22:45.658162+00:00",
+  "generated_utc": "2026-09-02T11:49:07.709072+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 560,
-  "trials_in_project": 2756,
+  "trials_in_family": 672,
+  "trials_in_project": 3966,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -89,10 +89,14 @@
         "n_neighbours": 2,
         "shape": "SLOPE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 34552,
       "independent_paths_best": 29.23,
-      "mwrr_q05_best": -0.980723567163303,
-      "mwrr_q50_best": -0.05026593691719383,
+      "mwrr_q05_best": -0.9812129194251594,
+      "mwrr_q50_best": -0.05757619776503087,
       "horizon_days_best": 51.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -179,10 +183,14 @@
         "n_neighbours": 2,
         "shape": "SLOPE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 28889,
       "independent_paths_best": 24.6,
-      "mwrr_q05_best": -0.9954794785403294,
-      "mwrr_q50_best": 0.02762575358269792,
+      "mwrr_q05_best": -0.9989748802099305,
+      "mwrr_q50_best": -0.1795736864281045,
       "horizon_days_best": 51.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -268,6 +276,10 @@
         "plateau_ratio": 0.7044534926382476,
         "n_neighbours": 2,
         "shape": "SLOPE"
+      },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
       },
       "n_starts_best": 9496,
       "independent_paths_best": 1.36,
@@ -359,6 +371,10 @@
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 2523,
       "independent_paths_best": 1.07,
       "mwrr_q05_best": 0.3615816385553472,
@@ -448,6 +464,10 @@
         "plateau_ratio": 0.7660805006519158,
         "n_neighbours": 2,
         "shape": "SLOPE"
+      },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
       },
       "n_starts_best": 5871,
       "independent_paths_best": 1.23,
@@ -539,6 +559,10 @@
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 616,
       "independent_paths_best": 1.02,
       "mwrr_q05_best": 0.6789141697407873,
@@ -629,10 +653,14 @@
         "n_neighbours": 2,
         "shape": "SLOPE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 35080,
       "independent_paths_best": 29.66,
-      "mwrr_q05_best": -0.9886218450825102,
-      "mwrr_q50_best": 0.17189855567929535,
+      "mwrr_q05_best": -0.9894885286552396,
+      "mwrr_q50_best": 0.1602268794844458,
       "horizon_days_best": 51.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -718,6 +746,10 @@
         "plateau_ratio": 0.29543969541962806,
         "n_neighbours": 2,
         "shape": "SPIKE"
+      },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
       },
       "n_starts_best": 4289,
       "independent_paths_best": 1.16,
@@ -809,6 +841,10 @@
         "n_neighbours": 2,
         "shape": "SPIKE"
       },
+      "assembled_from": {
+        "code_revisions": 6,
+        "panel_revisions": 4
+      },
       "n_starts_best": 10336,
       "independent_paths_best": 1.4,
       "mwrr_q05_best": -0.05335045602927216,
@@ -825,57 +861,15 @@
   "pbo": {
     "ETHUSDT": {
       "symbol": "ETHUSDT",
-      "status": "ok",
-      "horizon_bars": 1224,
-      "span_over_horizon": 29.503,
-      "n_configs": 2,
-      "n_common_starts": 36112,
-      "n_splits": 252,
-      "pbo": 0.0,
-      "median_logit": 0.6931471805599452,
-      "degraded_fraction": 0.5,
-      "verdict": "SELECTION_INFORMATIVE",
-      "best_config_overall": {
-        "stride_days": 1.0,
-        "n_contributions": 52,
-        "include_funding": false
-      }
+      "status": "start offsets span 616 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split"
     },
     "BTCUSDT": {
       "symbol": "BTCUSDT",
-      "status": "ok",
-      "horizon_bars": 1224,
-      "span_over_horizon": 31.061,
-      "n_configs": 2,
-      "n_common_starts": 38019,
-      "n_splits": 252,
-      "pbo": 0.0,
-      "median_logit": 0.6931471805599452,
-      "degraded_fraction": 0.5,
-      "verdict": "SELECTION_INFORMATIVE",
-      "best_config_overall": {
-        "stride_days": 1.0,
-        "n_contributions": 52,
-        "include_funding": false
-      }
+      "status": "start offsets span 2523 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split"
     },
     "SOLUSDT": {
       "symbol": "SOLUSDT",
-      "status": "ok",
-      "horizon_bars": 1224,
-      "span_over_horizon": 23.779,
-      "n_configs": 2,
-      "n_common_starts": 29105,
-      "n_splits": 252,
-      "pbo": 0.5158730158730159,
-      "median_logit": -0.6931471805599454,
-      "degraded_fraction": 0.5119047619047619,
-      "verdict": "SELECTION_IS_NOISE",
-      "best_config_overall": {
-        "stride_days": 1.0,
-        "n_contributions": 52,
-        "include_funding": false
-      }
+      "status": "start offsets span 4289 bars against a 26040-bar horizon; the blocks would be the same price history and the split would not be a split"
     }
   },
   "search_test": {
@@ -883,7 +877,7 @@
       "status": "ok",
       "observed_best": 3.6056116382051298,
       "null_mean": 24.73242713742485,
-      "null_q95": 71.99974358332842,
+      "null_q95": 71.99974358332845,
       "p_value": 0.72,
       "n_null": 199,
       "n_configs": 18,
