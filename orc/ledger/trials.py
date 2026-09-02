@@ -79,6 +79,14 @@ def code_hash(paths: list[Path] | None = None) -> str:
         config.ORC_ROOT / "orc" / "kernel",
         config.ORC_ROOT / "orc" / "eval",
         config.ORC_ROOT / "orc" / "orchestrator" / "runner.py",
+        # spec.py too, and for exactly the reason the comment above gives for
+        # runner.py. It defines the fee and slippage actually applied
+        # (effective_fee_bps), the evaluator a configuration is routed to
+        # (uses_analytic) and how a grid expands -- change any of them and every
+        # metric moves while config_hash, panel_hash and evaluator all stay put,
+        # so INSERT OR IGNORE drops the corrected row and prints "new 0". The
+        # uses_analytic fix in this same commit range is the worked example.
+        config.ORC_ROOT / "orc" / "orchestrator" / "spec.py",
         config.ORC_ROOT / "orc" / "facts" / "panel.py",
     ]
     h = hashlib.sha256()

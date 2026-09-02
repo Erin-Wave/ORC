@@ -84,28 +84,44 @@ def load(
     clock: str = "1h",
     development_only: bool = True,
     with_funding: bool = True,
+    sealed_only: bool = False,
 ) -> Panel:
     """Load one symbol.
 
     `development_only=True` (the default, and the only value research may use)
-    truncates the series at the seal.  Passing False raises unless a final test
+    truncates the series at the seal.  Anything else raises unless a final test
     is open -- see orc.holdout.final_test -- and every such read is recorded
     against the opening that permitted it.
+
+    `sealed_only=True` is what a final test actually wants: the sealed span on
+    its own.  The gated door originally offered only development_only=False,
+    which returns the two spans concatenated -- 39,243 development bars against
+    21,505 sealed ones on BTCUSDT, so 64.6 percent of the window is the data the
+    candidate was selected on.  A metric over that is not an out-of-sample
+    measurement, it just looks like one, and there are three of them for the
+    life of the project.
     """
+    if sealed_only and not development_only:
+        raise ValueError("pass sealed_only=True on its own; the two spans are different measurements")
     p = panel_path(symbol, clock)
     if not p.exists():
         raise FileNotFoundError(f"no {clock} panel for {symbol}; run orc.facts.build_panel")
     df = pl.read_parquet(p)
 
-    if development_only:
+    if sealed_only:
+        # Refuses unless a final test is open. This used to be a docstring.
+        holdout.note_sealed_read(f"{symbol}/{clock} sealed")
+        df = holdout.sealed_slice(df)
+        state = "SEALED_ONLY"
+    elif development_only:
         df = holdout.development_slice(df)
         state = "DEVELOPMENT"
     else:
-        # Refuses unless a final test is open. This used to be a docstring.
-        holdout.note_sealed_read(f"{symbol}/{clock}")
+        holdout.note_sealed_read(f"{symbol}/{clock} full")
         state = "SEALED_INCLUDED"
     if df.height == 0:
-        raise ValueError(f"{symbol}: no bars left after the holdout seal")
+        raise ValueError(
+            f"{symbol}: no bars left in the {state} span")
 
     # Bar index is used as a clock (a stride of 168 hourly bars must mean one
     # week).  That is only true on a continuous grid, so verify it rather than

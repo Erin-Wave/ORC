@@ -86,6 +86,15 @@ def simulate(
         raise ValueError("start offsets run past the end of the series")
     table = table or tier_table_for("")
     fr = np.zeros(N) if funding_rate is None else np.asarray(funding_rate, dtype=np.float64)
+    # One non-finite rate turns wallet into NaN, and NaN <= maintenance_margin
+    # is False, so is_liquidated answers False for that path forever after: it
+    # is reported as a survivor and liquidation_rate -- the only number KT-2
+    # reads -- comes back finite and understated with nothing raising anywhere.
+    if not np.isfinite(fr).all():
+        raise ValueError(
+            f"funding_rate carries {int((~np.isfinite(fr)).sum())} non-finite "
+            "value(s); a NaN here silently makes every path that touches it "
+            "unliquidatable")
 
     M = int(starts.size)
 

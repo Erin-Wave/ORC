@@ -137,7 +137,16 @@ def _openings() -> list[dict]:
 
 
 def openings_used() -> int:
-    return len(_openings())
+    """How many of the three are spent.
+
+    The highest ordinal any record carries, not the number of lines: a log that
+    has lost a line -- a bad merge, a hand edit, a truncated write -- would
+    otherwise restore an opening and hand out an ordinal already spent, and the
+    count that is supposed to be irreversible is the one thing in the project
+    reconstructed from a file rather than defended by one.
+    """
+    recs = _openings()
+    return max((int(r.get("opening", 0)) for r in recs), default=0) if recs else 0
 
 
 def open_final_test(candidate: dict, reason: str) -> dict:

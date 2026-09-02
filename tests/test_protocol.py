@@ -770,3 +770,60 @@ def test_the_permit_is_dropped_even_when_the_final_test_raises(monkeypatch, tmp_
             holdout.note_sealed_read("SYM/1h")
             raise RuntimeError("the measurement blew up")
     assert not holdout.sealed_reads_permitted(), "a crash must not leave the door open"
+
+
+def test_the_spend_count_is_the_ordinal_not_the_line_count(monkeypatch, tmp_path):
+    """A log that loses a line would otherwise restore an opening and reissue
+    an ordinal already spent."""
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setattr(holdout, "LOG_FILE", log)
+    log.write_text(chr(10).join([json.dumps({"opening": 1}),
+                                 json.dumps({"opening": 3}), ""]),
+                   encoding="utf-8")
+    assert holdout.openings_used() == 3, "two lines, but three are spent"
+
+
+def test_the_code_hash_covers_the_module_that_routes_and_prices_a_trial():
+    """spec.py defines effective_fee_bps, uses_analytic and grid expansion.
+    Change any of them and every metric moves while config_hash, panel_hash and
+    evaluator all stay put, so INSERT OR IGNORE drops the corrected row."""
+    from orc.ledger.trials import code_hash
+
+    spec_py = config.ORC_ROOT / "orc" / "orchestrator" / "spec.py"
+    base = code_hash()
+    original = spec_py.read_bytes()
+    try:
+        spec_py.write_bytes(original + b"# a change that moves every fee" + chr(10).encode())
+        assert code_hash() != base, "a change in spec.py must start a new trial"
+    finally:
+        spec_py.write_bytes(original)
+    assert code_hash() == base
+
+
+def test_a_non_finite_funding_rate_cannot_make_a_path_immortal():
+    """NaN <= maintenance_margin is False, so one bad rate reports every path
+    that touches it as a survivor and understates liquidation_rate."""
+    import numpy as np
+    from orc.eval.simulate import SimSpec, simulate
+
+    close = np.full(40, 100.0)
+    low = close.copy()
+    fr = np.zeros(40)
+    fr[5] = np.nan
+    with pytest.raises(ValueError, match="non-finite"):
+        simulate(close, low, np.array([0]),
+                 SimSpec(contribution=100.0, stride_bars=1, n_contributions=3),
+                 funding_rate=fr)
+
+
+def test_a_final_test_can_ask_for_the_sealed_span_alone():
+    """The gated door originally offered only the two spans concatenated --
+    64.6 % of a BTCUSDT full panel is development history -- so the one
+    irreversible measurement would be taken mostly in-sample."""
+    from orc.facts import panel as panel_mod
+
+    assert not holdout.sealed_reads_permitted()
+    with pytest.raises(holdout.HoldoutViolation, match="no final test is open"):
+        panel_mod.load("BTCUSDT", "1h", sealed_only=True)
+    with pytest.raises(ValueError, match="different measurements"):
+        panel_mod.load("BTCUSDT", "1h", development_only=False, sealed_only=True)
