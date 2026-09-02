@@ -33,6 +33,8 @@ from orc.orchestrator.runner import run_hypothesis
 from orc.orchestrator.spec import Hypothesis, load_registry
 from orc.orchestrator.surface import summarise, write_report
 
+import notify                                                     # noqa: E402
+
 
 def intake_queue() -> list[Hypothesis]:
     """Register queued hypotheses.  Registration is the moment of no return:
@@ -122,6 +124,17 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False) -> dict:
     (config.REPORTS / "CYCLE_SUMMARY.json").write_text(
         json.dumps(summary, indent=2, default=str), encoding="utf-8")
     write_cycle_markdown(summary, reports)
+
+    # Publish the notifier's answer rather than its thresholds.  Anything that
+    # wants to raise an alarm -- a desktop toast, a phone push from a cloud
+    # routine that cannot import this package -- reads this one file, so there
+    # is still exactly one definition of what counts as a finding.
+    news = notify.collect()
+    (config.REPORTS / "NEWS.json").write_text(
+        json.dumps({"generated_utc": summary["finished_utc"],
+                    "run_id": run_id, "items": news}, indent=2),
+        encoding="utf-8")
+    print(f"news items: {len(news)}")
     print(f"\ntrials {before} -> {after}   (+{after - before})")
     print(f"written: {config.REPORTS / 'CYCLE_REPORT.md'}")
     return summary
