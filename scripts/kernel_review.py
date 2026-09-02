@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from orc import config, llm                                       # noqa: E402
 
@@ -81,6 +82,12 @@ def main() -> int:
     (config.REPORTS / "KERNEL_REVIEW.md").write_text("\n".join(lines), encoding="utf-8")
     (config.REPORTS / "KERNEL_REVIEW.json").write_text(
         json.dumps({"utc": stamp, **r}, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # Into the ledger, so a finding survives the next review overwriting this
+    # file and so skipping one becomes a decision on the record.
+    import findings as ledger
+    new_n, known_n = ledger.merge()
+    print(f"{new_n} new to the findings ledger, {known_n} already known")
 
     high = [f for f in findings if f.get("severity") == "high"]
     for f in findings:

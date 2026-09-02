@@ -35,6 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from orc import config, llm                                       # noqa: E402
 
@@ -147,6 +148,22 @@ def main() -> int:
     for d in (PROPOSED, KILLED, CLOSED):
         d.mkdir(parents=True, exist_ok=True)
     report: dict = {"utc": datetime.now(timezone.utc).isoformat(), "steps": {}}
+
+    # A cycle run on code known to be wrong produces numbers that look like
+    # evidence and are not, and they get quoted long after the review that
+    # flagged them is forgotten. Refuse, and say exactly what is blocking.
+    import findings as ledger
+    blocked = ledger.blocking()
+    if blocked:
+        print("BLOCKED: an unaddressed high-severity finding stands")
+        for f in blocked:
+            print(f"  {f['id']}  {f['file']}:{f.get('line')}  {str(f['what'])[:90]}")
+        print("Fix it, or record the decision:")
+        print("  python scripts/findings.py wontfix <id> <reason>")
+        report["steps"]["blocked"] = [f["id"] for f in blocked]
+        (config.REPORTS / "REASONING_LOG.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        return 1
 
     print("propose")
     try:

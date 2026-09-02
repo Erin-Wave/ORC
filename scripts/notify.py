@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from orc import config                                            # noqa: E402
 from orc.orchestrator.verdict import survivors                    # noqa: E402
@@ -30,6 +31,10 @@ from orc.orchestrator.verdict import survivors                    # noqa: E402
 # The worker fires every six hours; a day of silence is past any schedule
 # slipping and means something stopped.
 STALL_AFTER = timedelta(hours=30)
+
+# The reasoning pass runs daily. Two missed days is past any single
+# machine-was-off explanation.
+REASONING_STALE_DAYS = 2
 
 
 def _load(name: str):
@@ -64,6 +69,33 @@ def collect() -> list[str]:
         if (config.QUEUE / "rejected").exists() else []
     for r in rejected:
         news.append(f"ORC rejected a queued hypothesis: {r.name}")
+
+    # The worker refreshes CYCLE_SUMMARY every six hours whether or not the
+    # reasoning layer ran, so a reasoning pass that dies -- an expired token, a
+    # rate limit, a machine asleep at 08:25 -- leaves the reports looking
+    # perfectly fresh while no new question is ever asked again. Its own stamp
+    # is the only thing that notices.
+    stamp = config.ORC_ROOT / "logs" / ".last_cycle"
+    if stamp.exists():
+        try:
+            last = datetime.strptime(stamp.read_text(encoding="utf-8-sig").strip(),
+                                     "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            days = (datetime.now(timezone.utc) - last).days
+            if days >= REASONING_STALE_DAYS:
+                news.append(f"ORC reasoning has not run for {days} days; the worker "
+                            f"keeps reporting but nothing new is being asked")
+        except ValueError:
+            news.append("ORC reasoning stamp is unreadable")
+
+    # Open findings, not the latest review: a finding reported last week and
+    # never dispositioned is exactly the one that needs saying again.
+    try:
+        import findings as ledger
+        for f in ledger.blocking():
+            news.append(f"BLOCKING finding {f['id']} {f.get('file')}:"
+                        f"{f.get('line', '?')} {str(f.get('what', ''))[:110]}")
+    except Exception:                                              # noqa: BLE001
+        pass
 
     return news
 
