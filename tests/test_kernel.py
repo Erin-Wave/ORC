@@ -324,3 +324,51 @@ def test_a_short_squeeze_liquidates_the_short_side():
     r = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")
     assert r["n_liquidations"] == 1
     assert r["final_equity"] == pytest.approx(0.0)
+
+
+def test_a_carry_signal_cannot_see_past_its_own_bar():
+    """Changing a future funding rate must not change any earlier signal."""
+    from orc.eval.signal_rules import carry_funding
+
+    n = 600
+    rate = np.zeros(n)
+    rate[::8] = 0.0002
+    a_entry, a_exit = carry_funding(rate, lookback_bars=80, enter_rate=0.00015,
+                                    exit_rate=0.00005)
+    bumped = rate.copy()
+    bumped[400:] = 0.01                      # a wild future, same past
+    b_entry, b_exit = carry_funding(bumped, lookback_bars=80, enter_rate=0.00015,
+                                    exit_rate=0.00005)
+    assert np.array_equal(a_entry[:400], b_entry[:400])
+    assert np.array_equal(a_exit[:400], b_exit[:400])
+
+
+def test_a_carry_signal_stays_flat_until_its_window_is_full():
+    from orc.eval.signal_rules import carry_funding
+
+    n = 300
+    rate = np.zeros(n)
+    rate[::8] = 0.001                        # richly positive from bar zero
+    entry, _ = carry_funding(rate, lookback_bars=100, enter_rate=0.00015,
+                             exit_rate=0.00005)
+    assert not entry[:99].any(), "a partial window is not evidence"
+    assert entry[99:].any()
+
+
+def test_carry_thresholds_that_would_flip_every_bar_are_refused():
+    from orc.eval.signal_rules import carry_funding
+
+    with pytest.raises(ValueError, match="enter_rate"):
+        carry_funding(np.zeros(100), lookback_bars=10, enter_rate=0.0,
+                      exit_rate=0.001)
+
+
+def test_carry_reads_the_rate_per_settlement_not_per_bar():
+    """funding_rate is zero except on settlement bars; the mean must ignore those."""
+    from orc.eval.signal_rules import _trailing_settlement_mean
+
+    n = 200
+    rate = np.zeros(n)
+    rate[::8] = 0.0003                       # every eighth bar settles
+    m = _trailing_settlement_mean(rate, window=80)
+    assert m[-1] == pytest.approx(0.0003), "dividing by the window would give an eighth"
