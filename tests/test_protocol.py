@@ -198,3 +198,30 @@ def test_every_opening_is_logged_with_a_hash(monkeypatch, tmp_path):
     rec = json.loads(log.read_text(encoding="utf-8").strip())
     assert rec["candidate"] == {"cfg": "candidate A"}
     assert len(rec["candidate_sha256"]) == 64
+
+
+def test_funding_past_the_panel_end_is_not_charged():
+    """A settlement with no bar to land on must be dropped, not folded onto the last one.
+
+    searchsorted answers 'the last bar' for anything past the end, so the naive
+    mapping silently accumulated every later settlement on the final bar.  On a
+    BTCUSDT panel truncated at the seal that put 0.163990 into a single hour --
+    the exact sum of the 2742 sealed settlements -- which is both an absurd
+    funding charge and sealed data inside the development window.
+    """
+    import polars as pl
+    from orc.facts.fetch_vision import funding_rate_per_bar
+
+    bars = pl.Series("ts", [datetime(2024, 1, 1, h) for h in range(24)])
+    funding = pl.DataFrame({
+        "ts": [datetime(2024, 1, 1, 8),      # inside the panel
+               datetime(2024, 1, 1, 23, 59),  # inside the final bar
+               datetime(2024, 1, 2, 0),       # first bar past the end
+               datetime(2026, 8, 1)],         # long past the end
+        "funding_rate": [0.0001, 0.0002, 5.0, 7.0],
+    })
+    fr = funding_rate_per_bar(bars, funding)
+
+    assert fr[8] == pytest.approx(0.0001)
+    assert fr[23] == pytest.approx(0.0002), "a settlement inside the last bar still counts"
+    assert fr.sum() == pytest.approx(0.0003), "nothing past the end may be charged"

@@ -319,6 +319,18 @@ def funding_rate_per_bar(bar_ts: pl.Series, funding: pl.DataFrame) -> "np.ndarra
     rate = funding["funding_rate"].to_numpy().astype(np.float64)
     pos = np.searchsorted(bars, fts, side="right") - 1
     ok = (pos >= 0) & (pos < n)
+
+    # A settlement past the end of the panel has no bar to land on, and
+    # searchsorted answers with the last index rather than saying so.  Left
+    # unchecked that folds every later settlement onto the final bar: on a
+    # BTCUSDT panel truncated at the seal it charged 0.163990 in one hour,
+    # exactly the sum of the 2742 settlements that came after, and carried
+    # sealed funding into the development window.  Bound the last bar by its
+    # own width so a settlement is charged only where it actually falls.
+    if n >= 2:
+        step = np.median(np.diff(bars).astype("timedelta64[s]").astype(np.int64))
+        ok &= fts < bars[-1] + np.timedelta64(int(step), "s")
+
     np.add.at(out, pos[ok], rate[ok])
     return out
 
