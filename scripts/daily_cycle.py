@@ -34,6 +34,7 @@ from orc.orchestrator.spec import Hypothesis, load_registry
 from orc.orchestrator.surface import summarise, write_report
 
 import notify                                                     # noqa: E402
+from robustness import main as robustness_main                    # noqa: E402
 
 
 def intake_queue() -> list[Hypothesis]:
@@ -129,6 +130,14 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False) -> dict:
     # wants to raise an alarm -- a desktop toast, a phone push from a cloud
     # routine that cannot import this package -- reads this one file, so there
     # is still exactly one definition of what counts as a finding.
+    # The gate belongs in the cycle, not in a command someone has to remember.
+    # A robustness check that only runs when asked is a robustness check that
+    # runs after the decision it was supposed to inform.
+    try:
+        robustness_main([])
+    except Exception as exc:                                      # noqa: BLE001
+        print(f"  robustness gate failed: {type(exc).__name__}: {exc}")
+
     news = notify.collect()
     (config.REPORTS / "NEWS.json").write_text(
         json.dumps({"generated_utc": summary["finished_utc"],
