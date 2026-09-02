@@ -25,12 +25,15 @@ from orc import config
 from orc.eval.analytic import AnalyticSpec, evaluate, lump_sum_reference
 from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak,
                                simulate)
+from orc.eval.signal import SignalSpec, run_signals
+from orc.eval.signal_rules import build_signals
 from orc.facts import panel as panel_mod
 from orc.facts.panel import Panel
+from orc.kernel import metrics_fc
 from orc.kernel.liquidation import tier_table_for
 from orc.kernel.metrics_cf import mwrr_equal_interval, start_date_profile
 from orc.ledger.trials import Ledger, code_hash
-from orc.orchestrator.spec import Hypothesis, TrialConfig
+from orc.orchestrator.spec import SignalTrialConfig, Hypothesis, TrialConfig
 
 # Path-dependent variants are simulated from one start per day.  Finer grids buy
 # almost nothing: neighbouring start dates share nearly all of their history.
@@ -90,7 +93,62 @@ def _span(p: Panel, starts: np.ndarray, horizon: int) -> dict:
     }
 
 
-def run_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
+def run_signal_trial(cfg: "SignalTrialConfig", p: Panel | None = None) -> TrialOutcome:
+    """Track B: one equity curve per symbol, judged on fixed-capital ratios."""
+    p = p or panel_mod.load(cfg.symbol, cfg.clock, development_only=True)
+    if not p.has_funding():
+        raise UnsupportedConfig("no funding history; a carry rule has nothing to read")
+
+    lookback = p.bars(cfg.lookback_days)
+    if lookback < 2 or lookback >= len(p):
+        raise UnsupportedConfig(
+            f"lookback_exceeds_history ({lookback} bars of {len(p)})")
+
+    entry, exit_ = build_signals(cfg.rule, p, lookback, cfg.enter_rate, cfg.exit_rate)
+    spec = SignalSpec(
+        capital=cfg.capital, leverage=cfg.leverage,
+        fee_bps=cfg.effective_fee_bps, slippage_bps=cfg.effective_slippage_bps,
+        stop_loss=cfg.stop_loss, take_profit=cfg.take_profit,
+        max_hold_bars=p.bars(cfg.max_hold_days) if cfg.max_hold_days else None)
+    r = run_signals(p.close, p.high, p.low, entry, exit_, spec,
+                    funding_rate=p.funding_rate, symbol=cfg.symbol)
+
+    if r["n_trades"] == 0:
+        raise UnsupportedConfig("no_trades_fired")
+
+    m = metrics_fc.summary(r["equity"], cfg.clock)
+    span_days = float((p.ts[-1] - p.ts[0]) / np.timedelta64(1, "D"))
+    metrics = {
+        **m,
+        "n_trades": r["n_trades"],
+        "win_rate": r["win_rate"],
+        "funding_collected": r["funding_collected"],
+        "funding_frac_of_capital": r["funding_collected"] / cfg.capital,
+        "n_liquidations": r["n_liquidations"],
+        "liquidation_rate": r["n_liquidations"] / r["n_trades"],
+        "final_equity": r["final_equity"],
+        "start_first": str(p.ts[0])[:10],
+        "start_last": str(p.ts[-1])[:10],
+        "start_span_days": span_days,
+        # One equity curve is one path.  Each trade is a separate decision, so
+        # the trade count is the generous upper bound on how many independent
+        # experiments are underneath -- generous because they all share one
+        # price history and one regime, exactly as Track A's overlapping start
+        # offsets do.
+        "effective_independent_paths": float(r["n_trades"]),
+        "evaluator": "signal",
+    }
+    return TrialOutcome(cfg, "signal", 1, metrics)
+
+
+def run_trial(cfg, p: Panel | None = None) -> TrialOutcome:
+    """Dispatch on what kind of thing the configuration describes."""
+    if isinstance(cfg, SignalTrialConfig):
+        return run_signal_trial(cfg, p)
+    return run_dca_trial(cfg, p)
+
+
+def run_dca_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
     p = p or panel_mod.load(cfg.symbol, cfg.clock, development_only=True)
     stride = p.bars(cfg.stride_days)
     hold = p.bars(cfg.hold_days)

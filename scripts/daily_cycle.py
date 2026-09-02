@@ -31,7 +31,7 @@ from orc.facts import panel as panel_mod
 from orc.ledger.trials import Ledger
 from orc.orchestrator.runner import run_hypothesis
 from orc.orchestrator.spec import Hypothesis, load_registry
-from orc.orchestrator.surface import PRIMARY_METRIC, summarise, write_report
+from orc.orchestrator.surface import summarise, write_report
 
 
 def intake_queue() -> list[Hypothesis]:
@@ -137,8 +137,9 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
              f"(+{summary['trials_added']} this cycle)")
     L.append(f"- holdout sealed from **{summary['holdout_start']}**, "
              f"final tests used {summary['final_tests_used']}/{holdout.MAX_FINAL_TESTS}")
-    L.append(f"- primary metric: `{PRIMARY_METRIC}` "
-             "(5th-percentile terminal multiple across start dates)")
+    L.append("- primary metric per track: `tm_q05` for accumulation "
+             "(5th-percentile terminal multiple across start dates), "
+             "`calmar` for signal positions (return over deepest drawdown)")
     L.append("")
     L.append("Every number below is development data only. The ranking is not a "
              "result; the shape column and PBO are what decide whether it means "
@@ -146,7 +147,8 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
     L.append("")
 
     for rep in reports:
-        L.append(f"## {rep['hypothesis_id']} — {rep['family']}")
+        L.append(f"## {rep['hypothesis_id']} — {rep['family']} "
+                 f"(track {rep.get('track', 'A')}, metric `{rep['metric']}`)")
         L.append("")
         L.append(f"**Claim.** {rep['claim']}")
         L.append("")

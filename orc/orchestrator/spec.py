@@ -63,6 +63,46 @@ class TrialConfig:
         return self.slippage_bps * self.cost_multiplier
 
 
+@dataclass(frozen=True)
+class SignalTrialConfig:
+    """One Track B configuration: a rule, its thresholds, and how it is sized.
+
+    Deliberately a separate type rather than more fields on TrialConfig.  The
+    ledger keys a trial on the hash of its config dict, so widening TrialConfig
+    would change the hash of every Track A trial ever recorded and re-run the
+    lot under new identities, inflating N for a change that touched none of
+    them.  The two tracks describe different objects and get different types.
+    """
+    symbol: str
+    rule: str = "carry_funding"
+    lookback_days: float = 21.0
+    enter_rate: float = 0.00015          # per settlement, not annualised
+    exit_rate: float = 0.00005
+    capital: float = 10_000.0
+    leverage: float = 1.0
+    stop_loss: float | None = None       # fraction of margin
+    take_profit: float | None = None
+    max_hold_days: float | None = None
+    clock: str = "1h"
+    fee_bps: float = config.TAKER_FEE_BPS
+    slippage_bps: float = config.SLIPPAGE_BPS
+    cost_multiplier: float = 1.0
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def with_costs(self, mult: float) -> "SignalTrialConfig":
+        return replace(self, cost_multiplier=mult)
+
+    @property
+    def effective_fee_bps(self) -> float:
+        return self.fee_bps * self.cost_multiplier
+
+    @property
+    def effective_slippage_bps(self) -> float:
+        return self.slippage_bps * self.cost_multiplier
+
+
 # --------------------------------------------------------------------------
 # a registered hypothesis
 # --------------------------------------------------------------------------
@@ -75,13 +115,15 @@ class Hypothesis:
     universe: list[str]
     grid: dict[str, list]
     fixed: dict = field(default_factory=dict)
+    # "A" accumulation (DCA), "B" signal-driven positions.  See CLAUDE.md.
+    track: str = "A"
     registered_utc: str = ""
     prereg_hash: str = ""
 
     # ------------------------------------------------------------------
     def payload(self) -> dict:
         """Everything that must be fixed before results are seen."""
-        return {
+        p = {
             "hypothesis_id": self.hypothesis_id,
             "family": self.family,
             "claim": self.claim,
@@ -90,6 +132,12 @@ class Hypothesis:
             "grid": {k: list(v) for k, v in sorted(self.grid.items())},
             "fixed": dict(sorted(self.fixed.items())),
         }
+        # Track A predates this field.  Writing it unconditionally would change
+        # the pre-registration hash of every hypothesis registered before Track
+        # B existed, which is exactly what pre-registration forbids.
+        if self.track != "A":
+            p["track"] = self.track
+        return p
 
     def compute_hash(self) -> str:
         return hashlib.sha256(
@@ -116,16 +164,28 @@ class Hypothesis:
             n *= max(len(v), 1)
         return n
 
-    def expand(self) -> list[TrialConfig]:
+    @property
+    def primary_metric(self) -> str:
+        """What this track is judged on.  Section 4 of the constitution.
+
+        Track A is judged on the 5th-percentile terminal multiple.  Track B has
+        no start-date ensemble to take a percentile of, so it is judged on
+        Calmar: return over the deepest drawdown, which is the left tail of a
+        single equity curve.
+        """
+        return "calmar" if self.track == "B" else "tm_q05"
+
+    def expand(self) -> list:
         """Every (symbol x grid point) combination, in a deterministic order."""
         self.verify()
+        cls = SignalTrialConfig if self.track == "B" else TrialConfig
         keys = sorted(self.grid)
-        out: list[TrialConfig] = []
+        out: list = []
         for sym in sorted(self.universe):
             for values in product(*(self.grid[k] for k in keys)):
                 params = dict(zip(keys, values))
                 params.update(self.fixed)
-                out.append(TrialConfig(symbol=sym, **params))
+                out.append(cls(symbol=sym, **params))
         return out
 
     # ------------------------------------------------------------------

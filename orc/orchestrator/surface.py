@@ -35,8 +35,14 @@ PRIMARY_METRIC = "tm_q05"          # 5th percentile terminal multiple
 
 
 # --------------------------------------------------------------------------
-def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
-    """Assemble the metric over the hypothesis grid, per symbol."""
+def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
+    """Assemble the metric over the hypothesis grid, per symbol.
+
+    The metric follows the track: a Track B row has no tm_q05 to read, and
+    silently skipping every row of a whole track would report an empty
+    family as if it had simply not run.
+    """
+    metric = metric or h.primary_metric
     axes = sorted(h.grid)
     with Ledger() as led:
         rows = led.conn.execute(
@@ -66,6 +72,15 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             "mwrr_q05": met.get("mwrr_q05"),
             "mwrr_q50": met.get("mwrr_q50"),
             "horizon_days": met.get("horizon_days"),
+            # Track B judges the same cell on fixed-capital ratios; carrying
+            # them here is what lets one report show both tracks without the
+            # reader having to open the ledger to see what a number means.
+            "cagr": met.get("cagr"),
+            "max_drawdown": met.get("max_drawdown"),
+            "sharpe": met.get("sharpe"),
+            "n_trades": met.get("n_trades"),
+            "n_liquidations": met.get("n_liquidations"),
+            "funding_frac_of_capital": met.get("funding_frac_of_capital"),
         }
 
     # An axis is ordinal only if its values are numeric and it has enough
@@ -106,6 +121,12 @@ def surface_from_ledger(h: Hypothesis, metric: str = PRIMARY_METRIC) -> dict:
             "mwrr_q05_best": ctx.get("mwrr_q05"),
             "mwrr_q50_best": ctx.get("mwrr_q50"),
             "horizon_days_best": ctx.get("horizon_days"),
+            "cagr_best": ctx.get("cagr"),
+            "max_drawdown_best": ctx.get("max_drawdown"),
+            "sharpe_best": ctx.get("sharpe"),
+            "n_trades_best": ctx.get("n_trades"),
+            "n_liquidations_best": ctx.get("n_liquidations"),
+            "funding_frac_best": ctx.get("funding_frac_of_capital"),
         }
     return out
 
@@ -170,11 +191,14 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
 
 
 # --------------------------------------------------------------------------
-def write_report(h: Hypothesis, metric: str = PRIMARY_METRIC,
+def write_report(h: Hypothesis, metric: str | None = None,
                  pbo_symbols: list[str] | None = None) -> dict:
+    metric = metric or h.primary_metric
     surfaces = surface_from_ledger(h, metric)
     pbo = {}
-    for sym in (pbo_symbols or list(surfaces)[:3]):
+    # CSCV needs a performance-per-slice matrix built by re-running the grid
+    # through the closed-form evaluator, which only exists for Track A shapes.
+    for sym in ([] if h.track == "B" else (pbo_symbols or list(surfaces)[:3])):
         try:
             pbo[sym] = pbo_for_hypothesis(h, sym)
         except (ValueError, FileNotFoundError) as exc:
@@ -187,6 +211,7 @@ def write_report(h: Hypothesis, metric: str = PRIMARY_METRIC,
     report = {
         "hypothesis_id": h.hypothesis_id,
         "family": h.family,
+        "track": h.track,
         "claim": h.claim,
         "kill_condition": h.kill_condition,
         "prereg_hash": h.prereg_hash,
