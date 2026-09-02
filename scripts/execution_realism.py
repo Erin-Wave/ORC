@@ -65,9 +65,33 @@ def run_on(cfg: SignalTrialConfig, clock: str) -> dict:
                              for k in ("signal", "stop", "take_profit", "liquidation")}}
 
 
-def compare(cfg: SignalTrialConfig) -> dict:
-    hourly = run_on(cfg, "1h")
-    minute = run_on(cfg, "1m")
+def run_dca_on(cfg, clock: str) -> dict:
+    """Track A on one clock.  A contribution is filled on its bar's close, so
+    an hourly schedule is an hour of waiting per deposit that a minute schedule
+    does not pay -- the same bias as Track B's, spread over every deposit
+    instead of concentrated in a few fills."""
+    from dataclasses import replace
+
+    from orc.orchestrator.runner import run_trial
+
+    c = replace(cfg, clock=clock)
+    p = panel_mod.load(c.symbol, clock, development_only=True)
+    m = run_trial(c, p).metrics
+    return {"clock": clock, "bars": len(p),
+            # tm_q05 is a multiple; subtracting one puts it on the same
+            # footing as a return so a single drift rule reads both tracks.
+            "total_return": m["tm_q05"] - 1.0,
+            "cagr": m.get("mwrr_q05", float("nan")),
+            "max_drawdown": float("nan"),
+            "n_trades": int(m.get("tm_n", 0)), "n_liquidations": 0,
+            "exit_reasons": {}}
+
+
+def compare(cfg) -> dict:
+    dca = not isinstance(cfg, SignalTrialConfig)
+    runner = run_dca_on if dca else run_on
+    hourly = runner(cfg, "1h")
+    minute = runner(cfg, "1m")
     base = abs(hourly["total_return"])
     drift = abs(minute["total_return"] - hourly["total_return"]) / max(base, 1e-9)
     return {

@@ -120,6 +120,39 @@ def _equity(cfg, panel) -> np.ndarray | None:
                        funding_rate=panel.funding_rate, symbol=cfg.symbol)["equity"]
 
 
+def _execution_check(h, cfg) -> dict:
+    """Does the hourly answer survive the minute bars underneath it?
+
+    Both tracks fill on a bar's close, so both carry the bias: Track B in a few
+    fills, Track A spread over every scheduled deposit.  Exempting Track A
+    would have left it permanently unmeasured and therefore permanently
+    uncertifiable, which is a hole dressed up as caution.
+
+    Reported as unmeasured, not failed, wherever the minute panel is absent --
+    which is every cloud run, because 9.5 GB never goes into the bundle. That
+    is deliberate rather than a limitation: the worker can rank and reject on
+    its own, but it cannot certify a candidate, because the data that would
+    settle the question is only on the machine that built it.
+    """
+    if not panel_mod.panel_path(cfg.symbol, "1m").exists():
+        return {"check": "execution", "passed": None,
+                "reason": "no minute panel here; certification has to happen locally"}
+    try:
+        import execution_realism
+        r = execution_realism.compare(cfg)
+    except Exception as exc:                                       # noqa: BLE001
+        return {"check": "execution", "passed": None,
+                "reason": f"{type(exc).__name__}: {exc}"}
+    return {
+        "check": "execution",
+        "hourly_return": r["hourly"]["total_return"],
+        "minute_return": r["minute"]["total_return"],
+        "relative_drift": r["relative_drift"],
+        "sign_agrees": r["sign_agrees"],
+        "passed": r["passed"],
+    }
+
+
 def gate_one(h, symbol: str, best_config: dict) -> dict:
     """Every check, for one hypothesis's best cell on one symbol."""
     metric = h.primary_metric
@@ -145,6 +178,7 @@ def gate_one(h, symbol: str, best_config: dict) -> dict:
         scorer = lambda c, p, m: _tm_q05_over_mask(p, c, m) - 1.0        # noqa: E731
     checks.append(robustness.regime_consistency(
         scorer, cfg, panel, panel.bars(REGIME_WINDOW_DAYS)))
+    checks.append(_execution_check(h, cfg))
 
     out = robustness.verdict(checks)
     out.update({"hypothesis_id": h.hypothesis_id, "symbol": symbol,
@@ -196,11 +230,17 @@ def main(argv: list[str]) -> int:
                         print(f"      walk        {c['reason']}")
                     else:
                         print(f"      walk        in {c['in_sample']:+.4f}  out {c['out_of_sample']:+.4f}")
-                else:
+                elif c["check"] == "regime":
                     if "reason" in c:
                         print(f"      regime      {c['reason']}")
                     else:
                         print(f"      regime      rising {c['rising']:+.2%}  falling {c['falling']:+.2%}")
+                else:
+                    if "reason" in c:
+                        print(f"      execution   {c['reason']}")
+                    else:
+                        print(f"      execution   1h {c['hourly_return']:+.2%} -> "
+                              f"1m {c['minute_return']:+.2%}  drift {c['relative_drift']:.1%}")
 
     (config.REPORTS / "ROBUSTNESS.json").write_text(
         json.dumps({"results": results}, indent=2, default=str), encoding="utf-8")

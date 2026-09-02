@@ -146,6 +146,10 @@ python scripts/kt1_funding_drag.py              # kill tests
 python scripts/kt2_martingale.py
 python scripts/kt3_survivorship.py 120
 python scripts/daily_cycle.py                   # one research cycle
+python scripts/status.py                        # where the research stands
+python scripts/robustness.py                    # the gate: cost, walk, regime, execution
+python scripts/execution_realism.py H0002 BTCUSDT   # one cell on minute bars
+python scripts/notify.py                        # exit 0 when there is news
 python scripts/deploy_panel.py                  # build the cloud bundle
 python -m pytest tests -q                       # must be green before anything
 ```

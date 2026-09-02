@@ -45,6 +45,14 @@
           "falling": NaN,
           "passed": null,
           "reason": "the cell could not be scored in rising and falling"
+        },
+        {
+          "check": "execution",
+          "hourly_return": 2.6056116382051298,
+          "minute_return": 2.6153177585502414,
+          "relative_drift": 0.003725083279025299,
+          "sign_agrees": true,
+          "passed": true
         }
       ],
       "hypothesis_id": "H0001",
@@ -59,7 +67,8 @@
     {
       "passed": false,
       "failed": [
-        "regime"
+        "regime",
+        "execution"
       ],
       "unmeasured": [],
       "checks": [
@@ -97,8 +106,16 @@
         {
           "check": "regime",
           "window_bars": 720,
-          "rising": -0.3304608837543067,
+          "rising": -0.33046088375430677,
           "falling": 1.2291597066485425,
+          "passed": false
+        },
+        {
+          "check": "execution",
+          "hourly_return": 0.8232742243393087,
+          "minute_return": 0.37961961637079233,
+          "relative_drift": 0.5388904387533286,
+          "sign_agrees": true,
           "passed": false
         }
       ],
