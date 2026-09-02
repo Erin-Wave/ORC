@@ -688,45 +688,45 @@
     },
     "db4ec5e581de": {
       "id": "db4ec5e581de",
-      "status": "deferred",
+      "status": "open",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "one of three that together mean Track B treats a funding-driven wipeout as an ordinary exit. Fixing it properly is a rewrite of how a trade's wallet, liquidation level and funding credit interact, with tests, and it moves every Track B number. That is deliberate work, not a patch at the end of a session that has already rewritten the numbers layer twice today. Both Track B families are at their kill conditions on the current reading, so nothing waits on it.",
+      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
       "file": "orc/eval/signal.py",
       "line": 162,
       "severity": "high",
       "what": "The liquidation level is computed once from the entry wallet and never revisited, so funding debited during the trade never moves it and a position whose margin has been eaten by funding is never margin-checked again.",
       "trigger": "capital=10_000, leverage=10, SHORT filled at 100.0 on a flat series, funding_rate=-0.0010 on every 8th bar for 300 bars. The trade pays 3,700 of funding, leaving a 6,300 wallet, but `liq` stays frozen at 109.502 where liquidation_level(SHORT, 6300, 1000, 100, BTC_LIKE) = 105.821. A bar with high=107 is liquidated on the exchange and is not liquidated here; the run continues and books whatever the price does next.",
       "why_silent": "`adverse >= liq` simply never fires, so no branch is taken and no exception is raised. The trade closes on its ordinary signal exit with an arithmetically consistent gross/funding/pnl, and n_liquidations and liquidation_rate come back 0 — the exact figures KT-2 reads to decide whether a leverage setting is survivable.",
-      "decided_utc": "2026-09-02T13:21:58.289541+00:00"
+      "decided_utc": "2026-09-02T23:11:43.539040+00:00"
     },
     "9cea2bbfc3ac": {
       "id": "9cea2bbfc3ac",
-      "status": "deferred",
+      "status": "open",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "see db4ec5e581de -- same rewrite. cash = max(cash + pnl, 0.0) absorbing a wipeout into zero is the centre of it.",
+      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
       "file": "orc/eval/signal.py",
       "line": 219,
       "severity": "high",
       "what": "`cash = max(cash + pnl, 0.0)` (with the matching `np.maximum(..., 0.0)` on the path at line 217) absorbs a loss larger than the wallet into a zero instead of a wipeout, so a trade that is destroyed by funding rather than by price is recorded as an ordinary signal exit and, if the funding regime flips back, the position carries negative equity through the middle of the trade and recovers.",
       "trigger": "Two cases, both on a flat close=high=low=100.0 series so no price move can trigger anything. (a) capital=10_000, leverage=10, SHORT, funding_rate=-0.0060 on every 8th bar of 300: trade reason 'signal', n_liquidations 0, trade pnl -22,200 against a 10,000 wallet, equity_after 0.0, funding_frac_of_capital -2.22 — a bill 222% of capital the account never had. (b) same but funding_rate=-0.0060 on bars 8..200 step 8 then +0.0080 after: true mark equity reaches -4,400 and stays below zero for 104 bars, n_liquidations 0, the trade is scored a win, final_equity 15,600, total_return +56%.",
       "why_silent": "The clamp is what a wipeout is supposed to look like, so nothing distinguishes 'lost exactly the wallet' from 'lost twice the wallet'. cagr, total_return, win_rate and liquidation_rate all come out finite and plausible; only max_drawdown (exactly 1.0) and a nan sharpe hint at it, and a curve that recovers to +56% reads as a strategy that survived a bad patch. sum(t['pnl']) = -22,200 while the curve moved -10,000, so the trade log does not reconcile with the equity curve and neither one errors.",
-      "decided_utc": "2026-09-02T13:21:58.725875+00:00"
+      "decided_utc": "2026-09-02T23:11:43.546832+00:00"
     },
     "6641f54ee642": {
       "id": "6641f54ee642",
-      "status": "deferred",
+      "status": "open",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "see db4ec5e581de -- same rewrite. funding_collected can only be right once a liquidated trade's accounting is.",
+      "disposition": "reopened 2026-09-03T08:05Z: the rewrite these three were deferred for is now in progress, and until it lands no cycle may judge a Track B family on this code. H0006 is one reasoning pass away from a verdict computed on an evaluator that books a funding-driven wipeout as an ordinary exit.",
       "file": "orc/eval/signal.py",
       "line": 237,
       "severity": "high",
       "what": "`funding_collected` sums the `funding` field of every trade including liquidated ones, but line 212 sets `pnl = -cash` on liquidation and discards that funding, so the reported funding income was never credited to any wallet.",
       "trigger": "capital=10_000, leverage=10, SHORT filled at 100.0; funding_rate=+0.0020 on bars 8..150 step 8; close/high jump to 112.0 at bar 150 (past the 109.502 liquidation level). Result: reason 'liquidation', final_equity 0.0, funding recorded 3,600, funding_collected 3,600, and the runner's funding_frac_of_capital = 0.36 — 'collected 36% of capital in funding' on an account that ended at zero, numerically the mirror image of KT-1's 36% funding tax and exactly the number Track B's first family exists to find.",
       "why_silent": "The 3,600 is a correct sum of real per-bar accruals, so it passes any sanity check on its own magnitude. It is reported in a different key from the equity curve, and nothing in run_signals or run_signal_trial cross-foots funding_collected against final_equity, so the contradiction never meets itself.",
-      "decided_utc": "2026-09-02T13:21:59.126267+00:00"
+      "decided_utc": "2026-09-02T23:11:43.553609+00:00"
     },
     "46b1960c42a3": {
       "id": "46b1960c42a3",

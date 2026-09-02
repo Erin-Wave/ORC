@@ -111,6 +111,16 @@ def main() -> int:
     if not survivors:
         print("Nothing here is a result. Closing a family is what this is for, "
               "and a family that closes has answered its question.")
+
+    # The closed families are the only answered questions on the board, and a
+    # closed family stops being run, so it stops appearing in the tables above.
+    # Read from reports/ like everything else here: a post-mortem exists if and
+    # only if a family was closed and documented.
+    done = sorted(config.REPORTS.glob("POSTMORTEM_H*.md"))
+    if done:
+        print(f"\nclosed and answered ({len(done)}) -- the map, not a gap in it:")
+        for p in done:
+            print(f"  {p.stem.replace('POSTMORTEM_', '')}  reports/{p.name}")
     return 0
 
 

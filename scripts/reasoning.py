@@ -297,13 +297,25 @@ def main() -> int:
         _log(f"SKIPPED: {exc}")
         report["steps"]["surfaces"] = f"skipped: {exc}"
 
+    # The marker is stamped, never deleted.  Deleting it after writing the
+    # post-mortem is what made closing H0002 cost 972 trials in the next
+    # cycle: load_registry() reads configs/closed/ to know what not to
+    # enumerate, and the only file that said so had been consumed by the step
+    # that documented it.  A closed family is closed for the life of the
+    # project, so the record of it has to outlive the cycle that closed it.
     print("postmortem")
-    for f in sorted(CLOSED.glob("*.json")):
+    for f in sorted(CLOSED.glob("H*.json")):
+        rec = json.loads(f.read_text(encoding="utf-8"))
+        if rec.get("postmortem"):
+            continue
         try:
             text = postmortem(f)
             out = config.REPORTS / f"POSTMORTEM_{f.stem}.md"
             out.write_text(text, encoding="utf-8")
-            f.unlink()
+            rec["postmortem"] = out.name
+            rec["postmortem_utc"] = datetime.now(timezone.utc).isoformat()
+            f.write_text(json.dumps(rec, indent=2, ensure_ascii=False),
+                         encoding="utf-8")
             _log(f"{f.stem} written to {out.name}")
             report["steps"].setdefault("postmortem", []).append(f.stem)
         except llm.LLMUnavailable as exc:

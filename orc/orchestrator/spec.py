@@ -264,14 +264,52 @@ class Hypothesis:
         return h
 
 
-def load_registry(directory: Path | None = None) -> list[Hypothesis]:
+def closed_families(directory: Path | None = None) -> dict[str, dict]:
+    """Families the reasoning layer has closed against their kill condition.
+
+    The marker is configs/closed/<id>.json and it is permanent.  It used to be
+    consumed the moment the post-mortem was written, which made closing a
+    family a documentation act and nothing else: the registry file stayed, so
+    the worker kept enumerating the grid.  H0002 closed at 17:13 and the 22:28
+    cycle re-ran all 972 of its cells, 972 of the 1210 rows that cycle added to
+    N -- a multiple-testing charge for asking a question that had already been
+    answered.
+    """
+    d = directory if directory is not None else config.CONFIGS / "closed"
+    out: dict[str, dict] = {}
+    if not d.exists():
+        return out
+    for p in sorted(d.glob("H*.json")):
+        try:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            rec = {}
+        out[rec.get("hypothesis_id") or p.stem] = rec
+    return out
+
+
+def load_registry(directory: Path | None = None,
+                  include_closed: bool = False) -> list[Hypothesis]:
+    """Every hypothesis still open to evaluation.
+
+    A closed family keeps its registry file -- that file is the pre-registered
+    claim, and section 3 forbids editing or deleting it -- but it is not handed
+    back for evaluation.  Its answer is in reports/POSTMORTEM_<id>.md.
+    """
     d = directory or config.REGISTRY
+    closed = {} if include_closed else closed_families()
     out = []
     for p in sorted(d.glob("*.json")):
         try:
-            out.append(Hypothesis.load(p))
+            h = Hypothesis.load(p)
         except (ValueError, TypeError) as exc:
             print(f"  registry: skipping {p.name} -- {exc}")
+            continue
+        if h.hypothesis_id in closed:
+            print(f"  registry: {h.hypothesis_id} is closed "
+                  f"({h.family}); not re-run")
+            continue
+        out.append(h)
     return out
 
 

@@ -198,7 +198,10 @@ def gate_one(h, symbol: str, best_config: dict) -> dict:
 def main(argv: list[str]) -> int:
     wanted = set(argv) or None
     results = []
-    for h in load_registry():
+    # The sweep skips closed families -- the gate decides whether a cell is a
+    # candidate, and a closed family has no candidates -- but an id named on
+    # the command line is honoured whatever its state.
+    for h in load_registry(include_closed=bool(wanted)):
         if wanted and h.hypothesis_id not in wanted:
             continue
         rep_path = config.REPORTS / f"{h.hypothesis_id}_SURFACE.json"

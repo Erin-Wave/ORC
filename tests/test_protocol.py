@@ -827,3 +827,68 @@ def test_a_final_test_can_ask_for_the_sealed_span_alone():
         panel_mod.load("BTCUSDT", "1h", sealed_only=True)
     with pytest.raises(ValueError, match="different measurements"):
         panel_mod.load("BTCUSDT", "1h", development_only=False, sealed_only=True)
+
+
+# --------------------------------------------------------------------------
+# a closed family stays closed, and a known-bad kernel books no trials
+# --------------------------------------------------------------------------
+def test_a_closed_family_is_not_handed_back_for_evaluation(tmp_path):
+    """Closing H0002 cost 972 trials because it did not stop anything.
+
+    The registry file is the pre-registration and must survive -- section 3
+    forbids editing or deleting it -- so the marker in configs/closed/ is the
+    only thing that can say "answered".  load_registry() has to read it.
+    """
+    from orc.orchestrator.spec import closed_families, load_registry
+
+    reg, closed = tmp_path / "registry", tmp_path / "closed"
+    reg.mkdir(); closed.mkdir()
+    _hyp(hypothesis_id="H9001").register().save(reg / "H9001.json")
+    _hyp(hypothesis_id="H9002").register().save(reg / "H9002.json")
+
+    assert {h.hypothesis_id for h in load_registry(reg, include_closed=True)} == {
+        "H9001", "H9002"}
+
+    (closed / "H9002.json").write_text(json.dumps(
+        {"hypothesis_id": "H9002", "family": "fam", "reason": "the kill condition was met"}),
+        encoding="utf-8")
+    import orc.config as cfg
+    real = cfg.CONFIGS
+    try:
+        cfg.CONFIGS = tmp_path
+        assert set(closed_families()) == {"H9002"}
+        assert [h.hypothesis_id for h in load_registry(reg)] == ["H9001"]
+        # An id named by hand is still reachable: re-measuring a closed family
+        # on minute bars is what produced the number that closed H0002.
+        assert len(load_registry(reg, include_closed=True)) == 2
+    finally:
+        cfg.CONFIGS = real
+
+
+def test_the_marker_outlives_the_postmortem_that_documents_it():
+    """reasoning.py used to unlink the marker as soon as it had written the
+    post-mortem, which is why H0002 was re-run 972 times the same evening."""
+    src = (Path(__file__).resolve().parents[1] / "scripts" / "reasoning.py"
+           ).read_text(encoding="utf-8")
+    body = src.split("print(\"postmortem\")", 1)[1]
+    assert "f.unlink()" not in body
+    assert '"postmortem"' in body
+
+
+def test_a_cycle_refuses_to_book_trials_while_a_high_finding_is_open(monkeypatch):
+    """The reasoning layer has refused since yesterday; the step that writes
+    to the ledger did not, and it is the half that cannot be undone."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import daily_cycle
+    import findings as ledger
+
+    monkeypatch.setattr(ledger, "load", lambda: {"findings": {
+        "deadbeef1234": {"id": "deadbeef1234", "status": "open", "severity": "high",
+                         "file": "orc/eval/signal.py", "line": 219,
+                         "what": "a wipeout is recorded as an ordinary exit"}}})
+    assert [f["id"] for f in daily_cycle.blocked_by_findings()] == ["deadbeef1234"]
+
+    out = daily_cycle.run_cycle()
+    assert out["status"] == "BLOCKED"
+    assert out["blocked_by"] == ["deadbeef1234"]
+    assert "trials_added" not in out          # nothing was evaluated

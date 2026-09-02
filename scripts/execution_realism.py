@@ -122,7 +122,13 @@ def main(argv: list[str]) -> int:
         print(__doc__.strip().splitlines()[-1])
         return 2
     hid, symbol = argv
-    h = next((x for x in load_registry() if x.hypothesis_id == hid), None)
+    # include_closed: this tool is pointed at one id by hand, and re-measuring
+    # a closed family is exactly what it is for.  The number that closed H0002
+    # past argument -- the short leg is -398 dollars once the funding coupon is
+    # subtracted, where the hourly bar showed +3,576 -- came from running it
+    # here after the family was already closed.
+    h = next((x for x in load_registry(include_closed=True)
+              if x.hypothesis_id == hid), None)
     if h is None:
         print(f"no such hypothesis: {hid}")
         return 2

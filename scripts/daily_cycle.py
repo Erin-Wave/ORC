@@ -30,7 +30,7 @@ from orc import config, holdout
 from orc.facts import panel as panel_mod
 from orc.ledger.trials import Ledger
 from orc.orchestrator.runner import run_hypothesis
-from orc.orchestrator.spec import Hypothesis, load_registry
+from orc.orchestrator.spec import Hypothesis, closed_families, load_registry
 from orc.orchestrator.surface import summarise, write_report
 from orc.orchestrator.verdict import disqualifiers
 
@@ -96,10 +96,39 @@ def intake_queue() -> list[Hypothesis]:
     return registered
 
 
-def run_cycle(only: list[str] | None = None, rerun_all: bool = False) -> dict:
+def blocked_by_findings() -> list[dict]:
+    """High-severity findings that stand between the code and a trial.
+
+    The reasoning layer has refused to run on code known to be wrong since
+    17:25 yesterday.  This step -- the one that actually books trials -- did
+    not, and it is the irreversible half: a reasoning pass that reads a bad
+    report can be re-run, but a row in the ledger is permanent and counts
+    toward N forever.  The worker fires every six hours and would have booked
+    1044 Track B trials at 09:00 KST on an evaluator whose own review says it
+    records a funding-driven wipeout as an ordinary signal exit.
+    """
+    import findings as ledger
+    return ledger.blocking()
+
+
+def run_cycle(only: list[str] | None = None, rerun_all: bool = False,
+              ignore_findings: bool = False) -> dict:
     config.ensure_dirs()
     run_id = uuid.uuid4().hex[:12]
     started = datetime.now(timezone.utc)
+
+    blocked = [] if ignore_findings else blocked_by_findings()
+    if blocked:
+        print(f"ORC cycle {run_id}  BLOCKED")
+        print("An unaddressed high-severity finding stands. Nothing was "
+              "evaluated and nothing was written; the queue is untouched.")
+        for f in blocked:
+            print(f"  {f['id']}  {f['file']}:{f.get('line')}  "
+                  f"{str(f['what'])[:90]}")
+        print("Fix it, or record the decision:")
+        print("  python scripts/findings.py wontfix <id> <reason>")
+        return {"run_id": run_id, "status": "BLOCKED",
+                "blocked_by": [f["id"] for f in blocked]}
 
     print(f"ORC cycle {run_id}  {started.isoformat()}")
     print(f"  holdout sealed from {config.HOLDOUT_START} "
@@ -255,6 +284,28 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
         L.append("No cell clears every check. Nothing in this table is a result.")
     L.append("")
 
+    # A closed family disappears from every table above, and section 9 lets the
+    # next reasoning pass read nothing but this document.  Without this section
+    # the family is simply gone: the proposer, told to name a mechanism nobody
+    # has tested, has no way to know that funding_carry_short was tested and
+    # answered, and re-proposing it is the likeliest single mistake it can make.
+    closed = closed_families()
+    if closed:
+        L.append("## Closed families -- answered, do not re-propose")
+        L.append("")
+        L.append("These are not gaps in the map. Each was closed against its "
+                 "own pre-registered kill condition and its grid is no longer "
+                 "enumerated. The reason is the finding.")
+        L.append("")
+        L.append("| family | closed because | post-mortem |")
+        L.append("|---|---|---|")
+        for hid, rec in sorted(closed.items()):
+            reason = " ".join(str(rec.get("reason", "")).split())
+            L.append(f"| {hid} `{rec.get('family', '?')}` | "
+                     f"{reason[:400]}{'...' if len(reason) > 400 else ''} | "
+                     f"`reports/{rec.get('postmortem', 'not written')}` |")
+        L.append("")
+
     for rep in reports:
         L.append(f"## {rep['hypothesis_id']} — {rep['family']} "
                  f"(track {rep.get('track', 'A')}, metric `{rep['metric']}`)")
@@ -338,9 +389,12 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    result = run_cycle(only=args or None, rerun_all="--all" in sys.argv)
+    result = run_cycle(only=args or None, rerun_all="--all" in sys.argv,
+                       ignore_findings="--ignore-findings" in sys.argv)
     # A cycle that found no panels evaluated nothing.  It used to return a dict
     # like any other, which is truthy, so the run went green and the only trace
     # was a line of stdout nobody reads -- a worker whose bundle failed to
     # unpack would have reported success every six hours indefinitely.
-    raise SystemExit(1 if result.get("status") == "NO_PANELS" else 0)
+    # BLOCKED exits non-zero for the same reason, and because the workflow's
+    # commit step is not `if: always()`: a refused cycle must not commit.
+    raise SystemExit(1 if result.get("status") in ("NO_PANELS", "BLOCKED") else 0)
