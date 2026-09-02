@@ -152,6 +152,19 @@ gh run watch
 | 로그 | `logs/reasoning_YYYY-MM-DD.log` (커밋 안 됨) |
 | 중복 방지 | `logs/.last_cycle` 에 날짜 기록, 하루 1회 |
 | 실패 시 | 15분 간격 2회 재시도 |
+| 시간 제한 | 3시간 (판단 호출이 8~10회로 늘어 1시간으로는 부족) |
+
+두 번째 작업도 함께 등록돼 있습니다.
+
+| | |
+|---|---|
+| 작업 이름 | `ORC Kernel Review` |
+| 실행 | 매주 일요일 09:30 KST, 창 없음 |
+| 하는 일 | 평가 커널을 4개씩 배치로 적대적 검토 |
+| 로그 | `logs/kernel_review.log`, 결과는 `reports/KERNEL_REVIEW.md` |
+
+첫 실행에서 결함 5건을 찾았고 그중 하나는 Track B 결과 전체를 무효화하는
+lookahead였습니다. high 등급 발견은 `notify.py` 를 통해 알림으로 나갑니다.
 
 **대가: 08:25 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
 `StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다.

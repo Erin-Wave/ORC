@@ -1,0 +1,26 @@
+{
+  "payer_exists": true,
+  "confidence": "high",
+  "who": "perp을 상시 숏으로 들고 있는 델타 헤저 — 채굴자, 토큰 트레저리·VC·마켓메이커의 락업/베스팅 재고, 환매에 대비하는 펀드, 현물을 보유한 데스크 (패닉 국면의 레버리지 베어는 부차적·일시적 지불자)",
+  "why_they_keep_paying": "이들의 숏은 캐리를 벌려고 만든 포지션이 아니라 대차대조표상의 헤지이며, 알트의 현물 차입(borrow)이 얕거나 아예 없어 규모 있는 숏을 실을 수 있는 유일한 창구가 perp이기 때문에 조달비용이 마이너스여도 헤지를 풀지 않는다. Binance의 funding은 거래소 수수료가 아니라 반대 포지션 간 P2P 이전이므로, 지불 주체는 '이 가격에 하방을 넘기고 싶다'고 결정한 실체 그 자체다.",
+  "what_would_end_it": "해당 자산에 깊고 저렴한 현물 대차 시장(또는 규제된 증권대차·옵션·CME 등 대체 헤지 창구)이 생겨 헤저가 perp을 쓰지 않아도 되고 차익거래자가 현물 숏으로 마이너스 베이시스를 압축할 수 있게 되는 것. 그 다음으로는 거래소 파라미터 변경(interest rate 0.01%/8h 웨지, ±0.05% clamp, 정산주기)과, 기관 cash-and-carry가 지배하는 강세 레짐 — 2024년 1~2월(spot ETF 직후, seal 이전) BTC·ETH·SOL·XRP·ADA·DOGE·LINK·AVAX의 마이너스 정산 비중은 정확히 0%였다.",
+  "sources": [
+    "https://www.binance.com/en/support/faq/introduction-to-binance-futures-funding-rates-360033525031",
+    "https://arxiv.org/html/2212.06888v5",
+    "https://finance.wharton.upenn.edu/~jermann/AHJ-main-10.pdf",
+    "https://papers.ssrn.com/sol3/Delivery.cfm/6185958.pdf?abstractid=6185958&mirid=1",
+    "https://elmwealth.com/perpetual-futures/",
+    "https://www.coinbase.com/institutional/research-insights/resources/education/crypto-hedging-for-institutions-futures",
+    "https://hashrateindex.com/blog/bitcoin-miners-should-hedge-to-lower-their-cost-of-capital/",
+    "https://keyrock.com/from-locked-to-liquidity-what-16000-token-unlocks-teach-us/",
+    "https://medium.com/@giannisandreoua/how-vcs-trade-token-unlocks-what-you-can-learn-from-them-e196bad6dc84",
+    "https://phemex.com/news/article/bitcoin-futures-funding-rate-turns-negative-amid-institutional-hedging-76622",
+    "https://www.coindesk.com/markets/2026/04/27/as-the-bitcoin-price-rises-futures-may-look-bearish-but-they-re-not-analyst-says",
+    "https://www.binance.com/en/support/announcement/important-updates-on-funding-rates-of-usd%E2%93%A2-m-perpetual-contracts-98d6b24d3e5c4f84a8ed04087997d8d0",
+    "https://www.coindesk.com/markets/2021/07/26/binance-says-its-cutting-leverage-limit-to-20x-a-day-after-ftx-announces-the-same",
+    "https://blog.kaiko.com/crypto-black-thursday-under-the-microscope-a86770df5c29",
+    "https://bis.org/publ/work1087.htm",
+    "https://www.mdpi.com/2227-7390/14/2/346"
+  ],
+  "notes": "지불자는 존재하지만, 주장이 지목한 지불자가 아니다. 두 개의 서로 다른 주체가 한 이름으로 묶여 있다. (1) 크라우드된 레버리지 베어는 실재하나 지속되지 않는다 — facts/funding, seal(2024-03-01) 이전 측정에서 BTC의 마이너스 구간 median 지속은 1회 정산(8h), p90 4회(~32h), max 24회이고, 마이너스 funding 총량의 82~86%(BTC/ETH)가 최악 5% 정산에 몰려 있다. 즉 2020-03, 2021-05, 2022-05(LUNA), 2022-11(FTX)라는 소수 이벤트다. 틀린 베어는 반복 지불자가 되지 못하고 청산된다. (2) 진짜 durable한 지불자는 재고 헤저이며, 이는 재고 과잉 알트에서 드러난다 — AXSUSDT는 seal 이전 정산의 60.8%가 마이너스, 최장 연속 293회(~98일), 정산의 24%가 ≤-5bp/8h; APEUSDT 49.7%·최장 154회; DOTUSDT 최장 135회; BNBUSDT 31.2%. AXS의 마이너스 총량 중 최악 5% 정산 기여분은 27.8%뿐 — 스파이크가 아니라 상시 상태다. 주장의 'demand for immediacy'는 이 헤저에게는 정확한 경제학이고, 레버리지 베어에게는 틀렸다. || 주장의 조건부 서술은 majors에서 확인된다: BTC/ETH는 90일 고점 대비 -20% 이하일 때 마이너스 funding 확률이 1.9배(BTC 12.9%→24.6%, ETH 12.0%→22.2%)이고, 고점 5% 이내에서는 3.3%/0.7%에 불과하다. 그러나 알트에서 lift는 거의 없다(AXS 1.13배, XRP 1.14배) — 두 지불자를 혼동했다는 신호가 바로 이것이다. || 'the two point the same way'는 메커니즘이 지지하지 않는다. 헤저는 현물을 들고 하방을 넘기려고 숏이며, funding은 그 하방을 인수하는 대가다. 반대편에 서는 것은 제약된 참여자가 델타를 털어내는 바로 그 시점에 델타를 받는 것이고, 가장 깊은 마이너스 에피소드(2020-03, LUNA, FTX)는 스퀴즈가 아니라 드로다운이었다. 스퀴즈는 두 결과 중 하나이지 메커니즘이 아니다. || 지불 규모는 비대칭이다. Binance의 설계(interest rate 0.01%/8h + ±0.05% clamp) 때문에 perp이 index 대비 약 4bp 이상 할인돼야 funding이 음수가 되고, 그 결과 seal 이전 BTC 마이너스 정산 합계는 명목의 -5.3%인 반면 전체 합계는 +62.3%다(ETH -5.6% vs +76.6%). majors에서 마이너스 풀은 플러스 풀의 약 1/12 규모다. || 거래소·규제 변화가 지불의 형태를 바꿨다: 레버리지 상한 125x→20x(2021-07-19 신규계정, 이후 기존계정 확대)는 양쪽의 레버리지 지불자를 줄였고, 2023-10-09 funding cap ±3%(max leverage ≤25x), 2023-10-12 일부 USDⓈ-M 정산주기 8h→4h(로컬 데이터: 4h 정산이 2023년 19,307건, 2024년 1~2월만 22,411건), YGGUSDT는 2023-08-07 2h로 변경. 따라서 'per-settlement 0.01% baseline'으로 표현된 임계값은 거래소가 그 의미를 바꿔 온 숫자다. || 다른 거래소에도 같은 지불이 존재하므로 Binance 설계의 산물은 아니다: 2020-03 붕괴 시 rate가 '대부분의 거래소에서 상당히 음수'였고(He et al.), dYdX v4는 interest rate를 0%로 두어 부호가 더 쉽게 뒤집힌다. 다만 funding 부호의 일부는 경제학이 아니라 거래소 파라미터 선택이라는 점은 인정해야 한다(0.01% 웨지의 기원은 BitMEX의 설계 결정으로 알려져 있다). || 레짐 의존성: 2022년이 이례적 해다(ETH 34.2%, BNB 50.6%, SOL 45.8%, AVAX 47.9% 마이너스) vs 2021 강세장(LINK 0.7%, XRP 4.0%, ETH 4.1%). 'durable'은 무조건이 아니라 드로다운 레짐 조건부다. || 잡음 경고: USDCUSDT는 정산의 44.5%가 마이너스인데 이는 지불 이유가 있는 주체가 아니라 index/premium 구성의 기계적 산물이다. 'funding<0'을 지불자 존재의 증거로 쓰면 이런 케이스가 섞인다. || durable한 지불자가 사는 심볼군(AXS, APE, DOT, BNB, MTL, BAL, CRV, INJ, GMT)은 KT-3의 survivorship 문제가 미해결인 영역과 겹치며, 동시에 '크라우드된 숏 베이스 → 스퀴즈' 논리가 가장 약한 곳이다 — 헤지 숏은 커버할 의무가 없다. || 마지막으로 정직하게: 마이너스 funding을 기관 헤지(펀드 환매, MSTR 관련 거래, AI로 전환하는 채굴자)로 귀속시키는 최신 코멘터리는 seal 이후 시점의 공개 논평이며, 측정이 아니다. 메커니즘의 지속 여부 판단에만 사용했고 정량 수치는 인용하지 않았다."
+}
