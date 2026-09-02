@@ -5,11 +5,11 @@
   "claim": "H0001 is unconditional by construction and its own claim says nobody is structurally paying it; its 448 trials vary how often and how many times money arrives, never whether a given bar is a bar worth buying. This proposes the axis H0001 has never held: a gate. Who pays: the liquidated leveraged long. On a perpetual venue a position that breaches maintenance margin is closed by the exchange at whatever price the book offers, in size, at a moment the seller did not choose and cannot decline - and because the liquidation of one position moves price into the maintenance level of the next, the selling arrives in cascades rather than smoothly. They keep doing it because leverage is the entire reason to be on this venue instead of buying spot, so the leveraged long base rebuilds after every flush; the venue's own fee schedule and insurance fund are built on the assumption that it will. A depositor with no urgency is the natural counterparty to a seller with no choice about timing, and the gate is the only way a scheduled depositor expresses that: contribute on bars that follow a drawdown of the gated depth, hold the cash otherwise. Two gate depths at two timescales are enumerated rather than a ladder, because they ask different questions - a 10 percent drawdown inside 7 days is a cascade, a 20 percent drawdown inside 30 days is a regime, and if only one pays then the answer names which. This does not and cannot repeal KT-1. Deferring a deposit changes the price at which it lands, not the fact that the perpetual charges the holder funding for as long as it is held, and the tax is therefore carried on the grid as include_funding so that it is measured rather than assumed away. If the gate beats its control only with funding switched off, the honest reading is that the dislocation exists but a perpetual cannot host the trade that harvests it, which is a finding about the venue and not about the gate. gate none is enumerated as an internal control rather than compared against H0001 across hypotheses, because the gate defers contributions and therefore moves the horizon: tm_q05 is a multiple of contributed capital and grows with holding time, so the comparison that decides this hypothesis is the annualised IRR, with tm_q05 reported beside it.",
   "kill_condition": "Closed if, with include_funding true, no gated cell's annualised IRR exceeds the gate none cell at the same symbol, stride and contribution count on at least five of the nine symbols. Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. Closed also if every cell that clears the first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms, then the gate never fired often enough to change anything and the family has not been tested.",
   "prereg_hash": "5c39d5b986fce8ca9ef1c612a63da3f96b240925e3246435445f5d08625ea912",
-  "generated_utc": "2026-09-02T12:24:52.960699+00:00",
+  "generated_utc": "2026-09-02T13:27:57.019273+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 216,
-  "trials_in_project": 5176,
+  "trials_in_family": 270,
+  "trials_in_project": 6386,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -54,13 +54,13 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1134,
       "independent_paths_best": 4.17,
       "mwrr_q05_best": -0.8297519680918217,
-      "mwrr_q50_best": -0.14837614686940614,
+      "mwrr_q50_best": -0.1483761468694062,
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -112,12 +112,12 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 898,
       "independent_paths_best": 3.51,
-      "mwrr_q05_best": -0.8562015153629432,
+      "mwrr_q05_best": -0.8562015153629422,
       "mwrr_q50_best": -0.25152612514361805,
       "horizon_days_best": 357.0,
       "cagr_best": null,
@@ -170,12 +170,12 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1124,
       "independent_paths_best": 4.15,
-      "mwrr_q05_best": -0.36186865645886357,
+      "mwrr_q05_best": -0.3618686564588635,
       "mwrr_q50_best": 0.16990372556904787,
       "horizon_days_best": 357.0,
       "cagr_best": null,
@@ -228,13 +228,13 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1279,
       "independent_paths_best": 4.58,
       "mwrr_q05_best": -0.6586734526213125,
-      "mwrr_q50_best": 0.5002743944449659,
+      "mwrr_q50_best": 0.5002743944449695,
       "horizon_days_best": 357.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -286,7 +286,7 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 973,
@@ -344,7 +344,7 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1199,
@@ -402,12 +402,12 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1156,
       "independent_paths_best": 4.24,
-      "mwrr_q05_best": -0.7939103815132051,
+      "mwrr_q05_best": -0.7939103815132036,
       "mwrr_q50_best": 0.1334418289725363,
       "horizon_days_best": 357.0,
       "cagr_best": null,
@@ -460,7 +460,7 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 907,
@@ -518,7 +518,7 @@
         "n_neighbours": 0
       },
       "assembled_from": {
-        "code_revisions": 4,
+        "code_revisions": 5,
         "panel_revisions": 3
       },
       "n_starts_best": 1159,

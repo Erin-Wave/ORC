@@ -1,7 +1,7 @@
 # ORC cycle report
 
-- run `04b20295b22e` finished 2026-09-02T12:24:52.961612+00:00
-- trials in project: **5176** (+1210 this cycle)
+- run `f2fce36959d4` finished 2026-09-02T13:27:57.020059+00:00
+- trials in project: **6386** (+1210 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
 
@@ -13,7 +13,7 @@ Every number below is development data only. The ranking is not a result; the sh
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 784. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 896. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -39,7 +39,7 @@ Trials in this family: 784. Pre-registration hash `16461da7e4b64a49`.
 
 **Kill condition.** Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.
 
-Trials in this family: 3888. Pre-registration hash `0d6e7ca037976c0c`.
+Trials in this family: 4860. Pre-registration hash `0d6e7ca037976c0c`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -67,7 +67,7 @@ Trials in this family: 3888. Pre-registration hash `0d6e7ca037976c0c`.
 
 **Kill condition.** Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.
 
-Trials in this family: 288. Pre-registration hash `d6b50b9b2c14f44f`.
+Trials in this family: 360. Pre-registration hash `d6b50b9b2c14f44f`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -95,7 +95,7 @@ Trials in this family: 288. Pre-registration hash `d6b50b9b2c14f44f`.
 
 **Kill condition.** Closed if, with include_funding true, no gated cell's annualised IRR exceeds the gate none cell at the same symbol, stride and contribution count on at least five of the nine symbols. Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. Closed also if every cell that clears the first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms, then the gate never fired often enough to change anything and the family has not been tested.
 
-Trials in this family: 216. Pre-registration hash `5c39d5b986fce8ca`.
+Trials in this family: 270. Pre-registration hash `5c39d5b986fce8ca`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
