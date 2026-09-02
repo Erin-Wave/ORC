@@ -5,11 +5,11 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T11:49:07.709072+00:00",
+  "generated_utc": "2026-09-02T12:21:54.716097+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 672,
-  "trials_in_project": 3966,
+  "trials_in_family": 784,
+  "trials_in_project": 5176,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -53,18 +53,18 @@
         ],
         [
           [
-            0.7559103853342579,
-            0.43153789886329497,
+            0.7541826472259472,
+            0.43827277969103784,
             NaN
           ],
           [
-            0.684591263394655,
-            0.10404518036719991,
+            0.6821791752297396,
+            0.0,
             NaN
           ],
           [
-            0.6118427131328754,
-            -0.49878563010630766,
+            0.6142633436045626,
+            0.0,
             NaN
           ]
         ]
@@ -90,7 +90,7 @@
         "shape": "SLOPE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 34552,
@@ -147,18 +147,18 @@
         ],
         [
           [
-            0.6397818864021146,
-            0.4374112023255914,
+            0.6351360671943834,
+            0.4376327299945462,
             NaN
           ],
           [
-            0.48455101533419154,
-            0.3069374636075765,
+            0.48153394594267096,
+            0.30714502430367024,
             NaN
           ],
           [
-            0.4236302062106904,
-            0.1409731190508561,
+            0.42639458722621776,
+            0.13973659702242472,
             NaN
           ]
         ]
@@ -184,7 +184,7 @@
         "shape": "SLOPE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 28889,
@@ -241,50 +241,50 @@
         ],
         [
           [
-            0.8083816547300794,
-            0.7745535905255435,
+            0.8053383981920903,
+            0.7776511793716471,
             NaN
           ],
           [
-            0.7739945019511557,
-            0.7891668846995189,
+            0.7755840570845243,
+            0.7887372979157341,
             NaN
           ],
           [
-            0.7954844424233609,
-            1.1247380726215188,
+            0.7963880590858435,
+            1.1260625166054576,
             NaN
           ]
         ]
       ],
       "cells_filled": 12,
       "cells_total": 18,
-      "best_value": 1.1247380726215188,
+      "best_value": 1.1260625166054576,
       "best_config": {
         "include_funding": true,
         "n_contributions": 156,
         "stride_days": 7.0
       },
       "shape_diagnostic": {
-        "peak": 1.1247380726215188,
+        "peak": 1.1260625166054576,
         "peak_index": [
           1,
           2,
           1
         ],
-        "neighbour_mean": 0.79232566356144,
-        "plateau_ratio": 0.7044534926382476,
+        "neighbour_mean": 0.7925626785007889,
+        "plateau_ratio": 0.7038354148311303,
         "n_neighbours": 2,
         "shape": "SLOPE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
-      "n_starts_best": 9496,
+      "n_starts_best": 396,
       "independent_paths_best": 1.36,
-      "mwrr_q05_best": 0.08066824648750182,
-      "mwrr_q50_best": 0.5011945897125694,
+      "mwrr_q05_best": 0.08149180566627995,
+      "mwrr_q50_best": 0.503102192318899,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
@@ -335,18 +335,18 @@
         ],
         [
           [
-            0.7965532816251244,
-            0.5615805020270191,
-            1.3299527718262774
+            0.798546733881037,
+            0.560451574963918,
+            1.3295129476178158
           ],
           [
-            0.7102638882486196,
-            0.38865627967135286,
+            0.7110632328663175,
+            0.3896444793072763,
             NaN
           ],
           [
-            0.6815705945406114,
-            0.2379257563623388,
+            0.6844049882332657,
+            0.23832818564419506,
             NaN
           ]
         ]
@@ -372,7 +372,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 2523,
@@ -429,18 +429,18 @@
         ],
         [
           [
-            0.755386930978256,
-            0.4356038635585278,
+            0.756089656435316,
+            0.43594820634122466,
             NaN
           ],
           [
-            0.6971225868885138,
-            0.2273239096306153,
+            0.6956375407635514,
+            0.0,
             NaN
           ],
           [
-            0.6403416008072254,
-            0.20430168817640337,
+            0.6402882309760541,
+            0.0,
             NaN
           ]
         ]
@@ -466,7 +466,7 @@
         "shape": "SLOPE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 5871,
@@ -523,18 +523,18 @@
         ],
         [
           [
-            0.7522999426067826,
-            0.5801951799040331,
-            2.156238514050346
+            0.7582835256073177,
+            0.5799252259370673,
+            0.0
           ],
           [
-            0.7059061994651611,
-            0.4856982122055298,
+            0.7084310338475592,
+            0.4868661225591493,
             NaN
           ],
           [
-            0.6870387038870028,
-            0.7052098139009698,
+            0.6858041336481447,
+            0.0,
             NaN
           ]
         ]
@@ -560,7 +560,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 616,
@@ -617,18 +617,18 @@
         ],
         [
           [
-            0.7286935021672785,
-            0.47019022487287354,
+            0.7275411674114534,
+            0.47240466195516995,
             NaN
           ],
           [
-            0.6606463679729895,
-            0.09216796796950256,
+            0.6609813412319421,
+            0.0,
             NaN
           ],
           [
-            0.6067975544717951,
-            0.4251719985837416,
+            0.6062339935802156,
+            0.0,
             NaN
           ]
         ]
@@ -654,7 +654,7 @@
         "shape": "SLOPE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 35080,
@@ -711,18 +711,18 @@
         ],
         [
           [
-            0.6712472099746009,
-            0.39893843000328916,
+            0.6748497102150512,
+            0.40016005646905156,
             NaN
           ],
           [
-            0.5830732094662414,
-            0.190314204616975,
+            0.5823735147098785,
+            0.0,
             NaN
           ],
           [
-            0.5336784724060284,
-            0.8184777490297893,
+            0.5298649634054324,
+            0.0,
             NaN
           ]
         ]
@@ -748,7 +748,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 4289,
@@ -805,18 +805,18 @@
         ],
         [
           [
-            0.7225924188797489,
-            0.4734884373868451,
+            0.7277454857122128,
+            0.4758504006302398,
             NaN
           ],
           [
-            0.6518697639479416,
-            0.20104949292053825,
+            0.6529680273233155,
+            0.2047532672601372,
             NaN
           ],
           [
-            0.6256254193532834,
-            0.3034435974974471,
+            0.630888711505494,
+            0.0,
             NaN
           ]
         ]
@@ -842,7 +842,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 6,
+        "code_revisions": 7,
         "panel_revisions": 4
       },
       "n_starts_best": 10336,
@@ -861,15 +861,15 @@
   "pbo": {
     "ETHUSDT": {
       "symbol": "ETHUSDT",
-      "status": "start offsets span 616 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split"
+      "status": "fewer than two configurations share a horizon"
     },
     "BTCUSDT": {
       "symbol": "BTCUSDT",
-      "status": "start offsets span 2523 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split"
+      "status": "fewer than two configurations share a horizon"
     },
     "SOLUSDT": {
       "symbol": "SOLUSDT",
-      "status": "start offsets span 4289 bars against a 26040-bar horizon; the blocks would be the same price history and the split would not be a split"
+      "status": "fewer than two configurations share a horizon"
     }
   },
   "search_test": {

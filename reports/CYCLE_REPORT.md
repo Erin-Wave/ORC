@@ -1,7 +1,7 @@
 # ORC cycle report
 
-- run `2ff14a02ae0c` finished 2026-09-02T11:51:45.987597+00:00
-- trials in project: **3966** (+1210 this cycle)
+- run `04b20295b22e` finished 2026-09-02T12:24:52.961612+00:00
+- trials in project: **5176** (+1210 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
 
@@ -13,14 +13,14 @@ Every number below is development data only. The ranking is not a result; the sh
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 672. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 784. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
 | ETHUSDT | +3.6056 | SPIKE | 0.166 | 616 | 1.02 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
 | BTCUSDT | +2.0510 | SPIKE | 0.285 | 2,523 | 1.07 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 30.0}` |
 | SOLUSDT | +1.6619 | SPIKE | 0.295 | 4,289 | 1.16 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
-| BNBUSDT | +1.1247 | SLOPE | 0.704 | 9,496 | 1.36 | `{'include_funding': True, 'n_contributions': 156, 'stride_days': 7.0}` |
+| BNBUSDT | +1.1261 | SLOPE | 0.704 | 396 | 1.36 | `{'include_funding': True, 'n_contributions': 156, 'stride_days': 7.0}` |
 | XRPUSDT | +0.9228 | SPIKE | 0.696 | 10,336 | 1.4 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
 | DOGEUSDT | +0.8602 | SLOPE | 0.766 | 5,871 | 1.23 | `{'include_funding': False, 'n_contributions': 156, 'stride_days': 7.0}` |
 | ADAUSDT | +0.7677 | SLOPE | 0.755 | 34,552 | 29.23 | `{'include_funding': False, 'n_contributions': 52, 'stride_days': 1.0}` |
@@ -29,9 +29,9 @@ Trials in this family: 672. Pre-registration hash `16461da7e4b64a49`.
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
-- PBO on **ETHUSDT** could not be computed: start offsets span 616 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split
-- PBO on **BTCUSDT** could not be computed: start offsets span 2523 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split
-- PBO on **SOLUSDT** could not be computed: start offsets span 4289 bars against a 26040-bar horizon; the blocks would be the same price history and the split would not be a split
+- PBO on **ETHUSDT** could not be computed: fewer than two configurations share a horizon
+- PBO on **BTCUSDT** could not be computed: fewer than two configurations share a horizon
+- PBO on **SOLUSDT** could not be computed: fewer than two configurations share a horizon
 
 ## H0002 — funding_carry_short (track B, metric `calmar`)
 
@@ -39,7 +39,7 @@ Trials in this family: 672. Pre-registration hash `16461da7e4b64a49`.
 
 **Kill condition.** Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.
 
-Trials in this family: 2916. Pre-registration hash `0d6e7ca037976c0c`.
+Trials in this family: 3888. Pre-registration hash `0d6e7ca037976c0c`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -67,7 +67,7 @@ Trials in this family: 2916. Pre-registration hash `0d6e7ca037976c0c`.
 
 **Kill condition.** Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.
 
-Trials in this family: 216. Pre-registration hash `d6b50b9b2c14f44f`.
+Trials in this family: 288. Pre-registration hash `d6b50b9b2c14f44f`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -95,7 +95,7 @@ Trials in this family: 216. Pre-registration hash `d6b50b9b2c14f44f`.
 
 **Kill condition.** Closed if, with include_funding true, no gated cell's annualised IRR exceeds the gate none cell at the same symbol, stride and contribution count on at least five of the nine symbols. Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. Closed also if every cell that clears the first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms, then the gate never fired often enough to change anything and the family has not been tested.
 
-Trials in this family: 162. Pre-registration hash `5c39d5b986fce8ca`.
+Trials in this family: 216. Pre-registration hash `5c39d5b986fce8ca`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -107,17 +107,13 @@ Trials in this family: 162. Pre-registration hash `5c39d5b986fce8ca`.
 | DOGEUSDT | +0.4871 | ? | nan | 973 | 3.72 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
 | ADAUSDT | +0.4775 | ? | nan | 1,134 | 4.17 | `{'gate': 'dip:0.20:30', 'include_funding': False}` |
 | AVAXUSDT | +0.4506 | ? | nan | 898 | 3.51 | `{'gate': 'dip:0.10:7', 'include_funding': False}` |
-| SOLUSDT | +0.3989 | ? | nan | 21,761 | 3.54 | `{'gate': 'none', 'include_funding': True}` |
+| SOLUSDT | +0.4002 | ? | nan | 907 | 3.54 | `{'gate': 'none', 'include_funding': True}` |
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
-| PBO symbol | PBO | verdict | covers best cell | configs | splits |
-|---|---:|---|---|---:|---:|
-| BNBUSDT | 0.167 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
-| BTCUSDT | 0.000 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
-| ETHUSDT | 0.000 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
-
-A **no** under `covers best cell` means that PBO was computed on configurations that do not include the best cell in the table above. It says nothing about that cell, and the check counts as not run.
+- PBO on **BNBUSDT** could not be computed: fewer than two analytic configurations
+- PBO on **BTCUSDT** could not be computed: fewer than two analytic configurations
+- PBO on **ETHUSDT** could not be computed: fewer than two analytic configurations
 
 ## What the next pass must do
 
