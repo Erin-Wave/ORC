@@ -269,7 +269,13 @@ def write_report(h: Hypothesis, metric: str | None = None,
     surfaces = surface_from_ledger(h, metric)
     pbo = {}
     run_pbo = pbo_for_signal_hypothesis if h.track == "B" else pbo_for_hypothesis
-    for sym in (pbo_symbols or list(surfaces)[:3]):
+    # The overfitting check has to run on the cells someone would actually be
+    # tempted by.  Taking whatever three symbols the dict happened to hold left
+    # the top-ranked cell -- the only one anyone reads -- with no PBO at all,
+    # which is the one place the check was needed.
+    ranked = [s for s, _ in sorted(surfaces.items(),
+                                   key=lambda kv: -kv[1]["best_value"])]
+    for sym in (pbo_symbols or ranked[:3]):
         try:
             pbo[sym] = run_pbo(h, sym)
         except (ValueError, FileNotFoundError) as exc:
