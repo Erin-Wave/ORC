@@ -38,6 +38,12 @@ N_WALK_BLOCKS = 4               # split the development window into quarters
 TRAIN_BLOCKS = 2                # choose on the first half, judge on the rest
 MIN_BLOCK_BARS = 24 * 30        # a block under a month cannot judge anything
 
+# How much of the in-sample result the out-of-sample blocks must retain. Sign
+# alone is not a test: H0002's best BTCUSDT cell went 1.790 in-sample to 0.159
+# out, lost 91 percent of its edge, and was recorded as passing because both
+# numbers were positive. Frozen at half before any family cleared the gate.
+MIN_OOS_RETENTION = 0.5
+
 
 def _sign_survives(base: float, stressed: float) -> bool:
     """The stressed result must keep the sign and not collapse to noise."""
@@ -104,8 +110,11 @@ def walk_forward(evaluate_on, cells, panel,
         "chosen": chosen.to_dict() if hasattr(chosen, "to_dict") else str(chosen),
         "in_sample": in_sample,
         "out_of_sample": oos,
-        # Chosen blind to these blocks, so this is the honest number.
-        "passed": _sign_survives(in_sample, oos),
+        "retention": (oos / in_sample) if in_sample > 0 and np.isfinite(oos) else float("nan"),
+        # Chosen blind to these blocks, so this is the honest number -- and it
+        # has to survive as a quantity, not merely as a sign.
+        "passed": bool(_sign_survives(in_sample, oos)
+                       and oos >= MIN_OOS_RETENTION * in_sample),
     }
 
 

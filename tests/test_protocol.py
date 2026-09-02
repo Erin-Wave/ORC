@@ -362,3 +362,39 @@ def test_plateau_score_cannot_see_a_two_level_grid():
     assert "shape" not in plateau_score(g, [False, False, False])
     fine = np.arange(27.0).reshape(3, 3, 3)
     assert "shape" in plateau_score(fine, [True, True, True])
+
+
+def test_walk_forward_needs_the_edge_to_survive_not_just_its_sign():
+    """Found by the post-mortem: 1.790 in-sample to 0.159 out was recorded as
+    passing because both numbers were positive."""
+    from orc.orchestrator import robustness
+
+    class Cell:
+        def to_dict(self):
+            return {}
+
+    panel = type("P", (), {"__len__": lambda self: 40_000})()
+    scores = {(0, 10_000): 2.0, (10_000, 20_000): 1.58,
+              (20_000, 30_000): 0.16, (30_000, 40_000): 0.16}
+
+    def score(cell, p, lo, hi):
+        return scores[(lo, hi)]
+
+    r = robustness.walk_forward(score, [Cell()], panel)
+    assert r["in_sample"] > 0 and r["out_of_sample"] > 0
+    assert r["retention"] < robustness.MIN_OOS_RETENTION
+    assert r["passed"] is False
+
+
+def test_a_surface_whose_best_cell_still_loses_gets_no_shape():
+    """Dividing one negative by another turned a collapse into a plateau: a peak
+    of -0.04 beside neighbours at -1.0 reported a ratio of 25 and PLATEAU."""
+    import numpy as np
+
+    from orc.kernel.inference import plateau_score
+
+    g = np.full((3, 3), -1.0)
+    g[1, 1] = -0.04
+    d = plateau_score(g, [True, True])
+    assert "shape" not in d
+    assert np.isnan(d["plateau_ratio"])

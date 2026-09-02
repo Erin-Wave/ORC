@@ -187,6 +187,15 @@ def plateau_score(grid: np.ndarray, ordinal_axes: list[bool] | None = None) -> d
     rather than a perturbation of the same one.  Those axes are skipped.
     """
     g = np.asarray(grid, dtype=np.float64)
+    # The ratio asks how much of the peak the neighbours retain, which only has
+    # that meaning when the peak is positive. On a surface where the best cell
+    # still loses, dividing one negative by another turns a collapse into a
+    # number above one: a peak of -0.04 with neighbours at -1.0 reported a
+    # plateau_ratio of 25 and the label PLATEAU. Every negative-valued surface
+    # was being shape-labelled backwards.
+    if g.size and np.isfinite(np.nanmax(g)) and np.nanmax(g) <= 0:
+        return {"peak": float(np.nanmax(g)), "plateau_ratio": float("nan"),
+                "unmeasurable": "the peak is not positive; the ratio has no meaning"}
     if g.size < 3 or np.all(np.isnan(g)):
         return {"peak": float(np.nanmax(g)) if g.size else float("nan"),
                 "plateau_ratio": float("nan")}

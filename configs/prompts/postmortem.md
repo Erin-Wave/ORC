@@ -10,7 +10,9 @@ Its robustness gate results:
 
 {gate_report}
 
-Write the entry in Markdown. Be specific and quantitative. Use these sections.
+Your entire reply becomes the file. Emit the Markdown document itself and nothing else -- no preamble, no description of what you did, no closing summary. A report about writing the entry is not the entry.
+
+Write it in Markdown. Be specific and quantitative. Use these sections.
 
 ## What was claimed
 One paragraph: the mechanism, and who was said to be paying.
