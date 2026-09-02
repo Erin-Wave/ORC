@@ -34,7 +34,14 @@ def disqualifiers(surface: dict, metric: str, pbo: float | None) -> list[str]:
     paths = surface.get("independent_paths_best")
     if paths is not None and paths < FEW_PATHS:
         why.append(f"{paths:g} paths")
-    if pbo is not None and pbo >= PBO_USELESS:
+    if pbo is None:
+        # write_report computes PBO for the top-ranked cells only, and a check
+        # that was never run is not a check that passed.  Treating None as
+        # clearance let any cell outside that set be announced as clearing
+        # "shape, path count and PBO together" with the strongest of the three
+        # never computed.
+        why.append("PBO unmeasured")
+    elif pbo >= PBO_USELESS:
         why.append(f"PBO {pbo:.2f}")
     return why
 

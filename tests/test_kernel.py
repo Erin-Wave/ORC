@@ -372,3 +372,41 @@ def test_carry_reads_the_rate_per_settlement_not_per_bar():
     rate[::8] = 0.0003                       # every eighth bar settles
     m = _trailing_settlement_mean(rate, window=80)
     assert m[-1] == pytest.approx(0.0003), "dividing by the window would give an eighth"
+
+
+def test_the_entry_bar_cannot_close_the_trade_it_opened():
+    """Found by the kernel review. The fill is close[a], so bar a's own high and
+    low happened before the position existed and must not reach it. Including
+    them returned a closed trade with bars_held 0 and +20% read off a spike that
+    preceded the fill; the mirror fabricates losses the same way."""
+    n = 40
+    close = np.full(n, 100.0)
+    high = close.copy()
+    low = close.copy()
+    high[5] = 130.0                       # inside bar 5, before its close
+    e, x = _one_trade(n, SIG_LONG, 4, 35)   # fills at close[5] == 100
+    spec = SignalSpec(capital=10_000.0, fee_bps=0.0, slippage_bps=0.0, take_profit=0.20)
+    t = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")["trades"][0]
+    assert t["bars_held"] > 0
+    assert t["reason"] == "signal"
+    assert t["pnl"] == pytest.approx(0.0)
+
+
+def test_a_settlement_before_the_fill_is_not_collected():
+    """Also from the review. Panels are labelled by open time and a settlement
+    sits on the bar containing it, so bar a's settlement cleared before the fill
+    at close[a]. Summing from a credited a full-notional settlement to a
+    position that did not yet exist."""
+    n = 60
+    close = np.full(n, 100.0)
+    fr = np.zeros(n)
+    fr[10] = 0.01                         # one fat settlement, on the fill bar
+    e, x = _one_trade(n, SIG_SHORT, 9, 40)  # fills at close[10]
+    spec = SignalSpec(capital=10_000.0, fee_bps=0.0, slippage_bps=0.0)
+    r = run_signals(close, close, close, e, x, spec, funding_rate=fr, symbol="BTCUSDT")
+    assert r["funding_collected"] == pytest.approx(0.0)
+
+    fr2 = np.zeros(n)
+    fr2[11] = 0.01                        # the very next bar is collected
+    r2 = run_signals(close, close, close, e, x, spec, funding_rate=fr2, symbol="BTCUSDT")
+    assert r2["funding_collected"] > 0

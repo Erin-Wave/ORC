@@ -1,0 +1,22 @@
+{
+  "hypothesis_id": "H0005",
+  "family": "funding_gated_dca",
+  "track": "A",
+  "claim": "KT-1 measured the funding tax on long perpetual accumulation at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTCUSDT settlements positive, and closed the family over it. What it did not ask is whether the tax has to be paid on every deposit. Thirteen percent of settlements are negative, and on those bars the accumulator is paid to hold rather than charged. This gates the deposit on that condition: contribute only when the trailing mean settlement rate is at or below the gate, otherwise hold the cash and deploy it on the next eligible bar. Who pays: the crowded shorts, and the desks holding spot that need protection immediately; they keep paying because the demand to be short during a drawdown is a demand for immediacy, and a hedge deferred until funding normalises is not a hedge. The rule shape differs from H0001 in what it does with a bar, not in how finely it enumerates one: H0001 buys on every scheduled bar unconditionally, this one buys only on bars where the carry runs the other way. The stride, the number of contributions, the calendar window and the total capital contributed are all held identical to the corresponding H0001 cell, so the gate can only change when inside the window the money arrives, and tm_q05 therefore remains comparable between the two. include_funding is on the grid as a discriminator rather than a tuning axis: negative funding clusters inside drawdowns, so a gate on it is also, unavoidably, a dip filter. If the gate wins only with funding switched off then what it found was price timing and the rebate is not what paid, which is a different and much weaker claim than the one being registered here.",
+  "kill_condition": "Closed if, with include_funding true, the gated rule's tm_q05 fails to exceed the unconditional H0001 cell at the same symbol, stride_days 7 and n_contributions 52 on at least five of the nine symbols. Closed also - even if that bar is cleared - if the improvement over the same H0001 cell with include_funding false is at least as large as the improvement with it true, on five or more symbols: the funding rebate is then demonstrably not the source of the gain and the family has found a dip filter wearing a carry mechanism's clothes. Closed also if the gate is not binding: if at every cell the median across the nine symbols of the fraction of scheduled contributions that are deferred is below 0.10, the rule is the H0001 baseline with noise on top and its differences cannot be attributed to the gate.",
+  "universe": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "LTCUSDT", "AVAXUSDT"],
+  "grid": {
+    "gate_rate": [0.0, -0.00005],
+    "lookback_days": [7, 21],
+    "include_funding": [true, false]
+  },
+  "fixed": {
+    "contribution": 100.0,
+    "clock": "1h",
+    "stride_days": 7,
+    "n_contributions": 52,
+    "leverage": 1.0,
+    "carry_skipped_contribution": true,
+    "deploy_residual_at_final_bar": true
+  }
+}

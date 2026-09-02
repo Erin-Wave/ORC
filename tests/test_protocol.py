@@ -242,10 +242,10 @@ def _cell(value, shape="PLATEAU", paths=40.0):
 def test_a_losing_cell_is_never_a_finding():
     from orc.orchestrator import verdict
 
-    assert verdict.disqualifiers(_cell(0.7677), "tm_q05", None) == ["at or below 1"]
-    assert verdict.disqualifiers(_cell(-0.29), "calmar", None) == ["at or below 0"]
-    assert verdict.disqualifiers(_cell(1.4), "tm_q05", None) == []
-    assert verdict.disqualifiers(_cell(0.31), "calmar", None) == []
+    assert verdict.disqualifiers(_cell(0.7677), "tm_q05", 0.1)[0] == "at or below 1"
+    assert verdict.disqualifiers(_cell(-0.29), "calmar", 0.1)[0] == "at or below 0"
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", 0.1) == []
+    assert verdict.disqualifiers(_cell(0.31), "calmar", 0.1) == []
 
 
 def test_every_disqualifier_is_reported_not_just_the_first():
@@ -264,7 +264,9 @@ def test_a_spike_is_not_a_finding_however_large():
 def test_survivors_reads_the_report_metric_not_a_default():
     from orc.orchestrator import verdict
 
-    report = {"metric": "calmar", "pbo": {},
+    report = {"metric": "calmar",
+              "pbo": {"AAA": {"status": "ok", "pbo": 0.1},
+                      "BBB": {"status": "ok", "pbo": 0.1}},
               "surfaces": {"AAA": _cell(0.4), "BBB": _cell(-0.1)}}
     assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
 
@@ -309,3 +311,31 @@ def test_the_regime_label_never_looks_forward():
     bumped[700:] = 1e6
     b = robustness.regime_split(bumped, window_bars=100)
     assert np.array_equal(a[:700], b[:700])
+
+
+def test_a_pbo_that_was_never_computed_is_not_a_pass():
+    """Found by the kernel review: None read as clearance, so any cell outside
+    the top three could be announced as clearing PBO with PBO never run."""
+    from orc.orchestrator import verdict
+
+    assert verdict.disqualifiers(_cell(1.4), "tm_q05", None) == ["PBO unmeasured"]
+    report = {"metric": "calmar", "pbo": {},
+              "surfaces": {"AAA": _cell(0.4)}}
+    assert verdict.survivors(report) == []
+
+
+def test_the_code_hash_covers_everything_that_writes_a_number():
+    """A metric corrected in the orchestrator must start a new trial, not be
+    discarded by INSERT OR IGNORE while the run reports 'new 0'."""
+    from orc import config
+    from orc.ledger.trials import code_hash
+
+    base = code_hash()
+    runner = config.ORC_ROOT / "orc" / "orchestrator" / "runner.py"
+    original = runner.read_bytes()
+    try:
+        runner.write_bytes(original + b"\n# a change to how a metric is computed\n")
+        assert code_hash() != base
+    finally:
+        runner.write_bytes(original)
+    assert code_hash() == base

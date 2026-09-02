@@ -163,38 +163,51 @@ def run_signals(
         if spec.max_hold_bars is not None:
             b = min(b, a + spec.max_hold_bars)
 
-        adverse = low[a:b + 1] if side == LONG else high[a:b + 1]
-        favour = high[a:b + 1] if side == LONG else low[a:b + 1]
+        # The scan starts at a+1, not at a.  The fill is close[a], so bar a's
+        # own extremes all happened before the position existed and cannot
+        # touch it.  Including them let a target be hit on the entry bar by a
+        # spike that preceded the fill: a flat series with high[5]=130 and a
+        # fill at close[5]=100 returned a closed trade with bars_held 0 and
+        # +20%, read entirely off a price the position never saw.  The mirror
+        # fabricates losses, and both are structurally identical to real trades.
+        scan = slice(a + 1, b + 1)
+        adverse = low[scan] if side == LONG else high[scan]
+        favour = high[scan] if side == LONG else low[scan]
 
         # Every way this trade can end, as (bar offset, priority, reason, price).
         ends = [(b - a, _PRIORITY["signal"], "signal", float(close[b]))]
 
         hit = _first_true(adverse <= liq if side == LONG else adverse >= liq)
         if hit >= 0:
-            ends.append((hit, _PRIORITY["liquidation"], "liquidation", liq))
+            ends.append((hit + 1, _PRIORITY["liquidation"], "liquidation", liq))
         if spec.stop_loss is not None:
             lvl = fill - side * spec.stop_loss * cash / qty
             hit = _first_true(adverse <= lvl if side == LONG else adverse >= lvl)
             if hit >= 0:
-                ends.append((hit, _PRIORITY["stop"], "stop", lvl))
+                ends.append((hit + 1, _PRIORITY["stop"], "stop", lvl))
         if spec.take_profit is not None:
             lvl = fill + side * spec.take_profit * cash / qty
             hit = _first_true(favour >= lvl if side == LONG else favour <= lvl)
             if hit >= 0:
-                ends.append((hit, _PRIORITY["take_profit"], "take_profit", lvl))
+                ends.append((hit + 1, _PRIORITY["take_profit"], "take_profit", lvl))
 
         off, _, reason, px = min(ends)
         b = a + off
         exit_px = px if reason == "liquidation" else px * (1.0 - side * spec.exit_cost)
 
-        # A long pays positive funding; a short collects it.
-        funding = -side * qty * float(flow_cum[b + 1] - flow_cum[a])
+        # A long pays positive funding; a short collects it -- from bar a+1.
+        # Panels are labelled by open time and a settlement sits on the bar
+        # containing it, so bar a's settlement cleared before the fill at
+        # close[a].  Summing from a credited a full-notional settlement to a
+        # position that did not yet exist, on roughly one trade in eight, in a
+        # family whose entire subject is funding income.
+        funding = -side * qty * float(flow_cum[b + 1] - flow_cum[a + 1])
         gross = side * qty * (exit_px - fill)
         pnl = -cash if reason == "liquidation" else gross + funding
 
         # Mark the curve bar by bar so drawdown sees the path, not just the fills.
         unreal = side * qty * (close[a:b + 1] - fill)
-        accrued = -side * qty * (flow_cum[a + 1:b + 2] - flow_cum[a])
+        accrued = -side * qty * (flow_cum[a + 1:b + 2] - flow_cum[a + 1])
         equity[a:b + 1] = np.maximum(cash + unreal + accrued, 0.0)
 
         cash = max(cash + pnl, 0.0)

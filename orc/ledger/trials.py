@@ -70,13 +70,21 @@ def canonical_hash(obj: Any) -> str:
 
 def code_hash(paths: list[Path] | None = None) -> str:
     """Hash of the evaluation code, so a silent kernel change starts a new trial."""
+    # Everything that can change a number written to a row.  The metrics are
+    # assembled in the orchestrator and the data in the panel loader, so hashing
+    # only the evaluators meant a corrected metric re-ran, matched the UNIQUE
+    # key, was discarded by INSERT OR IGNORE, and printed "new 0" -- which reads
+    # as correct deduplication rather than as a correction thrown away.
     roots = paths or [
         config.ORC_ROOT / "orc" / "kernel",
         config.ORC_ROOT / "orc" / "eval",
+        config.ORC_ROOT / "orc" / "orchestrator" / "runner.py",
+        config.ORC_ROOT / "orc" / "facts" / "panel.py",
     ]
     h = hashlib.sha256()
     for root in sorted(roots, key=str):
-        for p in sorted(Path(root).rglob("*.py")):
+        root = Path(root)
+        for p in ([root] if root.is_file() else sorted(root.rglob("*.py"))):
             h.update(p.name.encode())
             # Normalise line endings before hashing.  git on this workstation
             # runs with core.autocrlf=true, so a checkout rewrites these files

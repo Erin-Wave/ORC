@@ -177,8 +177,13 @@ def run_dca_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
         lump = lump_sum_reference(p.close, spec)
         metrics = {
             **_profile("tm", tm),
+            # horizon_years, or the IRR is annualised over the time of the last
+            # deposit instead of the time the value was measured.  With
+            # hold_days set, that is the one metric section 4 calls
+            # horizon-robust silently not being so.
             **_profile("mwrr", mwrr_equal_interval(cfg.contribution, cfg.n_contributions,
-                                                   years_between, res["terminal_value"])),
+                                                   years_between, res["terminal_value"],
+                                                   horizon_years=horizon / (p.bars_per_day * 365.0))),
             **_profile("funding_frac", res["funding_paid"] / invested),
             "invested_usdt": invested,
             "liquidation_rate": 0.0,
@@ -207,7 +212,8 @@ def run_dca_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
     metrics = {
         **_profile("tm", out["terminal_multiple"]),
         **_profile("mwrr", mwrr_equal_interval(cfg.contribution, cfg.n_contributions,
-                                               years_between, out["terminal_equity"])),
+                                               years_between, out["terminal_equity"],
+                                               horizon_years=horizon / (p.bars_per_day * 365.0))),
         **_profile("dd", out["max_dd_total"]),
         **_profile("funding_frac", out["funding_paid"] / np.maximum(invested, 1e-9)),
         "invested_usdt": float(np.median(invested)),
