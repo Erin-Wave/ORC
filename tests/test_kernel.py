@@ -410,3 +410,71 @@ def test_a_settlement_before_the_fill_is_not_collected():
     fr2[11] = 0.01                        # the very next bar is collected
     r2 = run_signals(close, close, close, e, x, spec, funding_rate=fr2, symbol="BTCUSDT")
     assert r2["funding_collected"] > 0
+
+
+# --------------------------------------------------------------------------
+# the seven the first kernel review left open
+# --------------------------------------------------------------------------
+def test_a_wiped_out_path_reports_a_total_drawdown():
+    """The liquidation bar left `act` before the mark-to-market, so a path that
+    lost everything reported the drawdown it had one bar earlier."""
+    close = np.concatenate([np.full(100, 100.0), np.linspace(100.0, 1.0, 300)])
+    low = close * 0.999
+    spec = SimSpec(contribution=1000.0, stride_bars=10, n_contributions=5,
+                   hold_bars=300, leverage=5.0, fee_bps=0.0, slippage_bps=0.0)
+    out = simulate(close, low, np.array([0]), spec, table=BTC_LIKE)
+    assert out["liquidated"][0]
+    assert out["terminal_multiple"][0] == pytest.approx(0.0)
+    assert out["max_dd_total"][0] >= 1.0, "losing everything is a full drawdown"
+
+
+def test_time_in_loss_divides_by_the_life_the_path_had():
+    """Dividing by the nominal horizon made the paths that died earliest -- the
+    worst ones -- look the healthiest on this measure."""
+    close = np.concatenate([np.full(100, 100.0), np.linspace(100.0, 1.0, 300)])
+    low = close * 0.999
+    spec = SimSpec(contribution=1000.0, stride_bars=10, n_contributions=5,
+                   hold_bars=300, leverage=5.0, fee_bps=0.0, slippage_bps=0.0)
+    out = simulate(close, low, np.array([0]), spec, table=BTC_LIKE)
+    lived = out["bars_lived"][0]
+    assert lived < spec.horizon_bars + 1, "this path died before the horizon"
+    assert out["frac_time_in_loss"][0] <= 1.0
+    assert out["frac_time_in_loss"][0] > 0
+
+
+def test_the_panel_identity_includes_the_wick():
+    """high and low decide every exit, so a panel differing only in a wick is
+    different data and must not dedupe against the old one."""
+    from orc.facts.panel import _hash_arrays
+
+    close = np.array([100.0, 101.0, 102.0])
+    fr = np.zeros(3)
+    high = np.array([101.0, 102.0, 103.0])
+    low_a = np.array([99.0, 100.0, 101.0])
+    low_b = low_a.copy()
+    low_b[1] = 50.0                        # a spurious wick, corrected
+    assert _hash_arrays(close, fr, high, low_a) != _hash_arrays(close, fr, high, low_b)
+
+
+def test_leverage_is_checked_against_the_bracket_the_size_lands_in():
+    """max_leverage is tier 0's and applies only to the smallest notionals."""
+    assert LONG_TAIL.leverage_at(1_000.0) == LONG_TAIL.max_leverage
+    assert LONG_TAIL.leverage_at(250_000.0) < LONG_TAIL.max_leverage
+
+    n = 40
+    close = np.full(n, 100.0)
+    e, x = _one_trade(n, SIG_LONG, 1, 30)
+    spec = SignalSpec(capital=10_000.0, leverage=LONG_TAIL.max_leverage)
+    with pytest.raises(ValueError, match="exceeds"):
+        run_signals(close, close, close, e, x, spec, symbol="SOMEALTUSDT",
+                    table=LONG_TAIL)
+
+
+def test_sharpe_refuses_a_destroyed_curve():
+    """Every wipeout came out at the same number regardless of size or timing."""
+    from orc.kernel.metrics_fc import sharpe
+
+    eq = np.concatenate([np.full(1000, 10_000.0), np.zeros(2000)])
+    assert np.isnan(sharpe(eq, 8760))
+    big = np.concatenate([np.full(1000, 10_000_000.0), np.zeros(2000)])
+    assert np.isnan(sharpe(big, 8760))

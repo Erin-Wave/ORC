@@ -33,6 +33,17 @@ from orc.orchestrator.spec import Hypothesis
 
 PRIMARY_METRIC = "tm_q05"          # 5th percentile terminal multiple
 
+# CSCV splits rows into blocks and asks whether the in-sample winner survives
+# out of sample. That only means something if the blocks cover different price
+# history. On Track A the rows are start offsets and each carries a horizon:
+# H0001/BTCUSDT had 105 days of offsets against horizons up to 4650, so every
+# column covered essentially the same window, the split was not a split, and
+# PBO came back as exactly 0.000 labelled SELECTION_INFORMATIVE -- the
+# strongest endorsement the scale has, from a comparison that measured nothing.
+# The offsets must span at least as long as the horizon before the answer is
+# reportable. Frozen before any family cleared.
+MIN_SPAN_OVER_HORIZON = 1.0
+
 
 # --------------------------------------------------------------------------
 def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
@@ -85,8 +96,18 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
 
     # An axis is ordinal only if its values are numeric and it has enough
     # levels for 'one step away' to mean a small change.
-    ordinal = [len(h.grid[a]) > 2 and all(isinstance(v, (int, float))
-               and not isinstance(v, bool) for v in h.grid[a]) for a in axes]
+    # An axis is ordinal if "one step away" means a small change along it. That
+    # needs three levels and an order. A None among otherwise numeric values is
+    # "off", which sorts nowhere, so the numeric levels are still ordinal but
+    # the None column is not a neighbour of anything -- previously the whole
+    # axis was declared categorical and never perturbed, which on H0002 left
+    # one axis of five carrying the entire shape verdict.
+    def _ordinal(vals: list) -> bool:
+        numeric = [v for v in vals
+                   if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        return len(numeric) > 2
+
+    ordinal = [_ordinal(h.grid[a]) for a in axes]
 
     out: dict[str, dict] = {}
     for sym, cells in values.items():
@@ -145,6 +166,7 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
 
     per_config: list[tuple[np.ndarray, np.ndarray]] = []
     labels: list[dict] = []
+    horizons: list[int] = []
     for cfg in configs:
         stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
         if stride < 1 or (cfg.n_contributions - 1) * stride + hold >= len(p):
@@ -159,6 +181,7 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
         if res.get("n_starts", 0) == 0:
             continue
         per_config.append((res["start_idx"], res["terminal_multiple"]))
+        horizons.append((cfg.n_contributions - 1) * stride + hold)
         labels.append({k: v for k, v in cfg.to_dict().items() if k in h.grid})
 
     if len(per_config) < 2:
@@ -172,6 +195,32 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
     if common.size < n_blocks * 10:
         return {"symbol": symbol, "status": f"only {common.size} common start dates"}
 
+    # Horizons differ across the grid, and a terminal multiple grows with the
+    # horizon (section 4), so the columns are not comparable as they stand and
+    # the in-sample winner would be chosen by holding longest. Keep only the
+    # configurations sharing the most common horizon.
+    from collections import Counter
+    common_h = Counter(horizons).most_common(1)[0][0]
+    keep = [i for i, hz in enumerate(horizons) if hz == common_h]
+    if len(keep) < 2:
+        return {"symbol": symbol,
+                "status": "fewer than two configurations share a horizon"}
+    per_config = [per_config[i] for i in keep]
+    labels = [labels[i] for i in keep]
+
+    common = per_config[0][0]
+    for s, _ in per_config[1:]:
+        common = np.intersect1d(common, s, assume_unique=True)
+    if common.size < n_blocks * 10:
+        return {"symbol": symbol, "status": f"only {common.size} common start dates"}
+
+    span_over_horizon = common.size / max(common_h, 1)
+    if span_over_horizon < MIN_SPAN_OVER_HORIZON:
+        return {"symbol": symbol,
+                "status": f"start offsets span {common.size} bars against a "
+                          f"{common_h}-bar horizon; the blocks would be the same "
+                          f"price history and the split would not be a split"}
+
     mat = np.column_stack([
         vals[np.searchsorted(starts, common)] for starts, vals in per_config])
 
@@ -179,6 +228,8 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
     return {
         "symbol": symbol,
         "status": "ok",
+        "horizon_bars": int(common_h),
+        "span_over_horizon": round(float(span_over_horizon), 3),
         "n_configs": res.n_configs,
         "n_common_starts": int(common.size),
         "n_splits": res.n_splits,

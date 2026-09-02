@@ -126,7 +126,14 @@ def load(
         volume=df["volume"].to_numpy().astype(np.float64),
         funding_rate=fr,
         holdout_state=state,
-        panel_hash=_hash_arrays(close, fr),
+        # high and low decide every liquidation, stop and take-profit, so a
+        # panel that differs only in a wick is different data. Hashing close
+        # and funding alone meant a corrected wick left the identity unchanged,
+        # the ledger's UNIQUE key matched, and the new liquidation rate was
+        # discarded as a duplicate of the old one.
+        panel_hash=_hash_arrays(close, fr,
+                                df["high"].to_numpy().astype(np.float64),
+                                df["low"].to_numpy().astype(np.float64)),
     )
 
 

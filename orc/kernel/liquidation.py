@@ -45,7 +45,15 @@ class TierTable:
 
     @property
     def max_leverage(self) -> float:
+        """The most any position may use -- tier 0, the smallest notionals."""
         return self.tiers[0].max_leverage
+
+    def leverage_at(self, notional: float) -> float:
+        """What the exchange allows at this size, which is what binds."""
+        for t in self.tiers:
+            if abs(notional) <= t.notional_cap:
+                return t.max_leverage
+        return self.tiers[-1].max_leverage
 
 
 # Published BTCUSDT brackets.  Retail DCA at a few thousand USDT never leaves

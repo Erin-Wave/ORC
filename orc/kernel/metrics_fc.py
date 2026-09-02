@@ -60,6 +60,14 @@ def sharpe(equity: np.ndarray, bars_per_year: float, rf: float = 0.0) -> float:
     equity = np.asarray(equity, dtype=np.float64)
     if equity.size < 3:
         return float("nan")
+    # A curve that reaches zero has no volatility-adjusted return to report.
+    # The clamp turns the wipeout into one enormous log return that sets both
+    # the mean and the standard deviation, and they cancel: every destroyed
+    # account came out at -sqrt(bars_per_year/n) regardless of how much was
+    # lost or when. The same figure for a 10,000 account and a 10,000,000 one
+    # is not a measurement.
+    if np.any(equity <= 0.0):
+        return float("nan")
     with np.errstate(divide="ignore", invalid="ignore"):
         r = np.diff(np.log(np.maximum(equity, 1e-12)))
     r = r[np.isfinite(r)]

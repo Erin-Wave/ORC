@@ -121,9 +121,15 @@ def run_signals(
         raise ValueError("a panel needs at least three bars to signal, fill and exit")
 
     table = table or tier_table_for(symbol)
-    if spec.leverage > table.max_leverage:
-        raise ValueError(f"leverage {spec.leverage} exceeds {table.max_leverage} "
-                         f"for the {table.name} tier table")
+    # max_leverage is tier 0's, which applies only to the smallest notionals.
+    # Checking against it let a position run at a size the exchange caps lower:
+    # 25x on 10,000 is a notional of 250,000, which sits in a bracket where the
+    # allowed leverage is 10. Check the bracket the position actually lands in.
+    notional = spec.capital * spec.leverage
+    allowed = table.leverage_at(notional)
+    if spec.leverage > allowed:
+        raise ValueError(f"leverage {spec.leverage} exceeds {allowed} at a notional "
+                         f"of {notional:,.0f} on the {table.name} tier table")
 
     # Funding accrues per bar on the position's notional.  Prefix sums make the
     # bill over any held window O(1), which is what keeps the trade scan cheap.

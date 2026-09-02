@@ -86,94 +86,101 @@
     },
     "149d8d4bfa5d": {
       "id": "149d8d4bfa5d",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: high and low join the panel identity",
       "file": "orc/facts/panel.py",
       "line": 129,
       "severity": "medium",
       "what": "`panel_hash` is computed from `close` and `funding_rate` only, so the arrays that decide every liquidation, stop and take-profit — `high` and `low` — are outside the panel's identity.",
       "trigger": "Correct a bad `low` column for AVAXUSDT (a vendor 1m bar with a spurious wick, which `to_hourly` propagates into the hourly low), rebuild the panel, re-run H0002. `close` and the funding series are byte-identical, so `_hash_arrays(close, fr)` returns the same 32 hex chars, the ledger's UNIQUE (config_hash, symbol, evaluator, panel_hash, code_hash) matches, and the new liquidation rate, Calmar and max_drawdown are discarded in favour of the ones computed from the bad wick. Conversely, two genuinely different panels that agree on closes are recorded as the same measurement.",
-      "why_silent": "The re-run prints 'new 0' and the report regenerates from the old rows; nothing compares the metrics that were just computed against the ones already stored."
+      "why_silent": "The re-run prints 'new 0' and the report regenerates from the old rows; nothing compares the metrics that were just computed against the ones already stored.",
+      "decided_utc": "2026-09-02T08:29:32.578133+00:00"
     },
     "c64f79505023": {
       "id": "c64f79505023",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: the wipeout is recorded before the path leaves act",
       "file": "orc/eval/simulate.py",
       "line": 153,
       "severity": "medium",
       "what": "Step 4 clears the liquidated path out of `act` before step 5 marks to market, so the bar on which the position is wiped out is never entered into `peak_pnl`/`max_dd_abs`; a total loss is reported with the drawdown it had one bar earlier.",
       "trigger": "close = [100.0]*100 then linspace(100, 1.0, 300); low = close*0.999; SimSpec(contribution=1000.0, stride_bars=10, n_contributions=5, hold_bars=300, leverage=5.0, fees 0). simulate returns liquidated=True, exit_bar=155, terminal_multiple=0.0 — and max_dd_total = 0.894. The path lost 100% of contributed capital and reports an 89.4% drawdown. runner.py:211 feeds this straight into `dd_q95`, so the left tail of the drawdown distribution is capped below the actual worst case by exactly the paths that had the worst case.",
-      "why_silent": "0.894 is a perfectly ordinary catastrophic-but-survivable drawdown, and `terminal_multiple = 0` and `liquidation_rate` are reported in different fields that nothing reconciles against `max_dd_total`."
+      "why_silent": "0.894 is a perfectly ordinary catastrophic-but-survivable drawdown, and `terminal_multiple = 0` and `liquidation_rate` are reported in different fields that nothing reconciles against `max_dd_total`.",
+      "decided_utc": "2026-09-02T08:29:32.584713+00:00"
     },
     "68194bacae55": {
       "id": "68194bacae55",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: divided by bars_lived, which the result now also reports",
       "file": "orc/eval/simulate.py",
       "line": 203,
       "severity": "medium",
       "what": "`frac_time_in_loss` and `frac_time_below_peak` divide by the nominal horizon `H+1` rather than by the number of bars the path actually lived, so any path that exits early (liquidation, stop, take-profit) reports a fraction diluted by time it never experienced.",
       "trigger": "Same input as the finding above: the path is liquidated at bar 155 of a 340-bar horizon and was underwater on 54 of its 156 living bars — 34.6% of its life. simulate reports frac_time_in_loss = 0.158. runner.py:215 records the median of this across the ensemble as `frac_time_in_loss_q50`. With a stop_loss in the grid, the paths that stop out earliest — the worst ones — contribute the smallest fractions, so the metric moves the wrong way as the strategy gets worse.",
-      "why_silent": "It is a fraction in [0,1] that trends in a believable direction, and the correct denominator (`exit_bar + 1`) is already computed and returned in the same dict, so the two never get compared."
+      "why_silent": "It is a fraction in [0,1] that trends in a believable direction, and the correct denominator (`exit_bar + 1`) is already computed and returned in the same dict, so the two never get compared.",
+      "decided_utc": "2026-09-02T08:29:32.591336+00:00"
     },
     "7f3a5b146fc4": {
       "id": "7f3a5b146fc4",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: PBO keeps one horizon and refuses when the offsets cannot span it",
       "file": "orc/orchestrator/surface.py",
       "line": 175,
       "severity": "medium",
       "what": "Not in the listed file set, but it is what produces the `pbo` that verdict.py consumes: `pbo_for_hypothesis` builds the CSCV matrix from terminal multiples of configs with wildly different horizons — the comparison CLAUDE.md section 4 forbids — over rows that are consecutive hourly start offsets whose horizons overlap almost completely, so the in-sample winner is decided by horizon length and PBO collapses to exactly 0.",
       "trigger": "H0001/BTCUSDT: the 14 columns have horizons of 51, 103, 155, 357, 721, 1085 and 1530 days, with mean terminal multiples 1.010 to 3.854. `common` is 2,523 start offsets spanning 105 calendar days, each with a horizon up to 1,530 days — the 'out-of-sample' blocks are the same price history as the 'in-sample' blocks. Result on disk: stride_days=7.0/n_contributions=104 wins all 252 splits, median_logit is identically 2.6391 (= log 14) for both BTCUSDT and ETHUSDT, degraded_fraction is exactly 0.5, pbo = 0.0, verdict 'SELECTION_INFORMATIVE'. Removing the two longest-horizon columns would change the answer completely.",
-      "why_silent": "pbo = 0.0 is the best possible score and reads as a clean pass of the project's headline overfitting control. Nothing in cscv_pbo checks its own documented precondition ('rows must be comparable across configs'), and the identical median_logit across two unrelated symbols is the only visible tell."
+      "why_silent": "pbo = 0.0 is the best possible score and reads as a clean pass of the project's headline overfitting control. Nothing in cscv_pbo checks its own documented precondition ('rows must be comparable across configs'), and the identical median_logit across two unrelated symbols is the only visible tell.",
+      "decided_utc": "2026-09-02T08:29:32.597107+00:00"
     },
     "756cb8997dc4": {
       "id": "756cb8997dc4",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: a numeric level beside a None is still ordinal",
       "file": "orc/orchestrator/surface.py",
       "line": 88,
       "severity": "medium",
       "what": "Not in the listed file set, but it drives `plateau_score`: the `ordinal` mask requires `len(values) > 2 AND all values numeric`, so a numeric axis containing `None` is declared categorical and never perturbed, and every 2-level axis is excluded too.",
       "trigger": "H0002's grid is 5 axes: enter_rate [0.0001, 0.0002] (2 levels, excluded), leverage [0.25, 1.0] (2 levels, excluded), stop_loss [0.1, 0.25, None] (excluded because None fails the isinstance test), max_hold_days [7.0, 30.0, None] (same), lookback_days [7.0, 21.0, 60.0] (the only ordinal axis). The 108-cell surface therefore gets its PLATEAU/SPIKE verdict from `n_neighbours: 2`, both along lookback_days — confirmed in reports/H0002_SURFACE.json for every symbol. `None` here means 'no stop' / 'no time limit', which is an ordered endpoint of the axis, not a different mechanism.",
-      "why_silent": "`n_neighbours` is present in the diagnostic dict but is not printed by summarise() or status.py, so a shape verdict resting on 2 of a possible ~14 neighbours is indistinguishable from one resting on all of them."
+      "why_silent": "`n_neighbours` is present in the diagnostic dict but is not printed by summarise() or status.py, so a shape verdict resting on 2 of a possible ~14 neighbours is indistinguishable from one resting on all of them.",
+      "decided_utc": "2026-09-02T08:29:32.604023+00:00"
     },
     "6e741cd69a58": {
       "id": "6e741cd69a58",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: leverage_at() checks the bracket the notional lands in",
       "file": "orc/kernel/liquidation.py",
       "line": 43,
       "severity": "low",
       "what": "`np.clip(idx, 0, len(caps)-1)` silently applies the top bracket to any notional above the last cap instead of refusing, and `TierTable.max_leverage` returns tier 0's leverage, so the leverage guard in run_signals is checked against a bracket the position may not be in.",
       "trigger": "SignalSpec(capital=10_000, leverage=25.0) on any symbol outside _MAJORS and the BTC set — LONG_TAIL.max_leverage is tiers[0].max_leverage = 25, so signal.py:124 lets it through. The resulting notional is 250,000, which sits in LONG_TAIL tier 3 where Binance caps leverage at 10x; the trade runs at a size the exchange would have rejected. Separately, maintenance_margin(1e9, BTC_LIKE) returns 0.5*1e9 - 209,098,050 = 290,901,950 rather than erroring, so a capacity study past the 800M cap gets a number.",
-      "why_silent": "Both paths return well-formed floats from the nearest bracket, and the docstring at liquidation.py:51-53 asserts the table exists precisely so 'capacity studies cannot silently use the wrong rate'."
+      "why_silent": "Both paths return well-formed floats from the nearest bracket, and the docstring at liquidation.py:51-53 asserts the table exists precisely so 'capacity studies cannot silently use the wrong rate'.",
+      "decided_utc": "2026-09-02T08:29:32.609777+00:00"
     },
     "9baff8355a92": {
       "id": "9baff8355a92",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T07:31:12.766776+00:00",
       "last_seen_utc": "2026-09-02T07:31:12.766776+00:00",
-      "disposition": "",
+      "disposition": "fixed: sharpe returns NaN on a curve that reaches zero",
       "file": "orc/kernel/metrics_fc.py",
       "line": 64,
       "severity": "low",
       "what": "For an equity curve destroyed in a single bar, the annualised Sharpe reduces to -sqrt(bars_per_year/n) independently of how much was lost or when, because the one huge log return sets both the mean and the standard deviation.",
       "trigger": "equity = [10_000.0]*1000 + [0.0]*38_243 (a first-trade liquidation on a 39,243-bar BTCUSDT panel). The clamp at 1e-12 gives one return of log(1e-16) and 39,241 zeros; mean = X/n and std = X/sqrt(n-1) cancel, so sharpe(equity, 8760) = -sqrt(8760/39243) ~= -0.47 whatever X is — the same figure for a 10,000 account and a 10,000,000 one, and the same whether the wipeout was at bar 1,000 or bar 30,000. The docstring claims log returns mean 'a liquidation does not produce a finite number out of a total loss'; it produces -0.47.",
-      "why_silent": "-0.47 reads as a mediocre strategy rather than a total loss. Severity is low only because cagr returns -1.0 and calmar -1.0 on the same curve, and BREAK_EVEN['calmar'] = 0.0 catches it — the Sharpe column in the report is what misleads, not the verdict."
+      "why_silent": "-0.47 reads as a mediocre strategy rather than a total loss. Severity is low only because cagr returns -1.0 and calmar -1.0 on the same curve, and BREAK_EVEN['calmar'] = 0.0 catches it — the Sharpe column in the report is what misleads, not the verdict.",
+      "decided_utc": "2026-09-02T08:29:32.616019+00:00"
     }
   }
 }

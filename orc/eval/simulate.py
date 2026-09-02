@@ -145,6 +145,12 @@ def simulate(
         margin = wallet if spec.undeployed_counts_as_margin else wallet - powder
         liq_now = has_pos & is_liquidated(margin, qty, ep, lo, table)
         if liq_now.any():
+            # Record the wipeout before the path leaves `act`, or the bar on
+            # which everything was lost never reaches peak_pnl/max_dd_abs and a
+            # total loss is reported with the drawdown it had one bar earlier:
+            # 100% of contributed capital gone, max_dd_total 0.894.
+            max_dd_abs = np.where(liq_now, np.maximum(max_dd_abs, peak_pnl + contributed),
+                                  max_dd_abs)
             terminal_equity = np.where(liq_now, 0.0, terminal_equity)
             exit_reason = np.where(liq_now, EXIT_LIQUIDATION, exit_reason)
             exit_bar = np.where(liq_now, e, exit_bar)
@@ -186,6 +192,11 @@ def simulate(
         exit_bar = np.where(still, H, exit_bar)
 
     total_invested = np.maximum(contributed, 1e-12)
+    # Divided by the bars the path actually lived, not the nominal horizon.
+    # A path liquidated at bar 155 of 340 that was underwater for 54 of its 156
+    # living bars was reporting 15.8% rather than 34.6%, so the paths that die
+    # earliest -- the worst ones -- looked the healthiest on this measure.
+    lived = np.maximum(exit_bar.astype(np.float64) + 1.0, 1.0)
     return {
         "n_starts": M,
         "start_idx": starts,
@@ -200,8 +211,9 @@ def simulate(
         "exit_bar": exit_bar,
         "max_dd_abs": max_dd_abs,
         "max_dd_total": max_dd_abs / total_invested,
-        "frac_time_in_loss": bars_in_loss / float(H + 1),
-        "frac_time_below_peak": bars_below_peak / float(H + 1),
+        "bars_lived": lived,
+        "frac_time_in_loss": bars_in_loss / lived,
+        "frac_time_below_peak": bars_below_peak / lived,
     }
 
 
