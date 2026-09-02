@@ -13,3 +13,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+
+# Reasoning-cycle logs are local operational noise, not research output.
+logs/

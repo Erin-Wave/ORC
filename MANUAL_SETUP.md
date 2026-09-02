@@ -127,46 +127,49 @@ gh run watch
 
 ---
 
-## STEP 3 — Claude 예약 루틴 등록 (약 10분)
+## STEP 3 — 추론 계층 등록 (완료됨, 로컬 작업 스케줄러)
 
-여기가 "아이디어를 계속 바꿔가며" 담당하는 계층입니다. Anthropic 클라우드에서
-돌기 때문에 **PC가 꺼져 있어도 실행됩니다.** Max 구독이면 하루 15회까지 무료
-(기존 사용량에서 차감).
+여기가 "아이디어를 계속 바꿔가며" 담당하는 계층입니다.
 
-Claude Code에서:
+원래 계획은 Anthropic 클라우드의 `/schedule` 루틴이었습니다. **이 계정에서는
+불가능합니다.** Team/Enterprise 플랜은 조직 Owner가 `Admin settings > Connectors`
+에서 GitHub 커넥터를 켜야 클라우드 세션이 저장소에 닿는데, Innobase 조직은 이게
+꺼져 있고 계정 역할이 `user` 라 직접 켤 수 없습니다. 우회로인 `/web-setup` 도
+`allow_quick_web_setup: false` 로 같이 막혀 있습니다. 개인 Max 계정으로 전환하면
+클라우드 루틴이 가능해지고, 그때는 이 STEP을 `/schedule` 로 되돌리면 됩니다.
 
-```
-/schedule
-```
+그래서 추론 계층만 로컬로 내렸습니다. 평가는 그대로 GitHub Actions가 합니다.
 
-를 실행하고 아래 내용으로 루틴을 만드세요.
+| | |
+|---|---|
+| 작업 이름 | `ORC Reasoning Cycle` |
+| 실행 | 매일 00:00 KST |
+| 스크립트 | `scripts/reasoning_cycle.ps1` |
+| 프롬프트 | `scripts/reasoning_prompt.txt` |
+| 모델 | `claude-opus-5` |
+| 허용 도구 | `Read`, `Glob`, `Grep`, `Write`, `Edit`, `Bash(git *)` |
+| 로그 | `logs/reasoning_YYYY-MM-DD.log` (커밋 안 됨) |
 
-**저장소:** 방금 만든 `orc`
-**주기:** 매일 1회 (예: 00:00 KST). 하루 15회 한도를 다 쓸 필요 없습니다.
-**프롬프트:**
+**대가: 00:00 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
+`StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다.
 
-```
-Read CLAUDE.md, then read reports/CYCLE_REPORT.md. Read nothing else.
+상태 확인과 수동 실행:
 
-For each family in the report, decide against its own pre-registered kill
-condition: continue or close. Then propose 1-3 NEW hypotheses.
-
-Rules:
-- Propose a different RULE SHAPE, never a finer grid over an existing one.
-  Parameters are already enumerated exhaustively.
-- Each hypothesis must name WHO IS STRUCTURALLY PAYING and why they keep doing
-  it. "It backtests well" is not a mechanism and will be rejected.
-- Each needs a kill condition written now, before results exist.
-- Respect the established results in CLAUDE.md section 7. Do not re-open a
-  closed family without new evidence.
-- Never propose opening the sealed holdout.
-
-Write each hypothesis to configs/queue/<id>.json using the schema in CLAUDE.md
-section 3, then commit and push. Do not run backtests yourself; the worker does
-that.
+```powershell
+Get-ScheduledTaskInfo -TaskName "ORC Reasoning Cycle" | Select-Object LastRunTime, LastTaskResult, NextRunTime
+Start-ScheduledTask -TaskName "ORC Reasoning Cycle"     # 지금 한 번 돌리기
 ```
 
-루틴이 커밋하면 GitHub Actions가 6시간 안에 집어가서 실행합니다.
+프롬프트를 바꾸려면 `scripts/reasoning_prompt.txt` 만 고치면 됩니다. 스케줄러는
+건드릴 필요 없습니다.
+
+멈추려면:
+
+```powershell
+Disable-ScheduledTask -TaskName "ORC Reasoning Cycle"
+```
+
+추론 계층이 커밋하면 GitHub Actions가 6시간 안에 집어가서 평가합니다.
 **이걸로 루프가 닫힙니다.**
 
 ---
@@ -214,14 +217,14 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 ## 매일 무슨 일이 벌어지는가
 
 ```
-00:00 KST   Claude 루틴 (클라우드)     새 가설 1~3개 → configs/queue/ 커밋
+00:00 KST   추론 계층 (로컬 스케줄러)   새 가설 1~3개 → configs/queue/ 커밋
 00:00~      GitHub Actions (6시간마다)  큐 수거 → 사전등록 해시 → 전 그리드 평가
             (public 저장소, 무제한 무료)  → 원장 기록 → 반응표면 + PBO
                                         → reports/ 커밋
-다음날      루틴이 CYCLE_REPORT.md 읽고 다음 질문 결정
+다음날      추론 계층이 CYCLE_REPORT.md 읽고 다음 질문 결정
 ```
 
-**PC는 꺼져 있어도 됩니다. 총 비용 ₩0.**
+**00:00 KST에만 PC가 켜져 있으면 됩니다. 평가는 PC와 무관하게 돕니다. 총 비용 ₩0.**
 
 당신이 개입해야 할 때는 두 번뿐입니다:
 1. 패널을 갱신할 때 (`deploy_panel.py` + `gh release upload`)
@@ -238,3 +241,4 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 | `test_analytic_matches_simulator` 실패 | 두 평가기가 어긋남 | **다른 모든 작업 중단.** 모든 결과가 무효입니다 |
 | `HoldoutViolation` | 봉인 구간이 새어들어옴 | 정상 동작. `panel.load()` 를 쓰지 않은 코드가 있는지 확인 |
 | 큐 파일이 `rejected/` 로 감 | 스키마 오류 | `configs/queue/rejected/` 에서 원인 확인 |
+| 아침에 새 가설이 없음 | 00:00에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
