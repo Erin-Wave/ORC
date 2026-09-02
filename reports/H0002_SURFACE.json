@@ -5,7 +5,7 @@
   "claim": "Leveraged long demand on a perpetual pays the funding rate every eight hours for as long as it stays crowded, and keeps paying because the leverage is the whole point of being there: someone who merely wanted the asset would buy spot. KT-1 measured that tax from the paying side at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTC settlements positive, and closed long perpetual accumulation over it. This stands on the receiving side of the same trade and asks the only question that side has: can the tax be collected without the directional move that produces it taking the position first? The rule shorts while the trailing mean settlement rate is rich and flattens when it decays, so it is short precisely when long crowding is most expensive - and therefore precisely when a squeeze is most likely. The grid exists to find whether any combination of stop, exposure and holding limit separates the two.",
   "kill_condition": "Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.",
   "prereg_hash": "0d6e7ca037976c0c24972f856f18200db83bfec536589fd90bda813547abc149",
-  "generated_utc": "2026-09-02T06:25:07.686437+00:00",
+  "generated_utc": "2026-09-02T06:26:42.727336+00:00",
   "metric": "calmar",
   "holdout_start": "2024-03-01",
   "trials_in_family": 972,
@@ -2595,5 +2595,63 @@
       "funding_frac_best": 0.12451574816699465
     }
   },
-  "pbo": {}
+  "pbo": {
+    "ADAUSDT": {
+      "symbol": "ADAUSDT",
+      "status": "ok",
+      "n_configs": 108,
+      "n_bars": 35775,
+      "n_splits": 252,
+      "pbo": 0.7261904761904762,
+      "median_logit": -0.33335696174589485,
+      "degraded_fraction": 0.7777777777777778,
+      "verdict": "SELECTION_IS_NOISE",
+      "n_liquidating_configs": 20,
+      "best_config_overall": {
+        "lookback_days": 21.0,
+        "enter_rate": 0.0002,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
+        "max_hold_days": 30.0
+      }
+    },
+    "AVAXUSDT": {
+      "symbol": "AVAXUSDT",
+      "status": "ok",
+      "n_configs": 108,
+      "n_bars": 30112,
+      "n_splits": 252,
+      "pbo": 0.6944444444444444,
+      "median_logit": -0.8342257788198508,
+      "degraded_fraction": 0.8373015873015873,
+      "verdict": "SELECTION_IS_NOISE",
+      "n_liquidating_configs": 21,
+      "best_config_overall": {
+        "lookback_days": 60.0,
+        "enter_rate": 0.0002,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
+        "max_hold_days": null
+      }
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "status": "ok",
+      "n_configs": 108,
+      "n_bars": 35535,
+      "n_splits": 252,
+      "pbo": 0.6865079365079365,
+      "median_logit": -0.5452270504833231,
+      "degraded_fraction": 0.7777777777777778,
+      "verdict": "SELECTION_IS_NOISE",
+      "n_liquidating_configs": 25,
+      "best_config_overall": {
+        "lookback_days": 7.0,
+        "enter_rate": 0.0001,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
+        "max_hold_days": null
+      }
+    }
+  }
 }

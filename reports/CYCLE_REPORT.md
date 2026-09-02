@@ -1,6 +1,6 @@
 # ORC cycle report
 
-- run `b524d645d7da` finished 2026-09-02T06:25:07.688884+00:00
+- run `2b7010ac8089` finished 2026-09-02T06:26:42.729891+00:00
 - trials in project: **1420** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
@@ -56,6 +56,12 @@ Trials in this family: 972. Pre-registration hash `0d6e7ca037976c0c`.
 | DOGEUSDT | -0.2929 | PLATEAU | 1.028 | 1 | 21 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': 30.0, 'stop_loss': 0.1}` |
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
+
+| PBO symbol | PBO | verdict | configs | splits |
+|---|---:|---|---:|---:|
+| ADAUSDT | 0.726 | SELECTION_IS_NOISE | 108 | 252 |
+| AVAXUSDT | 0.694 | SELECTION_IS_NOISE | 108 | 252 |
+| BNBUSDT | 0.687 | SELECTION_IS_NOISE | 108 | 252 |
 
 ## What the next pass must do
 

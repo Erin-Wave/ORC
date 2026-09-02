@@ -1,7 +1,7 @@
 {
-  "run_id": "b524d645d7da",
-  "started_utc": "2026-09-02T06:24:53.598459+00:00",
-  "finished_utc": "2026-09-02T06:25:07.688884+00:00",
+  "run_id": "2b7010ac8089",
+  "started_utc": "2026-09-02T06:26:24.256947+00:00",
+  "finished_utc": "2026-09-02T06:26:42.729891+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
@@ -16,7 +16,7 @@
     {
       "hypothesis_id": "H0001",
       "family": "unconditional_dca_spot_style",
-      "run_id": "b524d645d7da",
+      "run_id": "2b7010ac8089",
       "configurations": 162,
       "evaluated": 112,
       "new_trials": 0,
@@ -29,7 +29,7 @@
     {
       "hypothesis_id": "H0002",
       "family": "funding_carry_short",
-      "run_id": "b524d645d7da",
+      "run_id": "2b7010ac8089",
       "configurations": 972,
       "evaluated": 972,
       "new_trials": 0,
