@@ -585,3 +585,56 @@ def test_a_proposal_nothing_can_review_does_not_wedge_the_pipeline(tmp_path, mon
     assert not stuck.exists()
     verdict = json.loads((killed / "H9999.json").read_text(encoding="utf-8"))["verdict"]
     assert verdict["killed_by"] == "held_too_long"
+
+
+# --------------------------------------------------------------------------
+# a family that cannot be judged must not be allowed to cost N
+# --------------------------------------------------------------------------
+def test_the_intake_and_the_diagnostic_agree_on_what_an_ordinal_axis_is():
+    from orc.orchestrator.spec import ordinal_axis
+    assert ordinal_axis([1.0, 7.0, 30.0])
+    assert ordinal_axis([7.0, 30.0, 90.0, None])      # None is off, the rest order
+    assert not ordinal_axis([1.0, 7.0])               # no cell either side
+    assert not ordinal_axis([True, False])            # a switch, not a step
+    assert not ordinal_axis(["none", "sma:20", "sma:50", "sma:100", "sma:200"])
+
+
+def test_the_predicate_matches_what_the_reports_actually_got():
+    """H0006 and H0007 reported shape "?" on all nine symbols. If the check
+    disagreed with the reports it would be enforcing a different rule."""
+    import json
+
+    from orc.orchestrator.spec import Hypothesis
+    for hid, measurable in (("H0001", True), ("H0002", True),
+                            ("H0006", False), ("H0007", False)):
+        reg = config.REGISTRY / f"{hid}.json"
+        rep = config.REPORTS / f"{hid}_SURFACE.json"
+        if not (reg.exists() and rep.exists()):
+            pytest.skip(f"{hid} not present in this checkout")
+        h = Hypothesis(**json.loads(reg.read_text(encoding="utf-8")))
+        assert h.shape_is_measurable() is measurable, hid
+        got_a_shape = any("shape" in s["shape_diagnostic"]
+                          for s in json.loads(
+                              rep.read_text(encoding="utf-8"))["surfaces"].values())
+        if not measurable:
+            assert not got_a_shape, f"{hid} was judged unmeasurable but got a shape"
+
+
+def test_a_grid_that_can_never_be_shape_checked_is_refused(tmp_path, monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import daily_cycle
+
+    queue, registry = tmp_path / "queue", tmp_path / "registry"
+    queue.mkdir(); registry.mkdir()
+    monkeypatch.setattr(config, "QUEUE", queue)
+    monkeypatch.setattr(config, "REGISTRY", registry)
+
+    # five levels, all strings: reads as ordered, measures as five labels
+    blind = _hyp(grid={"gate": ["none", "sma:20", "sma:50", "sma:100", "sma:200"],
+                       "include_funding": [True, False]})
+    (queue / "H9999.json").write_text(
+        json.dumps({k: v for k, v in blind.__dict__.items()}), encoding="utf-8")
+
+    assert daily_cycle.intake_queue() == []
+    assert not (registry / "H9999.json").exists()
+    assert (queue / "rejected" / "H9999.json").exists()

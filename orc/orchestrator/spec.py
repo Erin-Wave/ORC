@@ -103,6 +103,23 @@ class SignalTrialConfig:
         return self.slippage_bps * self.cost_multiplier
 
 
+def ordinal_axis(values: list) -> bool:
+    """Does "one step away" mean a small change along this axis?
+
+    It needs an order and three levels: with two, the shape diagnostic has no
+    cell either side of the peak to compare against.  Booleans are switches and
+    a None is "off"; neither sorts anywhere, so neither counts toward the three.
+    Strings do not either, which is not pedantry -- "sma:20" through "sma:200"
+    reads as ordered to a human and is a set of five unrelated labels to the
+    diagnostic.  This is the definition surface.py evaluates the grid with, kept
+    here so that what the intake refuses and what the diagnostic can see are the
+    same rule rather than two copies of it.
+    """
+    numeric = [v for v in values
+               if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    return len(numeric) > 2
+
+
 # --------------------------------------------------------------------------
 # a registered hypothesis
 # --------------------------------------------------------------------------
@@ -163,6 +180,19 @@ class Hypothesis:
         for v in self.grid.values():
             n *= max(len(v), 1)
         return n
+
+    def shape_is_measurable(self) -> bool:
+        """Can this family ever be shown not to be a spike?
+
+        A grid with no ordinal axis returns no shape at all, and verdict.py
+        counts an unmeasured shape as a disqualifier -- correctly, since an
+        absent check is not a passed one.  So every cell such a hypothesis
+        enumerates enters N and none of them can ever be a finding.  H0006 is
+        the worked example: 72 configurations, every axis binary, nine symbols
+        reported with shape '?' and a nan neighbour ratio, and the family was
+        closed on PBO while the structural check it most needed could not run.
+        """
+        return any(ordinal_axis(v) for v in self.grid.values())
 
     @property
     def primary_metric(self) -> str:

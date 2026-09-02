@@ -29,7 +29,7 @@ from orc.eval.analytic import AnalyticSpec, evaluate
 from orc.facts import panel as panel_mod
 from orc.kernel.inference import cscv_pbo, plateau_score
 from orc.ledger.trials import Ledger
-from orc.orchestrator.spec import Hypothesis
+from orc.orchestrator.spec import ordinal_axis, Hypothesis
 
 PRIMARY_METRIC = "tm_q05"          # 5th percentile terminal multiple
 
@@ -102,12 +102,7 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     # the None column is not a neighbour of anything -- previously the whole
     # axis was declared categorical and never perturbed, which on H0002 left
     # one axis of five carrying the entire shape verdict.
-    def _ordinal(vals: list) -> bool:
-        numeric = [v for v in vals
-                   if isinstance(v, (int, float)) and not isinstance(v, bool)]
-        return len(numeric) > 2
-
-    ordinal = [_ordinal(h.grid[a]) for a in axes]
+    ordinal = [ordinal_axis(h.grid[a]) for a in axes]
 
     out: dict[str, dict] = {}
     for sym, cells in values.items():

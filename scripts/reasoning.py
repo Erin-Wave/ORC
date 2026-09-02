@@ -133,6 +133,11 @@ def expandable(path: Path) -> str | None:
         return (f"{len(cfgs)} configurations exceeds the ceiling of "
                 f"{config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}; every one of them would "
                 "enter the ledger and raise the multiple-testing bar permanently")
+    if not h.shape_is_measurable():
+        return ('no grid axis has three or more numeric levels, so plateau_score '
+                'returns no shape and verdict.py counts an unmeasured shape as a '
+                'disqualifier; every cell would enter N and none could ever be a '
+                'finding. Restate the axis you expect to matter as numbers.')
     rule = h.fixed.get("rule") or (cfgs[0].rule if hasattr(cfgs[0], "rule") else None)
     if rule is not None:
         from orc.eval.signal_rules import RULES

@@ -60,6 +60,17 @@ def intake_queue() -> list[Hypothesis]:
                     "grid under a new id; the grid of a registered hypothesis "
                     "cannot be trimmed after the fact.")
 
+            # A grid with no ordinal axis returns no shape, and an unmeasured
+            # shape is a disqualifier: every cell would enter N and none could
+            # ever be a finding.  H0006 and H0007 cost 126 trials between them
+            # for exactly this, both reporting '?' on all nine symbols.
+            if not h.shape_is_measurable():
+                raise ValueError(
+                    'no grid axis has three or more numeric levels, so the shape '
+                    'diagnostic can never run and no cell in this family can ever '
+                    'clear. Restate the axis you expect to matter as numbers -- '
+                    'a five-level string axis does not count.')
+
             # A queue file that is byte-identical to what is already registered
             # is a re-drop, not an edit -- the worker and the reasoning layer
             # both push, and a rebase can put the same file back.  Consume it
