@@ -219,8 +219,25 @@ I am opening the sealed holdout. I understand this consumes one of three
 openings for the life of this project and cannot be undone.
 ```
 
-사용하면 토큰 파일은 **자동 삭제**되고, 후보 해시가 `ledger/FINAL_TEST_LOG.jsonl`
-에 영구 기록됩니다. 3회를 다 쓰면 프로젝트가 끝날 때까지 다시 열리지 않습니다.
+그 다음, **반드시 이 형태로** 여세요. 컨텍스트 매니저 밖에서는 봉인 구간을 읽는 것 자체가
+거부됩니다:
+
+```python
+from orc import holdout
+from orc.facts import panel
+
+with holdout.final_test({"hypothesis_id": "H00xx", "config": {...}}, "why") as rec:
+    p = panel.load("BTCUSDT", "1h", sealed_only=True)   # 봉인 구간만
+    ...                                                  # 여기서 한 번 측정
+```
+
+`sealed_only=True` 가 핵심입니다. `development_only=False` 는 개발 구간과 봉인 구간을
+**붙여서** 돌려주고, BTCUSDT 기준 그 창의 **64.6%가 후보를 고를 때 이미 본 데이터**입니다.
+그 위에서 잰 숫자는 out-of-sample이 아니면서 out-of-sample처럼 보입니다.
+
+사용하면 토큰 파일은 **자동 삭제**되고, 후보 해시가 `ledger/FINAL_TEST_LOG.jsonl` 에,
+그 개봉으로 봉인 구간을 몇 번 읽었는지가 `ledger/FINAL_TEST_READS.jsonl` 에 영구 기록됩니다.
+3회를 다 쓰면 프로젝트가 끝날 때까지 다시 열리지 않습니다.
 
 > 지금 이 단계를 하지 마세요. 후보가 없습니다.
 
