@@ -47,7 +47,8 @@ def _trailing_sum(x: np.ndarray, window: int) -> np.ndarray:
     return out
 
 
-def _trailing_settlement_mean(funding_rate: np.ndarray, window: int) -> np.ndarray:
+def _trailing_settlement_mean(funding_rate: np.ndarray, window: int,
+                              settled: np.ndarray) -> np.ndarray:
     """Mean rate per settlement over the trailing window.
 
     `panel.funding_rate` is per bar and zero everywhere except the bars a
@@ -56,10 +57,20 @@ def _trailing_settlement_mean(funding_rate: np.ndarray, window: int) -> np.ndarr
     the rate people quote -- and every pre-registered threshold would mean
     something other than it says.  Divide by the settlements actually in the
     window instead, so 0.0001 is 0.01% per settlement whatever the clock.
+
+    Which settlements those are has to come from the panel's own mask, not
+    from `rate != 0.0`.  A settlement that printed exactly 0.0 is a settlement:
+    43.9 percent of BNBUSDT's development-window settlements did, and counting
+    only the non-zero ones inflated the reported mean by a median 1.8x and up
+    to 45x on that symbol -- so a pre-registered threshold of 0.0001 was being
+    compared against a quantity that was not the one it named.  The same line
+    failed the other way when a window's settlements were all 0.0: count fell
+    to zero, the mean came back NaN, and the rule read that hole as FLAT, a
+    decision not to trade.
     """
     rate = np.asarray(funding_rate, dtype=np.float64)
     total = _trailing_sum(rate, window)
-    count = _trailing_sum((rate != 0.0).astype(np.float64), window)
+    count = _trailing_sum(np.asarray(settled, dtype=np.float64), window)
     with np.errstate(invalid="ignore", divide="ignore"):
         out = np.where(count > 0, total / count, np.nan)
     out[~np.isfinite(total)] = np.nan
@@ -71,6 +82,7 @@ def carry_funding(
     lookback_bars: int,
     enter_rate: float,
     exit_rate: float,
+    settled: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Short while the trailing mean funding rate is rich; flat when it is not.
 
@@ -86,7 +98,12 @@ def carry_funding(
         raise ValueError("enter_rate must be at or above exit_rate, else the "
                          "rule enters and exits on the same bar")
 
-    mean_rate = _trailing_settlement_mean(funding_rate, lookback_bars)
+    if settled is None:
+        raise ValueError(
+            "carry rules need the panel's settlement mask: a rate of 0.0 is "
+            "both 'no settlement' and 'a settlement that cost nothing', and "
+            "the two cannot be told apart from the rate array alone")
+    mean_rate = _trailing_settlement_mean(funding_rate, lookback_bars, settled)
     rich = mean_rate >= enter_rate
     thin = mean_rate < exit_rate
 
@@ -103,6 +120,7 @@ def carry_funding_long(
     lookback_bars: int,
     enter_rate: float,
     exit_rate: float,
+    settled: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """The mirror: long while funding has been persistently negative.
 
@@ -114,7 +132,12 @@ def carry_funding_long(
     if enter_rate > exit_rate:
         raise ValueError("for the long side enter_rate must be at or below exit_rate")
 
-    mean_rate = _trailing_settlement_mean(funding_rate, lookback_bars)
+    if settled is None:
+        raise ValueError(
+            "carry rules need the panel's settlement mask: a rate of 0.0 is "
+            "both 'no settlement' and 'a settlement that cost nothing', and "
+            "the two cannot be told apart from the rate array alone")
+    mean_rate = _trailing_settlement_mean(funding_rate, lookback_bars, settled)
     entry = np.where(mean_rate <= enter_rate, LONG, FLAT).astype(np.int8)
     entry[~np.isfinite(mean_rate)] = FLAT
     exit_ = (mean_rate > exit_rate) & np.isfinite(mean_rate)
@@ -135,4 +158,5 @@ def build_signals(rule: str, panel, lookback_bars: int,
     except KeyError:
         raise ValueError(f"unknown signal rule {rule!r}; "
                          f"known rules are {sorted(RULES)}") from None
-    return fn(panel.funding_rate, lookback_bars, enter_rate, exit_rate)
+    return fn(panel.funding_rate, lookback_bars, enter_rate, exit_rate,
+              panel.funding_settled)

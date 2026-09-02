@@ -57,21 +57,34 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     axes = sorted(h.grid)
     with Ledger() as led:
         rows = led.conn.execute(
-            "SELECT symbol, config_json, metrics_json, n_starts "
-            "FROM trials WHERE hypothesis_id=?",
+            "SELECT symbol, config_json, metrics_json, n_starts, code_hash, "
+            "panel_hash FROM trials WHERE hypothesis_id=? ORDER BY trial_id",
             (h.hypothesis_id,)).fetchall()
 
     values: dict[str, dict[tuple, float]] = {}
     # How much evidence each cell actually rests on, carried alongside the
     # metric so the winning cell can be reported with its denominator.
     context: dict[str, dict[tuple, dict]] = {}
-    for sym, cfg_json, met_json, n_starts in rows:
+    # Which revision produced the number a cell reports used to be decided by
+    # whatever order SQLite returned: 1210 (hypothesis, symbol, config) groups
+    # hold more than one row, and on H0002 alone 613 of them disagree on calmar
+    # between revisions. One surface could therefore mix cells computed by
+    # different kernels on different panels, and plateau_score would compare
+    # them as though they were neighbours in the same experiment. Take the
+    # newest row per cell explicitly -- trial_id is monotonic, so the last write
+    # wins by construction rather than by luck -- and record what the surface
+    # was actually assembled from.
+    provenance: dict[str, dict] = {}
+    for sym, cfg_json, met_json, n_starts, code_h, panel_h in rows:
         cfg = json.loads(cfg_json)
         met = json.loads(met_json)
         if metric not in met:
             continue
         key = tuple(cfg[a] for a in axes)
         values.setdefault(sym, {})[key] = float(met[metric])
+        pv = provenance.setdefault(sym, {"code": set(), "panel": set()})
+        pv["code"].add(code_h)
+        pv["panel"].add(panel_h)
         context.setdefault(sym, {})[key] = {
             "n_starts": int(n_starts),
             # Absent on trials from code revisions predating the span figure.
@@ -126,6 +139,13 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             "best_value": float(grid[best_idx]),
             "best_config": {a: h.grid[a][best_idx[i]] for i, a in enumerate(axes)},
             "shape_diagnostic": plateau_score(grid, ordinal),
+            # More than one of either means this surface was assembled across
+            # revisions. The cells are individually real and comparing them to
+            # each other is not, which is exactly what the shape diagnostic does.
+            "assembled_from": {
+                "code_revisions": len(provenance.get(sym, {}).get("code", ())),
+                "panel_revisions": len(provenance.get(sym, {}).get("panel", ())),
+            },
             # The denominator behind the winning cell.  n_starts counts start
             # offsets, which overlap almost completely; independent_paths is the
             # generous upper bound on how many genuinely separate experiments
@@ -148,7 +168,8 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
 
 
 # --------------------------------------------------------------------------
-def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
+def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
+                       best_config: dict | None = None) -> dict:
     """CSCV probability of backtest overfitting, over the hypothesis grid.
 
     Only the closed-form-evaluable configurations are used: they share an exact,
@@ -195,7 +216,19 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
     # the in-sample winner would be chosen by holding longest. Keep only the
     # configurations sharing the most common horizon.
     from collections import Counter
-    common_h = Counter(horizons).most_common(1)[0][0]
+    # Which group, though?  The modal one, with ties broken by insertion order,
+    # is not necessarily the group the reported best cell is in -- on H0001 all
+    # nine horizons tied at two and the winner was stride_days 1.0, while every
+    # symbol's best cell was stride_days 30.0.  verdict.py then applied that PBO
+    # to a cell it had not measured.  Follow the cell that will be judged.
+    best_i = None
+    if best_config is not None:
+        for i, lab in enumerate(labels):
+            if all(lab.get(k) == v for k, v in best_config.items()):
+                best_i = i
+                break
+    common_h = (horizons[best_i] if best_i is not None
+                else Counter(horizons).most_common(1)[0][0])
     keep = [i for i, hz in enumerate(horizons) if hz == common_h]
     if len(keep) < 2:
         return {"symbol": symbol,
@@ -233,11 +266,16 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
         "degraded_fraction": res.degraded_fraction,
         "verdict": res.verdict(),
         "best_config_overall": labels[int(np.argmax(mat.mean(axis=0)))],
+        # verdict.py applies this to the surface's best cell. If that cell was
+        # not among the columns, the number is a measurement of other cells and
+        # must not be read as clearing this one.
+        "covers_reported_best": bool(best_i is not None),
     }
 
 
 # --------------------------------------------------------------------------
-def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) -> dict:
+def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
+                              best_config: dict | None = None) -> dict:
     """CSCV for Track B, where the columns are equity curves rather than start dates.
 
     Track A gets its rows from start dates: every configuration is scored on the
@@ -305,6 +343,13 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10) ->
         "verdict": res.verdict(),
         "n_liquidating_configs": liquidated,
         "best_config_overall": labels[int(np.argmax(mat.mean(axis=0)))],
+        # There is no horizon subset on this track -- every configuration that
+        # traded is a column -- but a configuration whose lookback exceeds the
+        # panel is dropped, so coverage is still checked rather than assumed.
+        "covers_reported_best": bool(
+            best_config is None
+            or any(all(lab.get(k) == v for k, v in best_config.items())
+                   for lab in labels)),
     }
 
 
@@ -383,7 +428,7 @@ def write_report(h: Hypothesis, metric: str | None = None,
                                    key=lambda kv: -kv[1]["best_value"])]
     for sym in (pbo_symbols or ranked[:3]):
         try:
-            pbo[sym] = run_pbo(h, sym)
+            pbo[sym] = run_pbo(h, sym, best_config=surfaces[sym]["best_config"])
         except (ValueError, FileNotFoundError) as exc:
             pbo[sym] = {"symbol": sym, "status": str(exc)}
 

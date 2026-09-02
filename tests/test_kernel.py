@@ -333,12 +333,13 @@ def test_a_carry_signal_cannot_see_past_its_own_bar():
     n = 600
     rate = np.zeros(n)
     rate[::8] = 0.0002
+    settled = rate != 0.0
     a_entry, a_exit = carry_funding(rate, lookback_bars=80, enter_rate=0.00015,
-                                    exit_rate=0.00005)
+                                    exit_rate=0.00005, settled=settled)
     bumped = rate.copy()
     bumped[400:] = 0.01                      # a wild future, same past
     b_entry, b_exit = carry_funding(bumped, lookback_bars=80, enter_rate=0.00015,
-                                    exit_rate=0.00005)
+                                    exit_rate=0.00005, settled=settled)
     assert np.array_equal(a_entry[:400], b_entry[:400])
     assert np.array_equal(a_exit[:400], b_exit[:400])
 
@@ -350,7 +351,7 @@ def test_a_carry_signal_stays_flat_until_its_window_is_full():
     rate = np.zeros(n)
     rate[::8] = 0.001                        # richly positive from bar zero
     entry, _ = carry_funding(rate, lookback_bars=100, enter_rate=0.00015,
-                             exit_rate=0.00005)
+                             exit_rate=0.00005, settled=rate != 0.0)
     assert not entry[:99].any(), "a partial window is not evidence"
     assert entry[99:].any()
 
@@ -360,7 +361,7 @@ def test_carry_thresholds_that_would_flip_every_bar_are_refused():
 
     with pytest.raises(ValueError, match="enter_rate"):
         carry_funding(np.zeros(100), lookback_bars=10, enter_rate=0.0,
-                      exit_rate=0.001)
+                      exit_rate=0.001, settled=np.zeros(100, dtype=bool))
 
 
 def test_carry_reads_the_rate_per_settlement_not_per_bar():
@@ -370,7 +371,7 @@ def test_carry_reads_the_rate_per_settlement_not_per_bar():
     n = 200
     rate = np.zeros(n)
     rate[::8] = 0.0003                       # every eighth bar settles
-    m = _trailing_settlement_mean(rate, window=80)
+    m = _trailing_settlement_mean(rate, window=80, settled=rate != 0.0)
     assert m[-1] == pytest.approx(0.0003), "dividing by the window would give an eighth"
 
 

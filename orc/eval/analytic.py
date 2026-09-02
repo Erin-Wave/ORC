@@ -146,9 +146,20 @@ def evaluate(
     }
 
 
-def lump_sum_reference(close: np.ndarray, spec: AnalyticSpec) -> dict:
+def lump_sum_reference(close: np.ndarray, spec: AnalyticSpec,
+                       funding_flow: np.ndarray | None = None) -> dict:
     """Same capital, deployed entirely at the first bar.  DCA that cannot beat
-    this on the metric you care about has not earned its complexity."""
+    this on the metric you care about has not earned its complexity.
+
+    `funding_flow` is not optional in spirit.  This benchmark used to have no
+    way to accept it while evaluate() charged it, so runner's vs_lump_sum_q50
+    subtracted an unfunded benchmark from a funded result -- and a lump sum on
+    a perpetual holds full notional for the whole horizon, which is the most
+    funding any schedule can pay.  On BTCUSDT at 156 weekly deposits the DCA
+    was charged 5,679 USDT and the benchmark 0 against a true 30,387, and the
+    reported figure went from -1.582 to +0.056: the sign of the comparison,
+    not its size.  Pass None only for a genuinely spot benchmark.
+    """
     close = np.asarray(close, dtype=np.float64)
     N = close.size
     starts = np.arange(0, N - spec.horizon_bars, dtype=np.int64)
@@ -157,7 +168,19 @@ def lump_sum_reference(close: np.ndarray, spec: AnalyticSpec) -> dict:
     ends = starts + spec.horizon_bars
     capital = spec.contribution * spec.n_contributions
     units = capital / (close[starts] * (1.0 + spec.entry_cost))
-    terminal = units * close[ends] * (1.0 - spec.exit_cost)
+
+    funding_paid = np.zeros_like(units)
+    if funding_flow is not None:
+        F = np.asarray(funding_flow, dtype=np.float64)
+        if F.size != N:
+            raise ValueError("funding_flow must align with close")
+        # Same convention as evaluate(): a position pays from the bar it is
+        # opened on through the bar it is closed on, inclusive.
+        W = np.zeros(N + 1, dtype=np.float64)
+        W[:N] = np.cumsum(F[::-1])[::-1]
+        funding_paid = units * (W[starts] - W[ends + 1])
+
+    terminal = units * close[ends] * (1.0 - spec.exit_cost) - funding_paid
     return {
         "n_starts": int(starts.size),
         "start_idx": starts,
@@ -165,4 +188,5 @@ def lump_sum_reference(close: np.ndarray, spec: AnalyticSpec) -> dict:
         "invested": float(capital),
         "terminal_value": terminal,
         "terminal_multiple": terminal / capital,
+        "funding_paid": funding_paid,
     }

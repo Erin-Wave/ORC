@@ -11,10 +11,15 @@ Two mechanisms, deliberately redundant:
      copy of the sealed period at all -- it cannot cheat even if its code is
      wrong.
 
-  2. `open_final_test()` is the only door to the sealed period.  It refuses
-     unless a human has written the token file by hand, it logs every opening
-     with the exact configuration hash, and it stops permanently after
-     MAX_FINAL_TESTS openings.
+  2. `final_test()` is the only door to the sealed period.  It refuses unless a
+     human has written the token file by hand, it logs every opening with the
+     exact configuration hash, it stops permanently after MAX_FINAL_TESTS
+     openings, and -- the part that was missing until the door was checked --
+     the loader refuses to hand back sealed bars outside one.  Before that,
+     `panel.load(development_only=False)` was callable at any moment with no
+     token, no log and no counter, so mechanism 2 protected the workstation
+     exactly as much as a comment does.  Only mechanism 1 was ever real, and
+     only for the cloud worker.
 
 A final test is not a validation step you run until something passes.  It is a
 single, expensive, irreversible measurement.  The counter exists to make that
@@ -24,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -34,6 +40,7 @@ from orc import config
 MAX_FINAL_TESTS = 3
 TOKEN_FILE = config.ORC_ROOT / "FINAL_TEST_TOKEN"
 LOG_FILE = config.ORC_ROOT / "ledger" / "FINAL_TEST_LOG.jsonl"
+READS_FILE = config.ORC_ROOT / "ledger" / "FINAL_TEST_READS.jsonl"
 
 TOKEN_TEXT = (
     "I am opening the sealed holdout. I understand this consumes one of three\n"
@@ -43,6 +50,55 @@ TOKEN_TEXT = (
 
 class HoldoutViolation(RuntimeError):
     pass
+
+
+# Whether a sealed read is currently permitted, and what has been read under
+# the opening that permitted it.  open_final_test() used to log an opening and
+# grant nothing at all: panel.load(development_only=False) was callable at any
+# moment by anybody, so the counter measured how many times someone had filled
+# in the form, not how many times the sealed period had been looked at.  One
+# opening could cover a 972-cell grid and the log would say 1.
+_sealed_reads: list[str] | None = None
+
+
+def sealed_reads_permitted() -> bool:
+    return _sealed_reads is not None
+
+
+def note_sealed_read(what: str) -> None:
+    """Called by the loader before it hands back sealed bars."""
+    if _sealed_reads is None:
+        raise HoldoutViolation(
+            f"refusing to read sealed data for {what}: no final test is open. "
+            "The sealed period is reachable only inside holdout.final_test(), "
+            "which consumes one of three openings for the life of the project.")
+    _sealed_reads.append(what)
+
+
+@contextmanager
+def final_test(candidate: dict, reason: str):
+    """The only door.  Consumes one opening and permits sealed reads inside it.
+
+    Every read is recorded, so an opening that quietly measured a whole grid
+    is visible afterwards as exactly that rather than as one measurement.
+    """
+    global _sealed_reads
+    if _sealed_reads is not None:
+        raise HoldoutViolation("a final test is already open")
+    record = open_final_test(candidate, reason)
+    _sealed_reads = []
+    try:
+        yield record
+    finally:
+        reads, _sealed_reads = _sealed_reads, None
+        READS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with READS_FILE.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "opening": record["opening"],
+                "candidate_sha256": record["candidate_sha256"],
+                "n_sealed_reads": len(reads),
+                "sealed_reads": reads,
+            }) + chr(10))
 
 
 def holdout_start() -> date:

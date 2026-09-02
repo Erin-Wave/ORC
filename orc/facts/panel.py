@@ -30,6 +30,9 @@ class Panel:
     close: np.ndarray
     volume: np.ndarray
     funding_rate: np.ndarray  # per bar, zero except on settlement bars
+    # Which bars a settlement actually landed on. A settlement whose rate was
+    # exactly 0.0 is a settlement; funding_rate cannot say so and this can.
+    funding_settled: np.ndarray
     holdout_state: str
     panel_hash: str
 
@@ -49,7 +52,11 @@ class Panel:
         return self.close * self.funding_rate
 
     def has_funding(self) -> bool:
-        return bool(np.any(self.funding_rate != 0.0))
+        # A symbol every one of whose settlements printed 0.0 still has a
+        # funding history; asking the rate array cannot tell that apart from
+        # a symbol that has none, and a carry rule was refused on the strength
+        # of it with "no funding history; a carry rule has nothing to read".
+        return bool(np.any(self.funding_settled))
 
 
 def panel_path(symbol: str, clock: str) -> Path:
@@ -81,8 +88,9 @@ def load(
     """Load one symbol.
 
     `development_only=True` (the default, and the only value research may use)
-    truncates the series at the seal.  Passing False is legal only from
-    orc.holdout.open_final_test, which is audited.
+    truncates the series at the seal.  Passing False raises unless a final test
+    is open -- see orc.holdout.final_test -- and every such read is recorded
+    against the opening that permitted it.
     """
     p = panel_path(symbol, clock)
     if not p.exists():
@@ -93,6 +101,8 @@ def load(
         df = holdout.development_slice(df)
         state = "DEVELOPMENT"
     else:
+        # Refuses unless a final test is open. This used to be a docstring.
+        holdout.note_sealed_read(f"{symbol}/{clock}")
         state = "SEALED_INCLUDED"
     if df.height == 0:
         raise ValueError(f"{symbol}: no bars left after the holdout seal")
@@ -110,10 +120,11 @@ def load(
             f"(limit {MAX_MISSING_BAR_FRACTION:.1%}); bar index is not a reliable clock")
 
     fr = np.zeros(df.height, dtype=np.float64)
+    settled = np.zeros(df.height, dtype=bool)
     if with_funding and funding_path(symbol).exists():
         from orc.facts.fetch_vision import funding_rate_per_bar
         fund = pl.read_parquet(funding_path(symbol))
-        fr = funding_rate_per_bar(df["ts"], fund)
+        fr, settled = funding_rate_per_bar(df["ts"], fund)
 
     close = df["close"].to_numpy().astype(np.float64)
     return Panel(
@@ -125,13 +136,16 @@ def load(
         close=close,
         volume=df["volume"].to_numpy().astype(np.float64),
         funding_rate=fr,
+        funding_settled=settled,
         holdout_state=state,
         # high and low decide every liquidation, stop and take-profit, so a
         # panel that differs only in a wick is different data. Hashing close
         # and funding alone meant a corrected wick left the identity unchanged,
         # the ledger's UNIQUE key matched, and the new liquidation rate was
         # discarded as a duplicate of the old one.
-        panel_hash=_hash_arrays(close, fr,
+        # The settlement mask is part of the identity: two funding tables
+        # can give the same rate array and different settlement counts.
+        panel_hash=_hash_arrays(close, fr, settled.astype(np.float64),
                                 df["high"].to_numpy().astype(np.float64),
                                 df["low"].to_numpy().astype(np.float64)),
     )

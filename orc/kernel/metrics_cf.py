@@ -57,6 +57,21 @@ def mwrr_equal_interval(
     a = np.full(V.shape, lo, dtype=np.float64)
     b = np.full(V.shape, hi, dtype=np.float64)
     fa = npv(a)
+    fb = npv(b)
+
+    # Monotone is not the same as bracketed.  mwrr_irregular, the reference
+    # solver this one is checked against, refuses when the ends share a sign;
+    # this one did not, and the loop then walked `a` all the way to `hi` and
+    # returned +1000.0 -- an annualised 100,000 percent -- for paths that had
+    # lost almost everything.  With hold_days=0 the terminal discount and the
+    # last deposit's discount coincide, so any path ending below about 3.96
+    # percent of contributed capital falls outside the bracket: 15,600 USDT in
+    # and 1 USDT back was reported as the best result in the ensemble.  235
+    # rows in the ledger carry mwrr_best >= 1000 from this.  NPV decreases in
+    # r, so ends of the same sign say the root is outside the bracket, and
+    # which side is legible from that sign.
+    outside = np.sign(fa) == np.sign(fb)
+
     for _ in range(iters):
         m = 0.5 * (a + b)
         fm = npv(m)
@@ -65,6 +80,11 @@ def mwrr_equal_interval(
         fa = np.where(go_right, fm, fa)
         b = np.where(go_right, b, m)
     r = 0.5 * (a + b)
+
+    # Saturate at the end the root lies beyond rather than at the opposite one.
+    # NPV(lo) < 0 means it is negative across the whole bracket, so the true
+    # rate is below lo; NPV(lo) > 0 with NPV(hi) > 0 means it is above hi.
+    r = np.where(outside, np.where(npv(np.full(V.shape, lo)) < 0.0, lo, hi), r)
     # A total wipeout has no interior root; report -100 % rather than the bracket.
     return np.where(V <= EPS, -1.0, r)
 

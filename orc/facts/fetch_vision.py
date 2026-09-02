@@ -301,19 +301,28 @@ def build_lifecycle(archive_cutoff: date | None = None) -> pl.DataFrame:
 # --------------------------------------------------------------------------
 # aligning funding onto a bar clock
 # --------------------------------------------------------------------------
-def funding_rate_per_bar(bar_ts: pl.Series, funding: pl.DataFrame) -> "np.ndarray":
+def funding_rate_per_bar(bar_ts: pl.Series,
+                         funding: pl.DataFrame) -> "tuple[np.ndarray, np.ndarray]":
     """Place each settlement on the bar that contains it; zero everywhere else.
 
     A settlement is charged on the bar it falls in, never spread across bars:
     that is how the exchange does it, and spreading would understate the pain
     of holding through a funding spike.
+
+    Returns the per-bar rate AND a mask of the bars a settlement landed on.
+    The two are not recoverable from each other: 4,276 settlements in this
+    archive have a rate of exactly 0.0 -- 43.9 percent of BNBUSDT's -- so a
+    rate of zero means 'no settlement here' and 'a settlement that cost
+    nothing' alike, and anything that counts settlements by looking for
+    non-zero rates counts the second kind as the first.
     """
     import numpy as np
 
     n = bar_ts.len()
     out = np.zeros(n, dtype=np.float64)
+    settled = np.zeros(n, dtype=bool)
     if funding.height == 0:
-        return out
+        return out, settled
     bars = bar_ts.to_numpy()
     fts = funding["ts"].to_numpy()
     rate = funding["funding_rate"].to_numpy().astype(np.float64)
@@ -332,7 +341,8 @@ def funding_rate_per_bar(bar_ts: pl.Series, funding: pl.DataFrame) -> "np.ndarra
         ok &= fts < bars[-1] + np.timedelta64(int(step), "s")
 
     np.add.at(out, pos[ok], rate[ok])
-    return out
+    settled[pos[ok]] = True
+    return out, settled
 
 
 if __name__ == "__main__":

@@ -40,7 +40,15 @@ def disqualifiers(surface: dict, metric: str, pbo: float | None,
     elif shape in SPIKE_SHAPES:
         why.append("spike")
     paths = surface.get("independent_paths_best")
-    if paths is not None and paths < FEW_PATHS:
+    if paths is None:
+        # The same rule as the shape and the PBO either side of this: a check
+        # that did not run is not a check that passed. 112 rows in the ledger
+        # predate _span and carry no path count at all, and whichever of a
+        # cell's rows the surface happens to keep decides whether the count
+        # exists -- so this was the one disqualifier a cell could clear by
+        # being measured on an old row rather than by having the paths.
+        why.append("path count unmeasured")
+    elif paths < FEW_PATHS:
         why.append(f"{paths:g} paths")
     if pbo is None:
         # write_report computes PBO for the top-ranked cells only, and a check
@@ -63,8 +71,12 @@ def disqualifiers(surface: dict, metric: str, pbo: float | None,
 def survivors(report: dict) -> list[tuple[str, dict]]:
     """(symbol, surface) for every cell in one hypothesis report that clears."""
     metric = report.get("metric", "tm_q05")
+    # A PBO computed on a subset that does not contain this cell is a
+    # measurement of other cells. On H0001 the horizon subset excluded every
+    # symbol's best cell and the number cleared them anyway; an uncovered PBO
+    # is therefore no PBO, which disqualifiers() already knows how to say.
     pbo = {s: r.get("pbo") for s, r in report.get("pbo", {}).items()
-           if r.get("status") == "ok"}
+           if r.get("status") == "ok" and r.get("covers_reported_best")}
     search = report.get("search_test", {})
     return [(sym, s) for sym, s in report.get("surfaces", {}).items()
             if not disqualifiers(s, metric, pbo.get(sym), search.get(sym))]

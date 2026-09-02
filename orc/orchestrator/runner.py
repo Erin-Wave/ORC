@@ -174,7 +174,9 @@ def run_dca_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
 
         tm = res["terminal_multiple"]
         invested = res["invested"]
-        lump = lump_sum_reference(p.close, spec)
+        # The same funding the DCA is charged. Without it the comparison was
+        # a funded schedule against an unfunded one.
+        lump = lump_sum_reference(p.close, spec, funding_flow=flow)
         metrics = {
             **_profile("tm", tm),
             # horizon_years, or the IRR is annualised over the time of the last

@@ -220,11 +220,13 @@ def test_funding_past_the_panel_end_is_not_charged():
                datetime(2026, 8, 1)],         # long past the end
         "funding_rate": [0.0001, 0.0002, 5.0, 7.0],
     })
-    fr = funding_rate_per_bar(bars, funding)
+    fr, settled = funding_rate_per_bar(bars, funding)
 
     assert fr[8] == pytest.approx(0.0001)
     assert fr[23] == pytest.approx(0.0002), "a settlement inside the last bar still counts"
     assert fr.sum() == pytest.approx(0.0003), "nothing past the end may be charged"
+    assert settled.tolist().count(True) == 2, "two settlements landed, and only two"
+    assert settled[8] and settled[23]
 
 
 # --------------------------------------------------------------------------
@@ -272,8 +274,10 @@ def test_survivors_reads_the_report_metric_not_a_default():
     from orc.orchestrator import verdict
 
     report = {"metric": "calmar",
-              "pbo": {"AAA": {"status": "ok", "pbo": 0.1},
-                      "BBB": {"status": "ok", "pbo": 0.1}},
+              "pbo": {"AAA": {"status": "ok", "pbo": 0.1,
+                              "covers_reported_best": True},
+                      "BBB": {"status": "ok", "pbo": 0.1,
+                              "covers_reported_best": True}},
               "search_test": {"AAA": _PASSED_SEARCH, "BBB": _PASSED_SEARCH},
               "surfaces": {"AAA": _cell(0.4), "BBB": _cell(-0.1)}}
     assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
@@ -638,3 +642,120 @@ def test_a_grid_that_can_never_be_shape_checked_is_refused(tmp_path, monkeypatch
     assert daily_cycle.intake_queue() == []
     assert not (registry / "H9999.json").exists()
     assert (queue / "rejected" / "H9999.json").exists()
+
+
+def test_a_pbo_measured_on_other_cells_does_not_clear_this_one():
+    """H0001: the horizon subset excluded every symbol's best cell -- BTCUSDT
+    was judged at stride_days 30 by a PBO computed on stride_days 1 -- and the
+    number cleared it anyway."""
+    from orc.orchestrator import verdict
+
+    report = {"metric": "tm_q05",
+              "search_test": {"AAA": _PASSED_SEARCH},
+              "surfaces": {"AAA": _cell(2.0)}}
+
+    report["pbo"] = {"AAA": {"status": "ok", "pbo": 0.1,
+                             "covers_reported_best": True}}
+    assert [s for s, _ in verdict.survivors(report)] == ["AAA"]
+
+    report["pbo"] = {"AAA": {"status": "ok", "pbo": 0.1,
+                             "covers_reported_best": False}}
+    assert verdict.survivors(report) == []
+    assert "PBO unmeasured" in verdict.disqualifiers(
+        _cell(2.0), "tm_q05", None, _PASSED_SEARCH)
+
+
+def test_an_unmeasured_path_count_is_not_a_pass_either():
+    """112 ledger rows predate the span figure and carry no path count. The
+    shape and the PBO either side of this check both fail closed; this one
+    did not."""
+    from orc.orchestrator import verdict
+
+    cell = _cell(2.0)
+    cell["independent_paths_best"] = None
+    assert "path count unmeasured" in verdict.disqualifiers(
+        cell, "tm_q05", 0.1, _PASSED_SEARCH)
+    cell["independent_paths_best"] = 9.0
+    assert verdict.disqualifiers(cell, "tm_q05", 0.1, _PASSED_SEARCH) == []
+
+
+def test_a_settlement_that_cost_nothing_is_still_a_settlement():
+    """4,276 settlements in the archive print exactly 0.0 -- 43.9 percent of
+    BNBUSDT's. The rate array cannot tell them from a bar with no settlement,
+    so the mask has to, or the per-settlement mean is divided by the wrong n."""
+    import polars as pl
+    from orc.facts.fetch_vision import funding_rate_per_bar
+
+    bars = pl.Series("ts", [datetime(2024, 1, 1, h) for h in range(24)])
+    funding = pl.DataFrame({"ts": [datetime(2024, 1, 1, 0),
+                                   datetime(2024, 1, 1, 8),
+                                   datetime(2024, 1, 1, 16)],
+                            "funding_rate": [0.0003, 0.0, 0.0003]})
+    fr, settled = funding_rate_per_bar(bars, funding)
+
+    assert fr.sum() == pytest.approx(0.0006)
+    assert settled.sum() == 3, "the 0.0 settlement is one of them"
+    assert (fr != 0.0).sum() == 2, "and the rate array cannot see it"
+
+
+def test_the_per_settlement_mean_counts_the_zero_rate_ones(tmp_path):
+    """The same window read two ways: 1.5x apart, and the pre-registered
+    threshold 0.0001 sits between them."""
+    import numpy as np
+    from orc.eval.signal_rules import _trailing_settlement_mean
+
+    n = 240
+    rate = np.zeros(n)
+    settled = np.zeros(n, dtype=bool)
+    settled[::8] = True                      # every eighth bar settles
+    rate[::24] = 0.00012                     # one settlement in three is priced
+
+    m = _trailing_settlement_mean(rate, 240, settled)
+    assert m[-1] == pytest.approx(0.00012 * 10 / 30), "30 settlements, 10 priced"
+
+    wrong = _trailing_settlement_mean(rate, 240, rate != 0.0)
+    assert wrong[-1] == pytest.approx(0.00012), "counting non-zero rates triples it"
+    assert m[-1] < 0.0001 < wrong[-1], (
+        "the old count put this window on the other side of enter_rate")
+
+
+def test_sealed_bars_are_refused_outside_a_final_test():
+    """The counter used to record how many times someone filled in the form,
+    not how many times the sealed period was read."""
+    from orc.facts import panel as panel_mod
+
+    assert not holdout.sealed_reads_permitted()
+    with pytest.raises(holdout.HoldoutViolation, match="no final test is open"):
+        panel_mod.load("BTCUSDT", "1h", development_only=False)
+
+
+def test_one_opening_cannot_quietly_cover_a_whole_grid(monkeypatch, tmp_path):
+    """A logged opening said 1 while the loop behind it read the sealed period
+    972 times. The reads are now counted against the opening."""
+    monkeypatch.setattr(holdout, "TOKEN_FILE", tmp_path / "tok")
+    monkeypatch.setattr(holdout, "LOG_FILE", tmp_path / "log.jsonl")
+    monkeypatch.setattr(holdout, "READS_FILE", tmp_path / "reads.jsonl")
+    holdout.TOKEN_FILE.write_text(holdout.TOKEN_TEXT, encoding="utf-8")
+
+    with holdout.final_test({"id": "H0002"}, "final") as rec:
+        assert holdout.sealed_reads_permitted()
+        for i in range(5):
+            holdout.note_sealed_read(f"SYM{i}/1h")
+    assert rec["opening"] == 1
+    assert not holdout.sealed_reads_permitted()
+
+    line = json.loads(holdout.READS_FILE.read_text(encoding="utf-8").strip())
+    assert line["n_sealed_reads"] == 5, "one opening, five measurements, said so"
+
+
+def test_the_permit_is_dropped_even_when_the_final_test_raises(monkeypatch, tmp_path):
+    monkeypatch.setattr(holdout, "TOKEN_FILE", tmp_path / "tok")
+    monkeypatch.setattr(holdout, "LOG_FILE", tmp_path / "log.jsonl")
+    monkeypatch.setattr(holdout, "READS_FILE", tmp_path / "reads.jsonl")
+    holdout.TOKEN_FILE.write_text(holdout.TOKEN_TEXT, encoding="utf-8")
+
+    with pytest.raises(RuntimeError):
+        with holdout.final_test({"id": "X"}, "final"):
+            holdout.note_sealed_read("SYM/1h")
+            raise RuntimeError("the measurement blew up")
+    assert not holdout.sealed_reads_permitted(), "a crash must not leave the door open"

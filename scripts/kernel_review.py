@@ -51,6 +51,14 @@ REVIEWED = ("orc/eval", "orc/kernel", "orc/facts/panel.py",
             "orc/orchestrator/spec.py", "orc/holdout.py")
 
 
+# Files per call.  The whole set in one prompt is one review of seventeen files,
+# which is a skim: the reviewer has to hold every one of them at once and the
+# call times out before it finishes trying.  Four is small enough that each file
+# is actually read and that one batch failing costs four files rather than all
+# of them.  Frozen before any review ran against the widened set.
+REVIEW_BATCH = 4
+
+
 def files_to_review() -> list[Path]:
     out: list[Path] = []
     for entry in REVIEWED:
@@ -64,22 +72,50 @@ def files_to_review() -> list[Path]:
 
 def main() -> int:
     paths = files_to_review()
-    listing = "\n".join(str(p.relative_to(config.ORC_ROOT)).replace("\\", "/")
-                        for p in paths)
-    print(f"reviewing {len(paths)} files")
+    print(f"reviewing {len(paths)} files in batches of {REVIEW_BATCH}")
 
-    try:
-        r = llm.ask_json(llm.load_prompt("kernel_review", files=listing),
-                         cwd=config.ORC_ROOT)
-    except llm.LLMUnavailable as exc:
-        print(f"review unavailable: {exc}")
+    findings: list[dict] = []
+    reviewed: list[str] = []
+    unreviewed: list[str] = []
+    confidences: list[str] = []
+    for i in range(0, len(paths), REVIEW_BATCH):
+        batch = paths[i:i + REVIEW_BATCH]
+        names = [str(q.relative_to(config.ORC_ROOT)).replace(chr(92), '/') for q in batch]
+        try:
+            r = llm.ask_json(llm.load_prompt("kernel_review",
+                                             files=chr(10).join(names)),
+                             cwd=config.ORC_ROOT)
+        except llm.LLMUnavailable as exc:
+            # A batch nobody could read is not a batch with no findings. Record
+            # it as unreviewed so an empty result cannot be mistaken for a clean
+            # one, which is the same mistake the gate already refuses to make.
+            print(f"  batch {i // REVIEW_BATCH + 1} UNAVAILABLE: {exc}")
+            unreviewed.extend(names)
+            continue
+        got = r.get("findings", [])
+        findings.extend(got)
+        reviewed.extend(r.get("reviewed", names))
+        confidences.append(str(r.get("confidence", "unknown")))
+        print(f"  batch {i // REVIEW_BATCH + 1}: {len(got)} finding(s) over "
+              f"{len(names)} file(s)")
+
+    if not reviewed:
+        print("review unavailable: no batch could be read")
         return 2
 
-    findings = r.get("findings", [])
+    # The weakest batch sets the confidence of the whole review.
+    order = {"low": 0, "medium": 1, "high": 2}
+    r = {"confidence": min(confidences, key=lambda c: order.get(c, 0)) if confidences
+         else "unknown",
+         "reviewed": reviewed, "unreviewed": unreviewed, "findings": findings}
+
     stamp = datetime.now(timezone.utc).isoformat()
     lines = [f"# Kernel review\n", f"Written {stamp}. Confidence "
-             f"{r.get('confidence', 'unknown')}. {len(findings)} finding(s) "
-             f"over {len(r.get('reviewed', []))} files read.\n"]
+             f"{r['confidence']}. {len(findings)} finding(s) over "
+             f"{len(reviewed)} file(s) read."]
+    if unreviewed:
+        lines.append(f"{len(unreviewed)} file(s) were NOT read this run and are "
+                     f"not covered by the result below: " + ", ".join(unreviewed))
     if not findings:
         lines.append("No findings. An empty review is a result, not a formality: "
                      "it says the reviewer read the code and could not construct "
@@ -107,6 +143,12 @@ def main() -> int:
         print(f"  {f.get('severity', '?'):6s} {f.get('file')}:{f.get('line', '?')}  "
               f"{str(f.get('what', ''))[:90]}")
     print(f"{len(findings)} finding(s), {len(high)} high")
+    if unreviewed:
+        # A partial review must not be filed as a completed one. Non-zero so the
+        # scheduler retries and so a green task result means the whole set was
+        # actually read.
+        print(f"PARTIAL: {len(unreviewed)} file(s) were not read")
+        return 3
     return 1 if high else 0
 
 

@@ -55,7 +55,8 @@ def _sliced(panel, lo: int, hi: int):
     return replace(panel,
                    ts=panel.ts[lo:hi], open=panel.open[lo:hi], high=panel.high[lo:hi],
                    low=panel.low[lo:hi], close=panel.close[lo:hi],
-                   volume=panel.volume[lo:hi], funding_rate=panel.funding_rate[lo:hi])
+                   volume=panel.volume[lo:hi], funding_rate=panel.funding_rate[lo:hi],
+                   funding_settled=panel.funding_settled[lo:hi])
 
 
 def _tm_q05_over_mask(panel, cfg, mask: np.ndarray) -> float:
