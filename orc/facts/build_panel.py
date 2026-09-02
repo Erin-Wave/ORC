@@ -21,11 +21,13 @@ from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass, asdict
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
 
 from orc import config
+from orc.facts import source_duckdb
 
 COLUMNS = ["ts", "open", "high", "low", "close",
            "volume", "quote_volume", "taker_buy_base", "taker_buy_quote", "trades"]
@@ -37,6 +39,15 @@ SCHEMA = {
 }
 
 KEEP = ["ts", "open", "high", "low", "close", "volume", "quote_volume", "trades"]
+
+# Frozen when the builder moved onto the duckdb store, before any result from
+# the wider universe was seen.  A symbol whose whole history postdates the seal
+# is unreadable by research -- panel.load() truncates it to zero rows -- so
+# building it writes a file nothing may ever open.  This is also what keeps the
+# equity-linked perpetuals out (AAPLUSDT, TSLAUSDT, NVDAUSDT and the rest all
+# first traded in 2026): they are named nowhere, they simply have no
+# development history to contribute.
+REQUIRE_DEVELOPMENT_BARS = True
 
 
 @dataclass
@@ -60,15 +71,23 @@ def symbol_dir(symbol: str) -> Path:
     return config.RAW_1M / symbol
 
 
-def list_symbols() -> list[str]:
+def list_symbols_csv() -> list[str]:
     return sorted(p.name for p in config.RAW_1M.iterdir() if p.is_dir())
 
 
-def load_raw_1m(symbol: str) -> pl.DataFrame:
+def load_raw_1m_csv(symbol: str) -> pl.DataFrame:
     glob = str(symbol_dir(symbol) / (symbol + "_*.csv")).replace("\\", "/")
     lf = pl.scan_csv(glob, has_header=False, new_columns=COLUMNS,
                      schema_overrides=SCHEMA, ignore_errors=True)
     return lf.collect()
+
+
+def list_symbols(con=None) -> list[str]:
+    return source_duckdb.list_symbols(con)
+
+
+def load_raw_1m(symbol: str, con=None) -> pl.DataFrame:
+    return source_duckdb.load_raw_1m(symbol, con)
 
 
 def clean_1m(df: pl.DataFrame) -> tuple[pl.DataFrame, dict]:
@@ -140,8 +159,8 @@ def to_hourly(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def build_symbol(symbol: str, out_1m: Path, out_1h: Path) -> SymbolQA:
-    df = load_raw_1m(symbol)
+def build_symbol(symbol: str, out_1m: Path, out_1h: Path, con=None) -> SymbolQA:
+    df = load_raw_1m(symbol, con)
     if df.height == 0:
         return SymbolQA(symbol, 0, 0, 0, 0, "", "", 0, 0, 0, 0,
                         usable=False, reject_reason="no rows in archive")
@@ -154,6 +173,18 @@ def build_symbol(symbol: str, out_1m: Path, out_1h: Path) -> SymbolQA:
                         st["nonpositive_price_rows"], st["ohlc_violation_rows"],
                         usable=False,
                         reject_reason="only %d bars, need %d" % (clean.height, config.MIN_BARS_REQUIRED))
+
+    if REQUIRE_DEVELOPMENT_BARS:
+        seal = datetime(config.HOLDOUT_START.year, config.HOLDOUT_START.month,
+                        config.HOLDOUT_START.day)
+        if clean.filter(pl.col("ts") < seal).height == 0:
+            return SymbolQA(symbol, st["rows_raw"], st["rows_dropped_padding"],
+                            st["rows_dropped_duplicate"], clean.height,
+                            str(clean["ts"][0]), str(clean["ts"][-1]),
+                            st["gap_count"], st["largest_gap_minutes"],
+                            st["nonpositive_price_rows"], st["ohlc_violation_rows"],
+                            usable=False,
+                            reject_reason="listed after the seal; no development history")
 
     out_1m.parent.mkdir(parents=True, exist_ok=True)
     out_1h.parent.mkdir(parents=True, exist_ok=True)
@@ -171,7 +202,8 @@ def build_symbol(symbol: str, out_1m: Path, out_1h: Path) -> SymbolQA:
 
 def build_all(symbols=None, limit=None):
     config.ensure_dirs()
-    syms = symbols or list_symbols()
+    con = source_duckdb.connect()
+    syms = symbols or list_symbols(con)
     if limit:
         syms = syms[:limit]
     d1m = config.FACTS / "panel_1m"
@@ -179,7 +211,7 @@ def build_all(symbols=None, limit=None):
     report = []
     for i, s in enumerate(syms, 1):
         try:
-            qa = build_symbol(s, d1m / (s + ".parquet"), d1h / (s + ".parquet"))
+            qa = build_symbol(s, d1m / (s + ".parquet"), d1h / (s + ".parquet"), con)
         except Exception as exc:                                   # noqa: BLE001
             qa = SymbolQA(s, 0, 0, 0, 0, "", "", 0, 0, 0, 0,
                           usable=False, reject_reason=type(exc).__name__ + ": " + str(exc))
