@@ -1,7 +1,7 @@
 {
-  "run_id": "3bc1bf49e6eb",
-  "started_utc": "2026-09-02T08:30:37.357056+00:00",
-  "finished_utc": "2026-09-02T08:31:42.073150+00:00",
+  "run_id": "5ec83b0f2470",
+  "started_utc": "2026-09-02T08:38:09.684099+00:00",
+  "finished_utc": "2026-09-02T08:40:58.539191+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
@@ -11,52 +11,52 @@
     "H0006",
     "H0007"
   ],
-  "trials_before": 1546,
+  "trials_before": 2756,
   "trials_after": 2756,
-  "trials_added": 1210,
+  "trials_added": 0,
   "results": [
     {
       "hypothesis_id": "H0001",
       "family": "unconditional_dca_spot_style",
-      "run_id": "3bc1bf49e6eb",
+      "run_id": "5ec83b0f2470",
       "configurations": 162,
       "evaluated": 112,
-      "new_trials": 112,
+      "new_trials": 0,
       "skipped": 50,
       "skip_reasons": {
         "horizon_exceeds_history": 50
       },
-      "ledger_total_trials": 1658
+      "ledger_total_trials": 2756
     },
     {
       "hypothesis_id": "H0002",
       "family": "funding_carry_short",
-      "run_id": "3bc1bf49e6eb",
+      "run_id": "5ec83b0f2470",
       "configurations": 972,
       "evaluated": 972,
-      "new_trials": 972,
+      "new_trials": 0,
       "skipped": 0,
       "skip_reasons": {},
-      "ledger_total_trials": 2630
+      "ledger_total_trials": 2756
     },
     {
       "hypothesis_id": "H0006",
       "family": "negative_funding_carry_long",
-      "run_id": "3bc1bf49e6eb",
+      "run_id": "5ec83b0f2470",
       "configurations": 72,
       "evaluated": 72,
-      "new_trials": 72,
+      "new_trials": 0,
       "skipped": 0,
       "skip_reasons": {},
-      "ledger_total_trials": 2702
+      "ledger_total_trials": 2756
     },
     {
       "hypothesis_id": "H0007",
       "family": "dislocation_gated_dca",
-      "run_id": "3bc1bf49e6eb",
+      "run_id": "5ec83b0f2470",
       "configurations": 54,
       "evaluated": 54,
-      "new_trials": 54,
+      "new_trials": 0,
       "skipped": 0,
       "skip_reasons": {},
       "ledger_total_trials": 2756
