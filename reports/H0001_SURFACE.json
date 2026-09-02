@@ -4,7 +4,7 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-02T01:59:51.567483+00:00",
+  "generated_utc": "2026-09-02T04:13:59.677223+00:00",
   "metric": "tm_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 336,
@@ -87,7 +87,9 @@
         "plateau_ratio": 0.7548788912734686,
         "n_neighbours": 2,
         "shape": "SLOPE"
-      }
+      },
+      "n_starts_best": 34552,
+      "independent_paths_best": 29.23
     },
     "AVAXUSDT": {
       "axes": [
@@ -166,7 +168,9 @@
         "plateau_ratio": 0.7450260308246005,
         "n_neighbours": 2,
         "shape": "SLOPE"
-      }
+      },
+      "n_starts_best": 28889,
+      "independent_paths_best": 24.6
     },
     "BNBUSDT": {
       "axes": [
@@ -245,7 +249,9 @@
         "plateau_ratio": 0.7044534926382476,
         "n_neighbours": 2,
         "shape": "SLOPE"
-      }
+      },
+      "n_starts_best": 9496,
+      "independent_paths_best": 1.36
     },
     "BTCUSDT": {
       "axes": [
@@ -324,7 +330,9 @@
         "plateau_ratio": 0.28487378926192947,
         "n_neighbours": 1,
         "shape": "SPIKE"
-      }
+      },
+      "n_starts_best": 2523,
+      "independent_paths_best": 1.07
     },
     "DOGEUSDT": {
       "axes": [
@@ -403,7 +411,9 @@
         "plateau_ratio": 0.7660805006519158,
         "n_neighbours": 2,
         "shape": "SLOPE"
-      }
+      },
+      "n_starts_best": 5871,
+      "independent_paths_best": 1.23
     },
     "ETHUSDT": {
       "axes": [
@@ -482,7 +492,9 @@
         "plateau_ratio": 0.16608003465724358,
         "n_neighbours": 1,
         "shape": "SPIKE"
-      }
+      },
+      "n_starts_best": 616,
+      "independent_paths_best": 1.02
     },
     "LTCUSDT": {
       "axes": [
@@ -561,7 +573,9 @@
         "plateau_ratio": 0.796635614011233,
         "n_neighbours": 2,
         "shape": "SLOPE"
-      }
+      },
+      "n_starts_best": 35080,
+      "independent_paths_best": 29.66
     },
     "SOLUSDT": {
       "axes": [
@@ -640,7 +654,9 @@
         "plateau_ratio": 0.29543969541962806,
         "n_neighbours": 2,
         "shape": "SPIKE"
-      }
+      },
+      "n_starts_best": 4289,
+      "independent_paths_best": 1.16
     },
     "XRPUSDT": {
       "axes": [
@@ -719,7 +735,9 @@
         "plateau_ratio": 0.6964734060995418,
         "n_neighbours": 2,
         "shape": "SPIKE"
-      }
+      },
+      "n_starts_best": 10336,
+      "independent_paths_best": 1.4
     }
   },
   "pbo": {
