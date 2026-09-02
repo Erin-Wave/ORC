@@ -29,6 +29,10 @@ Trials in this family: 672. Pre-registration hash `16461da7e4b64a49`.
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
+- PBO on **ETHUSDT** could not be computed: start offsets span 616 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split
+- PBO on **BTCUSDT** could not be computed: start offsets span 2523 bars against a 36720-bar horizon; the blocks would be the same price history and the split would not be a split
+- PBO on **SOLUSDT** could not be computed: start offsets span 4289 bars against a 26040-bar horizon; the blocks would be the same price history and the split would not be a split
+
 ## H0002 — funding_carry_short (track B, metric `calmar`)
 
 **Claim.** Leveraged long demand on a perpetual pays the funding rate every eight hours for as long as it stays crowded, and keeps paying because the leverage is the whole point of being there: someone who merely wanted the asset would buy spot. KT-1 measured that tax from the paying side at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTC settlements positive, and closed long perpetual accumulation over it. This stands on the receiving side of the same trade and asks the only question that side has: can the tax be collected without the directional move that produces it taking the position first? The rule shorts while the trailing mean settlement rate is rich and flattens when it decays, so it is short precisely when long crowding is most expensive - and therefore precisely when a squeeze is most likely. The grid exists to find whether any combination of stop, exposure and holding limit separates the two.
@@ -51,11 +55,11 @@ Trials in this family: 2916. Pre-registration hash `0d6e7ca037976c0c`.
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
-| PBO symbol | PBO | verdict | configs | splits |
-|---|---:|---|---:|---:|
-| BTCUSDT | 0.317 | SELECTION_WEAK | 108 | 252 |
-| LTCUSDT | 0.385 | SELECTION_WEAK | 108 | 252 |
-| XRPUSDT | 0.647 | SELECTION_IS_NOISE | 108 | 252 |
+| PBO symbol | PBO | verdict | covers best cell | configs | splits |
+|---|---:|---|---|---:|---:|
+| BTCUSDT | 0.317 | SELECTION_WEAK | yes | 108 | 252 |
+| LTCUSDT | 0.385 | SELECTION_WEAK | yes | 108 | 252 |
+| XRPUSDT | 0.647 | SELECTION_IS_NOISE | yes | 108 | 252 |
 
 ## H0006 — negative_funding_carry_long (track B, metric `calmar`)
 
@@ -79,11 +83,11 @@ Trials in this family: 216. Pre-registration hash `d6b50b9b2c14f44f`.
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
-| PBO symbol | PBO | verdict | configs | splits |
-|---|---:|---|---:|---:|
-| SOLUSDT | 0.516 | SELECTION_IS_NOISE | 8 | 252 |
-| BNBUSDT | 0.278 | SELECTION_WEAK | 8 | 252 |
-| BTCUSDT | 0.821 | SELECTION_IS_NOISE | 8 | 252 |
+| PBO symbol | PBO | verdict | covers best cell | configs | splits |
+|---|---:|---|---|---:|---:|
+| SOLUSDT | 0.516 | SELECTION_IS_NOISE | yes | 8 | 252 |
+| BNBUSDT | 0.278 | SELECTION_WEAK | yes | 8 | 252 |
+| BTCUSDT | 0.821 | SELECTION_IS_NOISE | yes | 8 | 252 |
 
 ## H0007 — dislocation_gated_dca (track A, metric `tm_q05`)
 
@@ -107,11 +111,13 @@ Trials in this family: 162. Pre-registration hash `5c39d5b986fce8ca`.
 
 `start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
 
-| PBO symbol | PBO | verdict | configs | splits |
-|---|---:|---|---:|---:|
-| BNBUSDT | 0.167 | SELECTION_INFORMATIVE | 2 | 252 |
-| BTCUSDT | 0.000 | SELECTION_INFORMATIVE | 2 | 252 |
-| ETHUSDT | 0.000 | SELECTION_INFORMATIVE | 2 | 252 |
+| PBO symbol | PBO | verdict | covers best cell | configs | splits |
+|---|---:|---|---|---:|---:|
+| BNBUSDT | 0.167 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
+| BTCUSDT | 0.000 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
+| ETHUSDT | 0.000 | SELECTION_INFORMATIVE | **no** | 2 | 252 |
+
+A **no** under `covers best cell` means that PBO was computed on configurations that do not include the best cell in the table above. It says nothing about that cell, and the check counts as not run.
 
 ## What the next pass must do
 

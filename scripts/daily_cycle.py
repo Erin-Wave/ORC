@@ -248,12 +248,33 @@ def write_cycle_markdown(summary: dict, reports: list[dict]) -> None:
                  "sample size.")
         L.append("")
         ok = [r for r in rep["pbo"].values() if r.get("status") == "ok"]
+        refused = [r for r in rep["pbo"].values() if r.get("status") != "ok"]
         if ok:
-            L.append("| PBO symbol | PBO | verdict | configs | splits |")
-            L.append("|---|---:|---|---:|---:|")
+            L.append("| PBO symbol | PBO | verdict | covers best cell | "
+                     "configs | splits |")
+            L.append("|---|---:|---|---|---:|---:|")
             for r in ok:
+                covers = r.get("covers_reported_best")
                 L.append(f"| {r['symbol']} | {r['pbo']:.3f} | {r['verdict']} | "
+                         f"{'yes' if covers else '**no**'} | "
                          f"{r['n_configs']} | {r['n_splits']} |")
+            L.append("")
+            # A PBO computed on a horizon group that does not contain the cell
+            # in the table above is a measurement of other cells. It reads as
+            # that cell clearing the check; verdict.py no longer lets it, and
+            # the reader of this document should not be misled either.
+            if any(not r.get("covers_reported_best") for r in ok):
+                L.append("A **no** under `covers best cell` means that PBO was "
+                         "computed on configurations that do not include the best "
+                         "cell in the table above. It says nothing about that cell, "
+                         "and the check counts as not run.")
+                L.append("")
+        for r in refused:
+            # A refusal is a result: it says the split could not be made, which
+            # is not the same as a selection that carried information.
+            L.append(f"- PBO on **{r.get('symbol')}** could not be computed: "
+                     f"{r.get('status')}")
+        if refused:
             L.append("")
 
     L.append("## What the next pass must do")
