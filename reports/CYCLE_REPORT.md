@@ -13,15 +13,15 @@ Best cell per family per symbol, ranked on the metric that survives a horizon ch
 
 | family | symbol | return p.a. | max drawdown | basis | not a finding because |
 |---|---|---:|---:|---|---|
-| H0001 | ADAUSDT | n/a | 418.8% | invested | at or below 0, shape unmeasured, 1.37 paths, PBO unmeasured, search test unmeasured |
-| H0001 | AVAXUSDT | n/a | 311.0% | invested | at or below 0, shape unmeasured, 1.16 paths, PBO unmeasured, search test unmeasured |
-| H0001 | BNBUSDT | n/a | 271.9% | invested | spike, 1.36 paths, PBO unmeasured, search test unmeasured |
-| H0001 | BTCUSDT | n/a | 193.4% | invested | spike, 1.07 paths, PBO unmeasured, search test unmeasured |
-| H0001 | DOGEUSDT | n/a | 1344.9% | invested | at or below 0, shape unmeasured, 1.23 paths, PBO unmeasured, search test unmeasured |
-| H0001 | ETHUSDT | n/a | 481.5% | invested | spike, 1.02 paths, PBO unmeasured, p=1.000 vs a random search |
-| H0001 | LTCUSDT | n/a | 130.6% | invested | at or below 0, shape unmeasured, 1.39 paths, PBO unmeasured, search test unmeasured |
-| H0001 | SOLUSDT | n/a | 849.7% | invested | spike, 1.16 paths, PBO unmeasured, p=1.000 vs a random search |
-| H0001 | XRPUSDT | n/a | 139.1% | invested | at or below 0, shape unmeasured, 1.4 paths, PBO unmeasured, search test unmeasured |
+| H0001 | ETHUSDT | +67.9% | 481.5% | invested | spike, 1.02 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0001 | SOLUSDT | +37.3% | 849.7% | invested | spike, 1.16 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0001 | BTCUSDT | +36.2% | 193.4% | invested | spike, 1.07 paths, PBO unmeasured, search test unmeasured |
+| H0001 | BNBUSDT | +8.1% | 271.9% | invested | spike, 1.36 paths, PBO unmeasured, search test unmeasured |
+| H0001 | XRPUSDT | -5.3% | 139.1% | invested | at or below 0, shape unmeasured, 1.4 paths, PBO unmeasured, search test unmeasured |
+| H0001 | DOGEUSDT | -9.9% | 1344.9% | invested | at or below 0, shape unmeasured, 1.23 paths, PBO unmeasured, search test unmeasured |
+| H0001 | LTCUSDT | -23.7% | 130.6% | invested | at or below 0, shape unmeasured, 1.39 paths, PBO unmeasured, search test unmeasured |
+| H0001 | AVAXUSDT | -29.9% | 311.0% | invested | at or below 0, shape unmeasured, 1.16 paths, PBO unmeasured, search test unmeasured |
+| H0001 | ADAUSDT | -32.0% | 418.8% | invested | at or below 0, shape unmeasured, 1.37 paths, PBO unmeasured, search test unmeasured |
 
 No cell clears every check. Nothing in this table is a result.
 

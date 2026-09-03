@@ -5,7 +5,7 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-03T04:00:01.800806+00:00",
+  "generated_utc": "2026-09-03T08:41:33.756419+00:00",
   "metric": "mwrr_q05",
   "holdout_start": "2024-03-01",
   "trials_in_family": 1120,
@@ -91,6 +91,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 0.5958112554492814,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": -0.31971005364131944,
       "mwrr_q50_best": -0.008274274879996657,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -101,7 +102,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": -0.31971005364131944,
         "return_pa_median": -0.008274274879996657,
         "mdd": 4.188287848680771,
         "mdd_kind": "invested"
@@ -187,6 +188,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 0.6183911094027328,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": -0.2985760826081987,
       "mwrr_q50_best": 0.277038243291185,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -197,7 +199,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": -0.2985760826081987,
         "return_pa_median": 0.277038243291185,
         "mdd": 3.1104963249707556,
         "mdd_kind": "invested"
@@ -290,6 +292,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 1.1260625166054576,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": 0.08149180566627995,
       "mwrr_q50_best": 0.503102192318899,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -300,7 +303,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": 0.08149180566627995,
         "return_pa_median": 0.503102192318899,
         "mdd": 2.7186634661249833,
         "mdd_kind": "invested"
@@ -393,6 +396,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 2.051039115127731,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": 0.3615816385553472,
       "mwrr_q50_best": 0.42193768761835704,
       "horizon_days_best": 1530.0,
       "cagr_best": null,
@@ -403,7 +407,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": 0.3615816385553472,
         "return_pa_median": 0.42193768761835704,
         "mdd": 1.9341115827478386,
         "mdd_kind": "invested"
@@ -489,6 +493,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 0.8601961484914038,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": -0.0988066126163582,
       "mwrr_q50_best": 0.4830447612277601,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -499,7 +504,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": -0.0988066126163582,
         "return_pa_median": 0.4830447612277601,
         "mdd": 13.449197457031906,
         "mdd_kind": "invested"
@@ -592,6 +597,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 3.6056116382051298,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": 0.6789141697407873,
       "mwrr_q50_best": 0.7500426413546053,
       "horizon_days_best": 1530.0,
       "cagr_best": null,
@@ -602,7 +608,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": 0.6789141697407873,
         "return_pa_median": 0.7500426413546053,
         "mdd": 4.815366523898309,
         "mdd_kind": "invested"
@@ -688,6 +694,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 0.6868948254289569,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": -0.23739920078441465,
       "mwrr_q50_best": -0.06955329111148184,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -698,7 +705,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": -0.23739920078441465,
         "return_pa_median": -0.06955329111148184,
         "mdd": 1.305562845777864,
         "mdd_kind": "invested"
@@ -791,6 +798,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 1.6619021758095884,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": 0.3726884486782851,
       "mwrr_q50_best": 0.9683629406627341,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -801,7 +809,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": 0.3726884486782851,
         "return_pa_median": 0.9683629406627341,
         "mdd": 8.49677819282286,
         "mdd_kind": "invested"
@@ -887,6 +895,7 @@
       "primary_metric": "tm_q05",
       "primary_metric_best": 0.9227769940078271,
       "ranked_on": "mwrr_q05",
+      "mwrr_q05_best": -0.05335045602927216,
       "mwrr_q50_best": 0.03920185603346249,
       "horizon_days_best": 1085.0,
       "cagr_best": null,
@@ -897,7 +906,7 @@
       "n_liquidations_best": null,
       "funding_frac_best": null,
       "headline": {
-        "return_pa": null,
+        "return_pa": -0.05335045602927216,
         "return_pa_median": 0.03920185603346249,
         "mdd": 1.3907801792863541,
         "mdd_kind": "invested"
@@ -922,8 +931,8 @@
     "ETHUSDT": {
       "status": "ok",
       "observed_best": 0.6789141697407873,
-      "null_mean": 24.73242713742485,
-      "null_q95": 71.99974358332845,
+      "null_mean": 24.732427137424843,
+      "null_q95": 71.9997435833285,
       "p_value": 1.0,
       "n_null": 199,
       "n_configs": 18,
@@ -935,7 +944,7 @@
       "status": "ok",
       "observed_best": 0.3726884486782851,
       "null_mean": 23.273133945749578,
-      "null_q95": 102.85523178516314,
+      "null_q95": 102.85523178516321,
       "p_value": 1.0,
       "n_null": 199,
       "n_configs": 18,
