@@ -1,26 +1,23 @@
-# ORC 연구 브리핑 — 2026-09-04 00:03 KST
+# ORC 연구 브리핑 — 2026-09-04 08:32 KST
 
 ## 지금 돌고 있는가
 
-🟢 **24시간 감독자가 살아 있고 지금도 일하고 있습니다.**
+🟡 **감독자가 떠 있지 않습니다** — 예약된 추론 발화까지 아무것도 하지 않습니다.
 
-- `ORC Reasoning Cycle`의 마지막 결과는 실행 실패였지만 경로는 지금 정상입니다 — 다음 발화에서 지워집니다
-- 감독자 살아 있음 (pid 40628, 박동 13분 전). 지금 할 일: **kernel_review** — kernel_review: 이 저장소에서 한 번도 실행되지 않았습니다
-- 마지막으로 한 일: execution_realism (13분 전) — exit 1: H0002 BTCUSDT  {'enter_rate': 0.0002, 'leverage': 1.0, 'lookback_days': 21.0, 'max_hold_days': 7.0, 'stop_loss': None} |   hourly  b
-- 24시간 등록 예산 0/4 사용 — 제안과 검토는 공짜고, N을 올리는 것은 등록뿐입니다
+- 마지막 신규 시행 20시간 6분 전, 큐는 비었고 감독자도 떠 있지 않습니다 — `python scripts/forever.py` 또는 `python scripts/schedule.py --install`
 
 | 무엇 | 언제 | 무슨 일이 있었나 |
 |---|---|---|
-| **마지막 신규 시행** (백테스트가 아무도 묻지 않았던 것에 답한 시각) | 2026-09-03 12:26 KST · 11시간 36분 전 | 시행 112건 추가 · H0001 · 소요 48초 |
-| 마지막 워커 사이클 | 2026-09-03 19:25 KST · 4시간 37분 전 | 소요 34분 50초 · 신규 0건  ← 돌았지만 새로 답한 것이 없음 |
-| 다음 워커 발화 (명목) | 2026-09-04 03:00 KST · 2시간 56분 후 | 6시간마다. 공개 저장소의 예약 실행은 2~4시간 지연이 흔합니다 |
-| 마지막 추론 패스 (아이디어 발굴) | 2026-09-03 23:34 KST · 28분 전 | 판단 호출 실패 2건 |
-| 추론 계층 마지막 기동 | 2026-09-03 23:34 KST · 28분 전 | 파이프라인을 실행했습니다 |
-| 다음 추론 발화 | 2026-09-04 02:25 KST | 매일 02:25, 08:25, 14:25, 20:25 KST. 증거가 그대로면 스스로 건너뜁니다 |
+| **마지막 신규 시행** (백테스트가 아무도 묻지 않았던 것에 답한 시각) | 2026-09-03 12:26 KST · 20시간 6분 전 | 시행 112건 추가 · H0001 · 소요 48초 |
+| 마지막 워커 사이클 | 2026-09-04 07:57 KST · 34분 전 | 소요 34분 54초 · 신규 0건  ← 돌았지만 새로 답한 것이 없음 |
+| 다음 워커 발화 (명목) | 2026-09-04 09:00 KST · 27분 후 | 6시간마다. 공개 저장소의 예약 실행은 2~4시간 지연이 흔합니다 |
+| 마지막 추론 패스 (아이디어 발굴) | 2026-09-04 06:58 KST · 1시간 34분 전 | 적대자가 기각 1건 |
+| 추론 계층 마지막 기동 | 2026-09-04 06:58 KST · 1시간 34분 전 | 파이프라인을 실행했습니다 |
+| 다음 추론 발화 | 2026-09-04 14:25 KST | 매일 02:25, 08:25, 14:25, 20:25 KST. 증거가 그대로면 스스로 건너뜁니다 |
 | 대기 중인 질문 (큐) | — | 0개 — 다음 추론 패스가 만들 차례 |
 | 열린 가족 | — | H0001 |
-| 24시간 감독자 | 2026-09-03 23:49 KST | 살아 있음 (pid 40628, 박동 13분 전) |
-| 지금 할 일 | — | **kernel_review** — kernel_review: 이 저장소에서 한 번도 실행되지 않았습니다 |
+| 24시간 감독자 | 기록 없음 | **떠 있지 않습니다** — `python scripts/schedule.py --install` 로 등록하거나 `python scripts/forever.py` 로 띄웁니다 |
+| 지금 할 일 | — | **reason** — 이 저장소에서 지문이 기록된 패스가 없습니다 |
 | 24시간 등록 예산 | — | 0/4 사용. 제안·적대자 검토·웹 정찰은 N을 쓰지 않고, 등록만 씁니다 |
 
 ### 가동 기록 — 감독자가 실제로 한 일
@@ -29,22 +26,24 @@
 
 | 시각 (KST) | 한 일 | 소요 | 결과 |
 |---|---|---|---|
+| 2026-09-04 07:25 KST | `scout` | 8분 | exit 0:   + the Binance USDⓈ-M futures liquidity-provider-program participant whose next week's maker rebate tier is set by its share of Monday-to-Sun |
+| 2026-09-04 07:16 KST | `reason` | 21분 | exit 3: postmortem /   WARNING: 2 read-only call(s) changed the working tree; see REASONING_LOG.json / Created autostash: beea0ff / committed and push |
 | 2026-09-03 23:49 KST | `execution_realism` | 2초 | exit 1: H0002 BTCUSDT  {'enter_rate': 0.0002, 'leverage': 1.0, 'lookback_days': 21.0, 'max_hold_days': 7.0, 'stop_loss': None} /   hourly  bars    39, |
 | 2026-09-03 23:48 KST | `robustness` | 3초 | exit 0:   ETHUSDT    UNMEASURED: regime /       cost x2   +3.6056 -> +3.6016 /       walk        in +1.7285  out +0.9916 /       regime      the cell  |
 | 2026-09-03 23:47 KST | `scout` | 4분 | exit 1: claude: SKIPPED -- exit 1:  / codex: SKIPPED -- exit 1: 2026-09-03T14:47:42.599840Z ERROR codex_models_manager::manager: failed to refresh ava |
 
-### 정찰 노트북 — 외부에서 모은 지불자 6명
+### 정찰 노트북 — 외부에서 모은 지불자 13명
 
 제안자의 도구는 `Read/Glob/Grep/Write` 뿐이라 저장소 안의 것만 재배열할 수 있고, 그래서 첫 여덟 가족 중 여섯이 펀딩 요율에 얹혀 있었습니다. 이 노트북은 웹과 두 번째 벤더에서 **지불자**를 모아 그 구멍을 막습니다. 성능 숫자는 규칙으로 금지돼 있습니다 — 이 파일을 읽는 단계는 이 프로젝트의 결과를 보지 않아야 하기 때문입니다.
 
 | 언제 | 출처 | 확신 | 누가 지불하는가 |
 |---|---|---|---|
-| 2026-09-03 23:36 KST | codex | medium | a short-gamma BTC or ETH options dealer executing compulsory delta rebalancing through Binance USD-M perpetuals ⚠︎ 보유 데이터 부족 |
-| 2026-09-03 23:36 KST | codex | high | a leveraged Binance USD-M perpetual short whose collateral has fallen below maintenance margin ⚠︎ 보유 데이터 부족 |
-| 2026-09-03 23:34 KST | claude | medium | the holder of an open position in a perp Binance has announced it will retire, and the spot-versus-perp hedger who loses their only shortable leg on t ⚠︎ 보유 데이터 부족 |
-| 2026-09-03 23:34 KST | claude | medium | the trader whose futures collateral is a private stablecoin that the venue values at exactly 1.0000 USD and who holds no par-redemption right of their ⚠︎ 보유 데이터 부족 |
-| 2026-09-03 23:34 KST | claude | medium | the holder of a large position in a named symbol whose margin tiers Binance has announced it will tighten at a stated timestamp ⚠︎ 보유 데이터 부족 |
-| 2026-09-03 23:34 KST | claude | high | the holder of a Binance dated (quarterly) futures contract, force-delivered at a published index average on a calendar minute ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:25 KST | codex | medium | the Binance USDⓈ-M TWAP user who has committed a large order to a finite completion window ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:25 KST | codex | medium | the Binance USDⓈ-M Futures copy trader whose account automatically duplicates a lead trader's close ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:25 KST | codex | high | the Binance Leveraged Token hedge basket that must restore its mandated leverage through underlying perpetual contracts ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:24 KST | claude | medium | the USDⓈ-M perpetual holder whose order-entry path degrades while the venue's own risk engine keeps closing positions ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:24 KST | claude | medium | the Binance USDⓈ-M futures liquidity-provider-program participant whose next week's maker rebate tier is set by its share of Monday-to-Sunday maker vo ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 07:24 KST | claude | medium | the Binance Dual Investment subscriber, locked until settlement, whose payoff is decided by an average of the market price over the 30 minutes before  ⚠︎ 보유 데이터 부족 |
 
 ### 가동 기록 — 최근 사이클
 
@@ -52,6 +51,7 @@
 
 | 시작 (KST) | 소요 | 신규 시행 | 가설 |
 |---|---|---|---|
+| 2026-09-04 07:57 KST | 34분 54초 | +0 | H0001 |
 | 2026-09-03 12:25 KST | 48초 (평가만) | +112 | H0001 |
 | 2026-09-03 08:25 KST | 55초 (평가만) | +238 | H0001, H0006, H0007 |
 | 2026-09-02 22:23 KST | 1분 29초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
@@ -59,16 +59,17 @@
 | 2026-09-02 20:48 KST | 51초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
 | 2026-09-02 17:30 KST | 56초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
 | 2026-09-02 17:06 KST | 35초 (평가만) | +126 | H0006, H0007 |
-| 2026-09-02 14:57 KST | 15초 (평가만) | +112 | H0001 |
 
 ### 가동 기록 — 최근 추론 패스
 
 | 시각 (KST) | 등록 | 기각 | 거부/보류 |
 |---|---|---|---|
+| 2026-09-04 06:58 KST | 0 | 1 | — |
+| 2026-09-04 06:55 KST | 0 | 0 | 판단 불가 1건 |
 | 2026-09-03 23:34 KST | 0 | 0 | 판단 불가 2건 |
 | 2026-09-03 23:08 KST | 0 | 2 | — |
 
-**다음 패스가 실제로 물을 것인가**: 아니오 — 마지막 패스가 28분 전입니다 — 패스 간 최소 45분을 둡니다
+**다음 패스가 실제로 물을 것인가**: 예 — 이 저장소에서 지문이 기록된 패스가 없습니다
 
 ## 한 줄 요약
 

@@ -1,5 +1,7 @@
 {
-  "generated_utc": "2026-09-03T11:00:35.153398+00:00",
-  "run_id": "5d0f829b6f8c",
-  "items": []
+  "generated_utc": "2026-09-03T23:32:42.117553+00:00",
+  "run_id": "9f6246125e60",
+  "items": [
+    "ORC supervisor has no heartbeat at all, but has worked before -- the lock was removed or the process was killed without releasing it"
+  ]
 }

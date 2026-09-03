@@ -1,6 +1,6 @@
 # ORC cycle report
 
-- run `5d0f829b6f8c` finished 2026-09-03T11:00:35.153398+00:00
+- run `9f6246125e60` finished 2026-09-03T23:32:42.117553+00:00
 - trials in project: **6736** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
@@ -33,7 +33,7 @@ These are not gaps in the map. Each was closed against its own pre-registered ki
 |---|---|---|
 | H0002 `funding_carry_short` | The kill condition required a single cell with positive Calmar on at least five of the nine symbols and a liquidation on none. Six of the nine - SOLUSDT -0.0399, AVAXUSDT -0.0612, BNBUSDT -0.1249, ADAUSDT -0.1677, ETHUSDT -0.1691, DOGEUSDT -0.2928 - have no positive cell anywhere in the 108-cell grid. Counting the 108 cells across the nine symbols, the best any SINGLE cell manages is TWO symbols (... | `reports/POSTMORTEM_H0002.md` |
 | H0006 `negative_funding_carry_long` | H0006's kill condition carried four independent clauses and the third is met outright. PBO was computable on three of the nine symbols and reads at or above 0.5 on two of them - BTCUSDT 0.821 and SOLUSDT 0.516, both verdicted SELECTION_IS_NOISE, against BNBUSDT 0.278. Two of three is a majority of the symbols for which it was computed, which is the clause as written: 'Closed also if the reported P... | `reports/POSTMORTEM_H0006.md` |
-| H0007 `dislocation_gated_dca` | [claude] clause: Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. -- 제1절의 기준선은 넘었다 — include_funding true에서 게이트 셀이 gate none 대조군을 이긴 심볼이 9개 중 8개(SOLU... | `reports/not written` |
+| H0007 `dislocation_gated_dca` | [claude] clause: Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. -- 제1절의 기준선은 넘었다 — include_funding true에서 게이트 셀이 gate none 대조군을 이긴 심볼이 9개 중 8개(SOLU... | `reports/POSTMORTEM_H0007.md` |
 
 ## H0001 — unconditional_dca_spot_style (track A, metric `mwrr_q05`)
 
