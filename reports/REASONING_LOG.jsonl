@@ -2,3 +2,5 @@
 {"utc": "2026-09-03T14:20:27.263518+00:00", "gate": "DUE", "why": "심사 대기 제안 1건이 있어 먼저 판정합니다"}
 {"utc": "2026-09-03T14:08:03.338903+00:00", "blocked": [], "registered": [], "killed": ["H0009.json", "H0010.json"], "held": [], "proposed": ["H0009.json", "H0010.json"], "unavailable": []}
 {"utc": "2026-09-03T14:34:59.161025+00:00", "blocked": [], "registered": [], "killed": [], "held": [], "proposed": [], "unavailable": ["propose", "surfaces"]}
+{"utc": "2026-09-03T21:58:29.073460+00:00", "gate": "DUE", "why": "마지막 패스(2026-09-03 23:34 KST)는 아무것도 등록하지 못했습니다 — 적대자의 기각 사유가 다음 제안이 가진 새 정보입니다"}
+{"utc": "2026-09-03T21:55:40.054734+00:00", "blocked": [], "registered": [], "killed": [], "held": [], "proposed": [], "unavailable": ["propose"]}

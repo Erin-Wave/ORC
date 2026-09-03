@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-03T14:34:59.161025+00:00",
+  "utc": "2026-09-03T21:55:40.054734+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,7 +7,21 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": "skipped: exit 1: ",
-    "surfaces": "skipped: exit 1: "
+    "propose": "skipped: call timed out after 900s",
+    "surfaces": "written",
+    "tree_violations": [
+      {
+        "provider": "claude",
+        "files": [
+          "_confound_tmp.py"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "configs/killed/H0011.json"
+        ]
+      }
+    ]
   }
 }
