@@ -1,0 +1,51 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0010",
+    "family": "drawdown_limited_dca_abandonment",
+    "track": "A",
+    "claim": "Every DCA number this project holds describes an investor who does not exist. H0001's headline reports drawdowns ON INVESTED CAPITAL of 130.6% (LTC) to 1344.9% (DOGE): an account that was, at its worst, more than thirteen times its own contributed capital underwater in profit terms and kept depositing on schedule. No mandate, no margin agreement and no human survives that. This hypothesis supplies the rule shape the map is missing -- an abandonment rule -- and it is the same unconditional funded weekly ladder as H0001 with one addition: the programme closes PERMANENTLY when cumulative loss reaches a fixed fraction of the capital contributed so far (the simulator's account-level stop is exactly this: exit all when pnl/contributed <= -x, no further deposits). Who is structurally paying: we are, and that is the point. The payer is the drawdown-constrained accumulator, an account that sells at whatever price exists at the instant its limit is breached because the limit is a mandate or a margin rule and not a view. It keeps doing it because the constraint is written down in advance and the alternative is losing the mandate. That is the SAME population H0009 proposes to collect from, observed from the paying side, which is why the two are deliberately coupled and why each can kill the other's mechanism without waiting for it: if enforcing even a loose 50% limit costs approximately nothing, then immediacy is not priced on this venue and H0009's payer does not exist no matter what H0009's own surface looks like; and if the cost is large and steepens as the limit tightens, that magnitude IS the premium H0009 is trying to stand opposite. The run has a second product that is not a hypothesis but is worth having: the funded weekly 156-deposit shape carries a real liquidation_rate here, from the evaluator that can see ruin. orc/orchestrator/spec.py records that the closed form reports liquidation_rate 0.0 by construction on a shape that liquidates on 0.692 of ADAUSDT's start dates. Cost stated honestly: the stop_loss null control repeats a cell H0001 already holds, so 9 of these 45 ledger rows buy comparability at a matched horizon rather than a new number. That is deliberate -- the reasoning layer is not permitted to go trawling the ledger for the control, so the control has to be inside the hypothesis. All five configurations share one horizon, so tm_q05 is comparable across the axis and PBO is computable.",
+    "kill_condition": "Closed if the abandonment rule changes nothing at either end of its range: if mwrr_q05 at stop_loss 0.50 is within 2 percentage points of the stop_loss null control on 5 or more of the 9 symbols AND mwrr_q05 at stop_loss 0.15 is likewise within 2 percentage points of that control on 5 or more of the 9 symbols. There is then no cost of forced selling to measure and therefore no payer. Closed also if the response is not ordered: if mwrr_q05 is non-monotone in stop_loss -- in either direction, since an up-drifting symbol should be hurt by a tighter limit and a down-trending one helped, but both must be ordered -- on 5 or more of the 9 symbols, because an unordered response to the severity of forced selling is not a mechanism. Closed also if the stop never actually fires, detected without needing a new metric: if mwrr_q05 at stop_loss 0.15 equals the value at 0.25 to six decimal places on 5 or more of the 9 symbols, the failure mode that made stop_loss inert in H0002 (BTCUSDT 0.2215 identical across three stop values) and in H0006 (BTCUSDT identical to sixteen decimal places).",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT",
+      "LTCUSDT",
+      "AVAXUSDT",
+      "ADAUSDT"
+    ],
+    "grid": {
+      "stop_loss": [
+        0.15,
+        0.25,
+        0.35,
+        0.5,
+        null
+      ]
+    },
+    "fixed": {
+      "contribution": 100.0,
+      "stride_days": 7.0,
+      "n_contributions": 156,
+      "hold_days": 0.0,
+      "leverage": 1.0,
+      "gate": "none",
+      "include_funding": true,
+      "clock": "1h"
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "[codex] The claimed payer is not established: a mandate or margin rule normally constrains equity, leverage, or peak-to-trough loss, not pnl divided by cumulative contributions with permanent cessation of deposits. The proposal also misreads H0001’s drawdown-on-invested-capital metric: a 1344.9% peak-to-trough profit drawdown does not mean the account was thirteen times its contributed capital underwater.",
+    "payer_is_structural": false,
+    "kill_condition_is_falsifiable": true,
+    "configurations": 45,
+    "killed_by": "adversary:codex",
+    "reviewed_by": [
+      "claude",
+      "codex"
+    ]
+  }
+}

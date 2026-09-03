@@ -1,0 +1,50 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0009",
+    "family": "cascade_absorption_powder_ladder",
+    "track": "A",
+    "claim": "KT-1 established that the perpetual long pays rent for time: a median funding bill of 36% of contributed capital over a three-year weekly DCA. An accumulation shape can therefore only win if some counterparty pays that rent back. The one counterparty on this venue that pays WITHOUT CHOOSING THE PRICE is the liquidated leveraged long. The venue offers leverage up to 100x, the margin is frequently posted in the same asset that is falling, and the liquidation engine sells at market inside the bar rather than waiting for a better fill. That population is continuously replenished, which is what makes it structural rather than a regime: it is a property of the product, not of 2021. This payer is different from every family already tested. H0002 and H0006 asked the FUNDING payer for rent and the surfaces said we were measuring the price risk of the leg, not the carry. H0007 asked a 30-day dislocation gate to find a payer, and its surface reading says plainly that a dip gate with a month-long lookback only rearranges entries inside the same bear market -- it never stands opposite anybody. This shape does something the project has not tried: it holds contributions as CASH, which pays no funding, and deploys the accumulated powder only while price is 8% below its trailing 24-hour peak. A 24-hour lookback is a forced-seller condition; a 30-day lookback is a bear-market condition. The accounting is honest against us: the simulator counts every deposit into `contributed` whether or not it was ever deployed, so the gated arm is charged the full opportunity cost of the cash it sits on. The quantity of interest is NOT the level of any cell. Because `hold_days` is bars held after the last deposit, it varies the horizon, and section 4 forbids comparing tm_q05 across horizons; so the measurement is the annualised mwrr_q05 GAP between gate `dip:0.08:1` and gate `none` at the SAME hold_days, and how that gap behaves as the hold lengthens. If the payer is real, the gap is widest at hold 0 and decays, because an immediacy premium is collected within days of the cascade and after that both arms are holding identical beta while the gated arm has merely been late. A flat or widening gap is the falsification, not the finding: it would mean we measured cash timing and beta. Design note: the two arms at each hold level share a horizon, so PBO is computable here, which it was not for H0001 ('fewer than two configurations share a horizon').",
+    "kill_condition": "Closed if no hold_days level has the gated arm's mwrr_q05 above the ungated arm's at that same hold_days on at least 4 of the 6 symbols. Closed also -- even if that bar is cleared -- if the gap does not decay with the hold: specifically if the across-symbol median of (gated minus ungated mwrr_q05) at hold_days 0 is less than 1.5x the same median at hold_days 365, since a premium paid for absorbing forced selling must be collected near the cascade, and a gap that survives a further year of holding is beta timing under another name. Closed also if the best gated cell's shape diagnostic is SPIKE on 4 or more of the 6 symbols. Closed also if PBO is at or above 0.5 on a majority of the symbols for which it is computable.",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT"
+    ],
+    "grid": {
+      "hold_days": [
+        0.0,
+        30.0,
+        90.0,
+        180.0,
+        365.0
+      ],
+      "gate": [
+        "none",
+        "dip:0.08:1"
+      ]
+    },
+    "fixed": {
+      "contribution": 100.0,
+      "stride_days": 1.0,
+      "n_contributions": 365,
+      "leverage": 1.0,
+      "include_funding": true,
+      "clock": "1h"
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "[claude] The payer is verbatim H0007's registered payer — H0007's claim already reads 'Who pays: the liquidated leveraged long... the selling arrives in cascades' and already enumerated the cascade timescale (dip:0.10:7) — so 'this payer is different from every family already tested' is false against the registry; and the claimed novel shape is not novel: `orc/eval/simulate.py` has always held gated contributions as `powder` and deployed them when the gate opens, the identical code path H0007 ran, leaving `dip:0.08:1` as a third parameter pair on the same gate axis, i.e. a finer grid over an existing rule form (section 6). Compounding it, H0009 fixes include_funding=true and drops the with/without-funding control that is the exact clause H0007 closed on, so it cannot re-answer the question that killed its predecessor. | [codex] This is a finer-grid re-skin of closed H0007: it names the same liquidated-long payer and uses the same dip-gated cash-deployment rule, changing only the drawdown threshold and lookback from 10%/7 days and 20%/30 days to 8%/24 hours. The shorter lookback does not create a different rule shape, and an hourly trailing-peak gate still cannot identify or stand against the seconds-scale liquidation flow.",
+    "payer_is_structural": true,
+    "kill_condition_is_falsifiable": true,
+    "configurations": 60,
+    "killed_by": "adversary:claude,codex",
+    "reviewed_by": [
+      "claude",
+      "codex"
+    ]
+  }
+}

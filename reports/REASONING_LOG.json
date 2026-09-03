@@ -1,18 +1,38 @@
 {
-  "utc": "2026-09-03T00:43:08.679550+00:00",
+  "utc": "2026-09-03T14:08:03.338903+00:00",
   "steps": {
+    "close_votes": {
+      "H0001": {
+        "decision": "CONTINUE",
+        "family": "unconditional_dca_spot_style"
+      }
+    },
     "propose": [
-      "H0008.json"
+      "H0009.json",
+      "H0010.json"
     ],
     "adversary": [
       {
-        "file": "H0008.json",
+        "file": "H0009.json",
         "verdict": "KILL",
-        "reason": "[claude] kill_condition 전체가 IRR(tp, f) 위에 세워져 있는데, `orc/orchestrator/runner.py:279`의 경로 의존 분기는 MWRR을 `cfg.n_contributions`(156)와 명목 `horizon`(약 3.0년)으로 계산하고 시뮬레이터가 이미 돌려주는 `exit_bar`/실제 `contributed`를 쓰지 않는다 — 즉 take_profit이 조기 종료시킨 프로그램에 대해 실행되지 않은 입금 156회를 가격에 넣는다. 실측 결과 5주차에 tp=0.10이 발동한 셀의 진짜 연환산 IRR은 +415%인데 원장에는 브래킷 하한 -0.9999로 기록되어 D_funded = -1.096이 되므로, 첫 번째 절이 기계적으로 발동해 이 family가 존재하는 이유인 funded/unfunded 대비(2절)에 도달하기도 전에 회계 인공물로 닫히고 N에 90행이 영구히 남는다. Track A 1332 시행 중 take_profit이 설정된 행이 0건이라 이 버그는 아직 드러난 적이 없다: runner의 IRR을 실현 입금 수와 생존 구간으로 고치고 새 id로 등록하면 된다(그리드 수정이 아니므로 사전등록 원칙을 건드리지 않는다). | [codex] The named forced-cover payer is structural, but the proposed rule cannot identify or target it: a generic aggregate take-profit fires on any price rise, and a positive unfunded IRR contrast cannot distinguish liquidation-driven buying from ordinary trend or volatility. This is therefore a generic terminating take-profit hypothesis with a forced-cover mechanism attached only in prose.",
+        "reason": "[claude] The payer is verbatim H0007's registered payer — H0007's claim already reads 'Who pays: the liquidated leveraged long... the selling arrives in cascades' and already enumerated the cascade timescale (dip:0.10:7) — so 'this payer is different from every family already tested' is false against the registry; and the claimed novel shape is not novel: `orc/eval/simulate.py` has always held gated contributions as `powder` and deployed them when the gate opens, the identical code path H0007 ran, leaving `dip:0.08:1` as a third parameter pair on the same gate axis, i.e. a finer grid over an existing rule form (section 6). Compounding it, H0009 fixes include_funding=true and drops the with/without-funding control that is the exact clause H0007 closed on, so it cannot re-answer the question that killed its predecessor. | [codex] This is a finer-grid re-skin of closed H0007: it names the same liquidated-long payer and uses the same dip-gated cash-deployment rule, changing only the drawdown threshold and lookback from 10%/7 days and 20%/30 days to 8%/24 hours. The shorter lookback does not create a different rule shape, and an hourly trailing-peak gate still cannot identify or stand against the seconds-scale liquidation flow.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
-        "configurations": 90,
+        "configurations": 60,
         "killed_by": "adversary:claude,codex",
+        "reviewed_by": [
+          "claude",
+          "codex"
+        ]
+      },
+      {
+        "file": "H0010.json",
+        "verdict": "KILL",
+        "reason": "[codex] The claimed payer is not established: a mandate or margin rule normally constrains equity, leverage, or peak-to-trough loss, not pnl divided by cumulative contributions with permanent cessation of deposits. The proposal also misreads H0001’s drawdown-on-invested-capital metric: a 1344.9% peak-to-trough profit drawdown does not mean the account was thirteen times its contributed capital underwater.",
+        "payer_is_structural": false,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 45,
+        "killed_by": "adversary:codex",
         "reviewed_by": [
           "claude",
           "codex"
@@ -21,7 +41,53 @@
     ],
     "surfaces": "written",
     "postmortem": [
-      "H0006"
+      "H0007"
+    ],
+    "tree_violations": [
+      {
+        "provider": "claude",
+        "files": [
+          "configs/proposed/"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "scripts/reasoning.py",
+          "scripts/reasoning_cycle.ps1",
+          "tests/test_runstate.py"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "reports/FINDINGS.json"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "configs/prompts/scout.md"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "scripts/scout.py"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "orc/config.py",
+          "orc/runstate.py",
+          "reports/SCOUT.jsonl",
+          "scripts/forever.py",
+          "scripts/forever_hidden.vbs",
+          "scripts/schedule.py",
+          "tests/test_forever.py"
+        ]
+      }
     ]
   }
 }
