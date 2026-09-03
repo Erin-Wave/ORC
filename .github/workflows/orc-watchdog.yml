@@ -1,0 +1,67 @@
+name: orc-watchdog
+
+# A watchdog inside the thing it watches is not a watchdog.
+#
+# notify.py already knows the six ways this project goes quiet without going
+# wrong, but it runs INSIDE a cycle, so the only thing that could report a
+# stopped loop was the loop. If the worker stops firing and the workstation is
+# off, both halves are silent and so is every alarm -- and GitHub disables
+# scheduled workflows on a repository that has gone quiet, which turns a stall
+# into a permanent one.
+#
+# This job depends on nothing the cycle depends on: no panel, no release asset,
+# no requirements install. It reads committed artefacts with the standard
+# library and says whether the loop has stopped talking.
+
+on:
+  schedule:
+    # 11:00 KST, deliberately offset from every cycle slot so it reports on a
+    # settled state rather than racing one.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: orc-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Has it gone quiet?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          if ! python scripts/notify_issue.py --watchdog > msg.txt; then
+            echo "the loop is talking; nothing to report"
+            exit 0
+          fi
+          title=$(head -1 msg.txt)
+          sed -n '3,$p' msg.txt > body.md
+          cat body.md
+          # The same rolling issue the cycle uses, so a stall and a block land
+          # in one thread rather than in two the owner has to correlate.
+          n=$(gh issue list --label orc-notify --state open --limit 1 \
+                --json number --jq '.[0].number // empty' || true)
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body-file body.md
+            gh issue edit "$n" --title "$title"
+          else
+            gh label create orc-notify --color ededed \
+              --description "the loop talking" 2>/dev/null || true
+            gh issue create --title "$title" --body-file body.md --label orc-notify
+          fi
