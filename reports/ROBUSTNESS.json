@@ -4,7 +4,8 @@
       "passed": false,
       "failed": [],
       "unmeasured": [
-        "regime"
+        "regime",
+        "execution"
       ],
       "checks": [
         {
@@ -49,11 +50,8 @@
         },
         {
           "check": "execution",
-          "hourly_return": 2.6056116382051298,
-          "minute_return": 2.6153177585502414,
-          "relative_drift": 0.003725083279025299,
-          "sign_agrees": true,
-          "passed": true
+          "passed": null,
+          "reason": "no minute panel here; certification has to happen locally"
         }
       ],
       "hypothesis_id": "H0001",
@@ -63,133 +61,6 @@
         "include_funding": false,
         "n_contributions": 52,
         "stride_days": 30.0
-      }
-    },
-    {
-      "passed": false,
-      "failed": [
-        "regime"
-      ],
-      "unmeasured": [],
-      "checks": [
-        {
-          "check": "cost",
-          "multiplier": 2.0,
-          "base": 1.400717588413689,
-          "stressed": 1.3919156037004123,
-          "passed": true
-        },
-        {
-          "check": "walk_forward",
-          "n_blocks": 4,
-          "train_blocks": 2,
-          "chosen": {
-            "symbol": "SOLUSDT",
-            "rule": "carry_funding_long",
-            "lookback_days": 7,
-            "enter_rate": -0.0001,
-            "exit_rate": 0.0001,
-            "capital": 10000.0,
-            "leverage": 1.0,
-            "stop_loss": null,
-            "take_profit": null,
-            "max_hold_days": null,
-            "clock": "1h",
-            "fee_bps": 4.5,
-            "slippage_bps": 1.0,
-            "cost_multiplier": 1.0
-          },
-          "in_sample": 2.730843910327078,
-          "out_of_sample": 6.717161223272333,
-          "retention": 2.4597382508280408,
-          "passed": true
-        },
-        {
-          "check": "regime",
-          "window_bars": 720,
-          "rising": 2.917223583148677,
-          "falling": -0.02224564351673668,
-          "passed": false
-        },
-        {
-          "check": "execution",
-          "hourly_return": 8.809547759382497,
-          "minute_return": 9.623624135209283,
-          "relative_drift": 0.09240841846390638,
-          "sign_agrees": true,
-          "passed": true
-        }
-      ],
-      "hypothesis_id": "H0006",
-      "symbol": "SOLUSDT",
-      "metric": "calmar",
-      "config": {
-        "enter_rate": -0.0001,
-        "lookback_days": 21,
-        "stop_loss": 0.15
-      }
-    },
-    {
-      "passed": false,
-      "failed": [
-        "regime"
-      ],
-      "unmeasured": [],
-      "checks": [
-        {
-          "check": "cost",
-          "multiplier": 2.0,
-          "base": 0.8095002969260762,
-          "stressed": 0.8086663994666766,
-          "passed": true
-        },
-        {
-          "check": "walk_forward",
-          "n_blocks": 4,
-          "train_blocks": 2,
-          "chosen": {
-            "symbol": "BNBUSDT",
-            "contribution": 100.0,
-            "stride_days": 7,
-            "n_contributions": 52,
-            "hold_days": 0.0,
-            "leverage": 1.0,
-            "gate": "none",
-            "take_profit": null,
-            "stop_loss": null,
-            "include_funding": false,
-            "clock": "1h",
-            "fee_bps": 4.5,
-            "slippage_bps": 1.0,
-            "cost_multiplier": 1.0
-          },
-          "in_sample": 1.6824097280727681,
-          "out_of_sample": 1.1617846811318722,
-          "retention": 0.690548004892196,
-          "passed": true
-        },
-        {
-          "check": "regime",
-          "window_bars": 720,
-          "rising": -0.19373967411135284,
-          "falling": -0.34110841455093255,
-          "passed": false
-        },
-        {
-          "check": "execution",
-          "hourly_return": -0.19049970307392383,
-          "minute_return": -0.19380068318250154,
-          "relative_drift": 0.017328006581179597,
-          "sign_agrees": true,
-          "passed": true
-        }
-      ],
-      "hypothesis_id": "H0007",
-      "symbol": "BNBUSDT",
-      "metric": "tm_q05",
-      "config": {
-        "gate": "dip:0.20:30",
-        "include_funding": true
       }
     }
   ]
