@@ -793,16 +793,29 @@ ZERO_N_WORK = {
 ACTIVITY_LOG = config.REPORTS / "ACTIVITY.jsonl"
 
 
+# How long after a FAILED attempt the same action may be tried again.  A
+# transient failure -- a 404 refreshing a model list, a call that returned
+# nothing, a network blip -- must not cost the action its whole allowance: the
+# scout's is 90 minutes, so one bad minute would have meant no scouting for an
+# hour and a half.  Nor may it be retried instantly, or a permanently broken
+# provider becomes a hot loop.
+FAILURE_COOLDOWN_MIN = 12
+
+
 def record_activity(action: str, detail: str, seconds: float | None = None,
-                    path: Path | None = None) -> None:
+                    path: Path | None = None, ok: bool = True) -> None:
     """One line per thing the supervisor actually did.
 
     The claim "it never rests" has to be checkable, and this is the file that
     would fail if it were false: a gap in it is a gap in the work.
+
+    `ok` separates two clocks that were the same clock and should not be.  The
+    staleness clock -- "when was this last DONE" -- may only be moved by a run
+    that worked; a failed attempt moves the cooldown instead.
     """
     _append(path or ACTIVITY_LOG,
             {"utc": datetime.now(timezone.utc).isoformat(), "action": action,
-             "detail": detail[:400],
+             "detail": detail[:400], "ok": bool(ok),
              "seconds": None if seconds is None else round(seconds, 1)})
 
 
@@ -810,10 +823,22 @@ def activities(limit: int = 20, path: Path | None = None) -> list[dict]:
     return _read_jsonl(path or ACTIVITY_LOG, limit, "utc")
 
 
-def last_activity_at(action: str, path: Path | None = None) -> datetime | None:
+def last_activity_at(action: str, path: Path | None = None,
+                     ok_only: bool = True) -> datetime | None:
+    """When this action last ran.  By default only a run that WORKED counts.
+
+    A failed attempt used to reset the staleness clock, so one transient
+    provider error bought the scout ninety minutes of silence -- the action
+    looked freshly done because it had freshly not worked.  Rows written before
+    this field existed have no `ok`, and are read as successes: they were
+    recorded by a supervisor that only wrote a line after running something.
+    """
     for r in _read_jsonl(path or ACTIVITY_LOG, 2000, "utc"):
-        if r.get("action") == action:
-            return _utc(r.get("utc"))
+        if r.get("action") != action:
+            continue
+        if ok_only and r.get("ok") is False:
+            continue
+        return _utc(r.get("utc"))
     return None
 
 
@@ -891,12 +916,23 @@ def next_action(now: datetime | None = None) -> tuple[str, str]:
 
     for action, max_age_min in sorted(ZERO_N_WORK.items(),
                                       key=lambda kv: kv[1]):
+        # A failed attempt gets a short cooldown instead of the action's whole
+        # allowance, so a transient provider error costs minutes and a broken
+        # one still cannot become a hot loop.
+        tried = last_activity_at(action, ok_only=False)
+        if tried is not None and (now - tried) < timedelta(
+                minutes=FAILURE_COOLDOWN_MIN):
+            done = last_activity_at(action)
+            if done is None or done < tried:
+                continue
         at = last_activity_at(action)
         if at is None:
-            return action, f"{action}: 이 저장소에서 한 번도 실행되지 않았습니다"
+            return action, (f"{action}: 성공한 실행이 없습니다"
+                            if tried is not None else
+                            f"{action}: 이 저장소에서 한 번도 실행되지 않았습니다")
         age = now - at
         if age > timedelta(minutes=max_age_min):
-            return action, (f"{action}: 마지막 실행 {ago(at, now)} "
+            return action, (f"{action}: 마지막 성공 {ago(at, now)} "
                             f"(허용 {max_age_min}분)")
 
     # Everything is fresh and no question is due.  Say which clock will expire

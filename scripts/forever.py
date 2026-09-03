@@ -98,6 +98,35 @@ TIMEOUTS_S = {
     "survivorship": 3600,
 }
 
+# Exit codes that mean THE WORK HAPPENED, per action.
+#
+# "Non-zero means it failed" is wrong here, and wrong in the direction that
+# matters. In this project FAIL is the product -- the deliverable is a map of
+# where rules break -- so several of these scripts return non-zero to report a
+# VERDICT and not an error:
+#
+#   execution_realism  1 = the cell did not survive minute bars. That is the
+#                      answer, and it is the answer we ran it for. H0002 on
+#                      BTCUSDT drifts 53.9% between clocks and returns 1.
+#   kernel_review      1 = it found a HIGH finding. The review worked; the
+#                      code is what is wrong.
+#   scout              1 = every provider skipped, so nothing was collected.
+#                      Here non-zero really is "the work did not happen".
+#   reason             1 blocked by a finding, 3 judgement unavailable,
+#                      4 commit refused -- none of them a pass that ran.
+#
+# Getting this wrong is not cosmetic: a verdict read as a failure sits in the
+# 12-minute cooldown and is retried forever, so the one action whose answer is
+# already known becomes the only thing the supervisor ever does.
+DONE_EXIT_CODES = {
+    "reason": (0,),
+    "scout": (0,),
+    "kernel_review": (0, 1),
+    "robustness": (0,),
+    "execution_realism": (0, 1),
+    "survivorship": (0,),
+}
+
 # What each action changes, so the commit names its paths.  Section 10: never
 # stage by wildcard.  `reason` is absent because reasoning.py commits and
 # pushes its own registration -- the one commit in this project that must land
@@ -342,8 +371,11 @@ def tick(dry_run: bool = False) -> tuple[str, int]:
     rc, detail = run(cmd, TIMEOUTS_S.get(action, 3600))
     took = time.monotonic() - started
     landed = land(action)
-    runstate.record_activity(action, f"exit {rc}: {detail} [{landed}]", took)
-    log(f"{action}: exit {rc} in {took / 60:.1f}m -- {detail[:220]}")
+    done = rc in DONE_EXIT_CODES.get(action, (0,))
+    runstate.record_activity(action, f"exit {rc}: {detail} [{landed}]", took,
+                             ok=done)
+    log(f"{action}: exit {rc} ({'done' if done else 'did not run'}) "
+        f"in {took / 60:.1f}m -- {detail[:220]}")
     log(f"{action}: {landed}")
     return action, WORKED_SLEEP_S
 

@@ -250,6 +250,43 @@ def test_a_blocking_finding_stops_research_but_not_reading_the_code(sandbox,
     assert "deadbeef1234" in why
 
 
+def test_a_failed_attempt_does_not_count_as_the_action_being_done(sandbox):
+    """The scout's allowance is 90 minutes.  A failed attempt used to reset the
+    same clock as a successful one, so one transient provider error -- a 404
+    refreshing a model list, which happened on the supervisor's first scout --
+    bought an hour and a half of silence, and the action looked freshly done
+    because it had freshly not worked."""
+    now = datetime.now(UTC)
+    # No question is due, so the answer must come from the zero-N table.
+    _pass(now - timedelta(hours=3), ["H0009.json"])
+    runstate.stamp_reasoning()
+    assert runstate.reasoning_due(now)[0] is False
+    runstate.record_activity("scout", "exit 1: both providers skipped", 4.0,
+                             ok=False)
+    assert runstate.last_activity_at("scout") is None
+    assert runstate.last_activity_at("scout", ok_only=False) is not None
+
+    # Inside the cooldown it is passed over, so a broken provider cannot become
+    # a hot loop...
+    assert runstate.next_action(now)[0] != "scout"
+    # ...and once the cooldown is past, it is due again -- minutes, not the
+    # whole allowance.
+    later = now + timedelta(minutes=runstate.FAILURE_COOLDOWN_MIN + 1)
+    action, why = runstate.next_action(later)
+    assert action == "scout", (action, why)
+    assert "성공한 실행이 없습니다" in why
+
+
+def test_a_row_written_before_the_ok_field_existed_counts_as_success(sandbox):
+    """The activity log is append-only and already has rows in it.  Reading a
+    row with no `ok` as a failure would make every action look never-done."""
+    now = datetime.now(UTC)
+    runstate._append(runstate.ACTIVITY_LOG, {
+        "utc": (now - timedelta(minutes=5)).isoformat(),
+        "action": "robustness", "detail": "exit 0: fine"})
+    assert runstate.last_activity_at("robustness") is not None
+
+
 def test_an_activity_is_recorded_and_found(sandbox):
     """"It never rests" is a claim, and reports/ACTIVITY.jsonl is the file that
     would fail if it were false."""
@@ -345,6 +382,26 @@ def test_the_heartbeat_outlives_the_longest_action(monkeypatch, tmp_path):
             pytest.fail("the heartbeat thread never beat the lock")
     finally:
         stop.set()
+
+
+def test_a_research_verdict_is_not_read_as_a_failure():
+    """FAIL is the product here -- the deliverable is a map of where rules
+    break -- so several of these scripts return non-zero to report a VERDICT.
+    execution_realism returns 1 when a cell does not survive minute bars
+    (H0002/BTCUSDT drifts 53.9% between clocks and returns 1), and
+    kernel_review returns 1 when it FOUND a high finding.  Reading either as a
+    failure puts it in the 12-minute cooldown and retries it forever, so the
+    one action whose answer is already known becomes all the supervisor does."""
+    import forever
+    assert 1 in forever.DONE_EXIT_CODES["execution_realism"]
+    assert 1 in forever.DONE_EXIT_CODES["kernel_review"]
+    # And where non-zero really does mean nothing was collected, it must not be
+    # mistaken for work.
+    assert forever.DONE_EXIT_CODES["scout"] == (0,)
+    assert forever.DONE_EXIT_CODES["reason"] == (0,)
+    for action in list(runstate.ZERO_N_WORK) + ["reason"]:
+        assert action in forever.DONE_EXIT_CODES, action
+        assert 0 in forever.DONE_EXIT_CODES[action], action
 
 
 def test_the_commit_paths_name_files_and_never_a_wildcard():

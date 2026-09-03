@@ -127,6 +127,49 @@ gh run watch
 
 ---
 
+## STEP 2.5 — 24시간 감독자 (완료됨)
+
+| | |
+|---|---|
+| 작업 이름 | `ORC Forever` |
+| 실행 | **로그온 시 + 1시간마다 감시 재발화**, 프로세스는 계속 살아 있음 |
+| 실행 방식 | `wscript` 로 창 없이 (`scripts/forever_hidden.vbs`) |
+| 스크립트 | `scripts/forever.py` |
+| 시간 제한 | **없음** (0시간). 3시간 제한을 걸면 3시간마다 작업 중에 죽습니다 |
+| 중복 방지 | `MultipleInstances IgnoreNew` + `logs/forever.lock` 심장박동 |
+| 기록 | `logs/forever_YYYY-MM-DD.log`, `reports/ACTIVITY.jsonl` (커밋됨) |
+
+매 tick마다 `runstate.next_action()` 에게 **지금 가장 유용한 일**을 묻고 그것을
+합니다. 새 가설은 그중 하나일 뿐입니다:
+
+| action | 하는 일 | 원장 비용 |
+|---|---|---|
+| `reason` | 제안 → 적대자 → 등록 | 등록되면 N 증가 |
+| `scout` | **웹 + 두 번째 벤더에서 지불자 수집** → `reports/SCOUT.jsonl` | 0 |
+| `kernel_review` | 평가기 적대적 재독 | 0 |
+| `robustness` | 비용 스트레스 · 워크포워드 · 레짐 분할 | 0 |
+| `execution_realism` | 분봉으로 셀 재실행 | 0 |
+| `survivorship` | KT-3 폐지 표본 확대 | 0 |
+
+**등록만 배급됩니다.** `MAX_REGISTRATIONS_PER_DAY = 4` (롤링 24시간).
+기각된 제안은 `configs/killed/` 의 파일 하나와 **원장 0행**이므로, 하루 종일
+제안하는 것은 공짜인 컴퓨트를 탐색 폭에 쓰는 것입니다. 큐-비움 규칙만으로는
+등록 속도가 워커가 큐를 비우는 속도(약 하루 30건)로만 제한되고, 그러면 일주일에
+프로젝트 평생 누적보다 많은 행이 N에 들어갑니다.
+
+```powershell
+python scripts/forever.py --dry-run    # 지금 무엇을 할지만 말하고 아무것도 안 함
+python -m orc.runstate --next          # 같은 질문, 한 줄
+Get-ScheduledTaskInfo -TaskName "ORC Forever"
+Start-ScheduledTask -TaskName "ORC Forever"
+Stop-ScheduledTask  -TaskName "ORC Forever"    # 멈추기
+```
+
+감독자가 살아 있는지는 `python scripts/briefing.py` 첫 화면이 말합니다 —
+🟢 `WORKING` 이면 지금 일하는 중이고, 🟡 이면 떠 있지 않습니다.
+
+---
+
 ## STEP 3 — 추론 계층 등록 (완료됨, 로컬 작업 스케줄러)
 
 여기가 "아이디어를 계속 바꿔가며" 담당하는 계층입니다.
@@ -158,11 +201,18 @@ gh run watch
 **절대 경로**라서, 저장소를 옮기면 작업은 그대로 남아 있고 실행만 되지 않습니다.
 
 ```powershell
-python scripts/schedule.py            # 두 작업이 이 저장소를 가리키나? (아니면 exit 2)
+python scripts/schedule.py            # 세 작업이 이 저장소를 가리키나? (아니면 exit 2)
 python scripts/schedule.py --repair   # 저장소를 옮긴 뒤 경로만 다시 씀
 python scripts/schedule.py --cadence  # 발화 시각을 위 네 슬롯으로 맞춤
-python scripts/schedule.py --install  # 새 PC에서 처음부터 등록
+python scripts/schedule.py --install  # 새 PC에서 처음부터 등록 (세 작업 전부)
 ```
+
+`--install` 이 조용히 실패했던 두 가지는 이제 코드에 이유가 적혀 있습니다:
+`-RepetitionDuration ([TimeSpan]::MaxValue)` 는 이 빌드에서
+`P99999999DT23H59M59S` 로 직렬화되고 Task Scheduler의 XML 스키마가 그것을
+거부합니다(0x80041318) — duration을 **생략**하는 것이 무한 반복입니다. 그리고
+`-AtStartup` 과 **범위 없는** `-AtLogOn` 은 승격을 요구합니다(0x80070005);
+`-User $env:USERNAME` 로 범위를 주면 등록됩니다.
 
 두 번째 작업도 함께 등록돼 있습니다.
 
@@ -335,3 +385,6 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 | 아침에 새 가설이 없음 | 발화 시각에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
 | 며칠째 새 가설이 없고 로그도 없음 | **저장소를 옮겨서 작업의 절대 경로가 죽었음** | `python scripts/schedule.py` → exit 2면 `--repair`. `python scripts/briefing.py` 첫 줄이 🔴 로 같은 말을 합니다 |
 | 워커는 도는데 `신규 0건`이 계속됨 | 큐가 비어 있고 코드도 안 바뀜 = 새로 물은 것이 없음 | `python -m orc.runstate` 로 판정 확인. `BRIEFING.md` 의 '가동 기록' 표에서 `+0` 줄이 몇 개 연달아 있는지 보입니다 |
+| 브리핑이 🟡 `감독자가 떠 있지 않습니다` | `ORC Forever` 가 안 돌고 있음 | `Start-ScheduledTask -TaskName "ORC Forever"`. `logs/forever_*.log` 가 이유를 말합니다 |
+| 제안이 계속 기각됨 | 정상입니다 — 적대자가 일하는 것이고 원장 비용 0 | `configs/killed/` 의 최신 판정을 읽으십시오. 제안자는 다음 패스에서 그것을 읽습니다. 새 메커니즘이 필요하면 `python scripts/scout.py` |
+| `reports/ACTIVITY.jsonl` 에 구멍이 있음 | 감독자가 그 시간 동안 일하지 않았음 | 그 시각의 `logs/forever_*.log` 를 보십시오. 이 파일이 "쉬지 않는다"는 주장의 증거입니다 |

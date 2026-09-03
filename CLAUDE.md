@@ -166,9 +166,15 @@ python scripts/kt3_survivorship.py 120
 python scripts/daily_cycle.py                   # one research cycle
 python scripts/briefing.py                      # 한글 브리핑: 돌고 있나, 어디까지, 다음은
 python scripts/health.py                        # is it running, producing, stuck?
+python scripts/forever.py                       # the 24h supervisor (never exits)
+python scripts/forever.py --dry-run             # what it would do right now
+python scripts/scout.py                         # web + 2nd vendor -> SCOUT.jsonl
+python scripts/scout.py --list                  # the mechanisms it collected
 python scripts/schedule.py                      # do the local tasks point HERE?
 python scripts/schedule.py --repair             # after the checkout moves
+python scripts/schedule.py --install            # register all three tasks
 python -m orc.runstate                          # the durable loop verdict
+python -m orc.runstate --next                   # the most useful thing to do now
 python -m orc.runstate --due                    # may a reasoning pass run now?
 python scripts/status.py                        # where the research stands
 python scripts/robustness.py                    # the gate: cost, walk, regime, execution
@@ -178,7 +184,37 @@ python scripts/deploy_panel.py                  # build the cloud bundle
 python -m pytest tests -q                       # must be green before anything
 ```
 
-## 9. What a reasoning cycle does
+## 9. The loop runs continuously, and only registration is rationed
+
+`scripts/forever.py` is the supervisor. Every tick it asks
+`runstate.next_action()` for the most useful thing to do, and the answer is
+only sometimes a new hypothesis. The rest of the time it is work that costs
+**zero ledger rows** and is still research:
+
+| action | what it does | why it is not idling |
+|---|---|---|
+| `scout` | asks the web and a second vendor for a **payer**, into `reports/SCOUT.jsonl` | the proposer's tools are Read/Glob/Grep/Write, so left alone it can only re-arrange this registry — which is why six of the first eight families rested on the funding rate, and why H0009 was killed as a re-skin of closed H0007 |
+| `kernel_review` | adversarial read of the evaluators | six silent defects in one day, one of them putting sealed funding data into the development window. A defect here voids **every** result |
+| `robustness` | cost stress, walk forward, regime split over recorded cells | reads the ledger, never adds to it |
+| `execution_realism` | one Track B cell re-run on minute bars | where "adverse first" and "one fill" get tested |
+| `survivorship` | enlarges the delisted sample | KT-3 is inconclusive and blocks every alt-basket hypothesis until it is not |
+
+**Proposing is free. Registering is not.** A killed proposal is a file in
+`configs/killed/` and zero rows; a registration hashes a claim and a grid and
+raises the multiple-testing bar for the life of the project. So:
+
+- `MAX_REGISTRATIONS_PER_DAY = 4` is the rolling-24h ceiling, and
+  `reasoning_due()` refuses past it before it looks at anything else.
+- A pass may run again as soon as the evidence changes, **or** after a pass
+  that registered nothing — the adversary's reasons are what the next proposal
+  does not otherwise have. A 45-minute floor stops that becoming a loop.
+- The queue must be empty. A registered question already costs N, and leaving
+  it unanswered is the one kind of idling that has already been paid for.
+
+`reports/ACTIVITY.jsonl` is one line per thing the supervisor did. "It never
+rests" is a claim, and a gap in that file is what makes it false.
+
+## 9b. What a reasoning cycle does
 
 1. Read **only** `reports/CYCLE_REPORT.md`. Do not go trawling the ledger for a
    better-looking number; that is the search bias this whole design exists to
