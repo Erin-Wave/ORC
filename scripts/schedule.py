@@ -74,9 +74,35 @@ REASONING_SLOTS_KST = runstate.REASONING_SLOTS_KST
 REVIEW_SLOT_KST = ("Sunday", "09:30")
 
 TASKS = {
+    FOREVER_TASK: "scripts/forever_hidden.vbs",
     REASONING_TASK: "scripts/reasoning_cycle_hidden.vbs",
     REVIEW_TASK: "scripts/kernel_review_hidden.vbs",
 }
+
+# The supervisor is the thing that actually runs 24 hours: every tick it decides
+# what the most useful thing to do is, and only sometimes is that a new
+# hypothesis.  It is a long-running process, so its triggers are not a cadence
+# but three ways of making sure one copy is always alive:
+#
+#   at logon and at startup   a reboot brings it back with no human
+#   hourly                    a watchdog re-fire.  MultipleInstances IgnoreNew
+#                             leaves a live copy alone, and forever.py also
+#                             holds a heartbeat lock -- so the hourly trigger is
+#                             a no-op on a healthy supervisor and the restart on
+#                             a dead one.
+#
+# The reasoning task's four daily slots stay registered on purpose: they are the
+# fallback for a supervisor that cannot start at all, which is the state this
+# session was spent recovering from.  A double fire is harmless because the
+# evidence gate makes whichever runs second skip.
+FOREVER_WATCHDOG_MINUTES = 60
+
+# Hours a task may run before Task Scheduler kills it.  Zero means no ceiling,
+# and only the supervisor gets it: three hours is right for a reasoning pass,
+# and on a process meant to live until the machine stops it would be a kill
+# mid-action every three hours for the life of the project.
+TASK_HOURS = {FOREVER_TASK: 0}
+DEFAULT_TASK_HOURS = 3
 
 
 def _ps(script: str, timeout: int = 120) -> tuple[int, str, str]:
@@ -207,13 +233,21 @@ def install() -> int:
             print(f"[skip] {name}: {target} 가 없습니다")
             rc_all = max(rc_all, 2)
             continue
-        if name == REASONING_TASK:
+        if name == FOREVER_TASK:
+            trigs = ("(New-ScheduledTaskTrigger -AtLogOn); "
+                     "(New-ScheduledTaskTrigger -AtStartup); "
+                     "(New-ScheduledTaskTrigger -Once -At (Get-Date) "
+                     "-RepetitionInterval (New-TimeSpan -Minutes "
+                     f"{FOREVER_WATCHDOG_MINUTES})"
+                     " -RepetitionDuration ([TimeSpan]::MaxValue))")
+        elif name == REASONING_TASK:
             trigs = "; ".join(f'(New-ScheduledTaskTrigger -Daily -At "{s}")'
                               for s in REASONING_SLOTS_KST)
         else:
             day, at = REVIEW_SLOT_KST
             trigs = (f'(New-ScheduledTaskTrigger -Weekly '
                      f'-DaysOfWeek {day} -At "{at}")')
+        hours = TASK_HOURS.get(name, DEFAULT_TASK_HOURS)
         script = (
             f'$ErrorActionPreference = "Stop"; '
             f'$a = New-ScheduledTaskAction -Execute "wscript.exe" '
@@ -221,7 +255,7 @@ def install() -> int:
             f'$ts = @({trigs}); '
             f'$s = New-ScheduledTaskSettingsSet -StartWhenAvailable '
             f'-WakeToRun -MultipleInstances IgnoreNew '
-            f'-ExecutionTimeLimit (New-TimeSpan -Hours 3) '
+            f'-ExecutionTimeLimit (New-TimeSpan -Hours {hours}) '
             f'-RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 15); '
             f'$p = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" '
             f'-LogonType Interactive -RunLevel Limited; '

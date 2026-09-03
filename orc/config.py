@@ -78,6 +78,32 @@ MAX_CONFIGURATIONS_PER_HYPOTHESIS = 2000
 # what H0002 should have been from what H0006 and H0007 already were.
 MAX_PROBE_CONFIGURATIONS = 96
 
+# How many hypotheses may be REGISTERED in any rolling 24 hours.
+#
+# The loop now runs continuously rather than firing once a day, and that change
+# is only safe because of this line.  Proposing costs nothing that cannot be
+# undone: a killed proposal leaves a file in configs/killed/ and zero rows in
+# the ledger, and both adversaries killed both proposals on 2026-09-03.  So a
+# machine that proposes around the clock is spending compute, which is free
+# here, on the step whose whole job is to widen the search.
+#
+# REGISTRATION is the irreversible half.  It hashes a claim and a grid, and
+# every cell it enumerates enters the append-only ledger and raises the
+# multiple-testing bar for every result this project will ever produce.  With
+# the queue-empty rule alone, the registration rate would be bounded only by
+# how fast the worker can clear a queue -- roughly one cycle every 35 minutes,
+# so about thirty a day, which would put more rows into N in one week than the
+# project has accumulated in its life.
+#
+# Four, which is four times the rate the once-a-day schedule actually achieved
+# and bounded at 4 x 96 = 384 cells a day against a current N of 6,736.  Chosen
+# so that a day of continuous running cannot move N by more than a few per
+# cent, and deliberately not derived from any result: like the probe ceiling it
+# constrains what may be ASKED and never what counts as an answer, so no
+# finding can be biased by it.  Frozen 2026-09-03, before the continuous loop
+# ran once.
+MAX_REGISTRATIONS_PER_DAY = 4
+
 # --------------------------------------------------------------------------
 # Panel build
 # --------------------------------------------------------------------------

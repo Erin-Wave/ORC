@@ -81,6 +81,40 @@ def _log(msg: str) -> None:
     print(f"  {msg}", flush=True)
 
 
+def wake_the_worker() -> str:
+    """Ask GitHub Actions to collect the queue now instead of at its next cron.
+
+    The worker fires at 00/06/12/18 UTC, so a hypothesis registered a minute
+    after a slot waits nearly six hours to be evaluated - and the reasoning
+    layer will not ask anything else in the meantime, because the gate refuses
+    while the queue still holds an unanswered question. That is the loop
+    idling by construction, and one dispatch removes it.
+
+    Safe to fire whenever something was registered: the workflow declares
+    `concurrency: group: orc-cycle, cancel-in-progress: false`, so a dispatch
+    landing on top of a running cycle queues behind it rather than racing it or
+    killing it. Degrades to a printed line, like every other step here: an
+    un-dispatched queue is collected by the next cron, which is the behaviour
+    this project has always had.
+    """
+    if shutil.which("gh") is None:
+        return "gh is not on PATH; the queue waits for the next cron"
+    try:
+        r = subprocess.run(["gh", "workflow", "run", "orc-cycle.yml"],
+                           cwd=config.ORC_ROOT, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", check=False,
+                           timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        # This runs AFTER the commit and push, so the hypotheses are already
+        # registered and safe.  Raising here would report the whole pass as
+        # failed and the scheduler would retry it -- against a report the
+        # previous attempt has already answered.
+        return f"dispatch unavailable ({type(exc).__name__}); the next cron collects it"
+    if r.returncode == 0:
+        return "dispatched orc-cycle; the queue is collected now, not at the cron"
+    return f"dispatch failed ({(r.stderr or '').strip()[:160]}); the next cron collects it"
+
+
 def propose() -> list[Path]:
     """One pass over the cycle report. Returns the proposals awaiting review.
 
@@ -561,16 +595,44 @@ def main() -> int:
     r = subprocess.run(["git", "diff", "--cached", "--quiet"],
                        cwd=config.ORC_ROOT, check=False)
     if r.returncode != 0:
-        subprocess.run(["git", "commit", "-q", "-m",
-                        f"reasoning: {len(registered)} registered, "
-                        f"{len(list(KILLED.glob('*.json')))} killed to date"],
-                       cwd=config.ORC_ROOT, check=False)
+        committed = subprocess.run(
+            ["git", "commit", "-q", "-m",
+             f"reasoning: {len(registered)} registered, "
+             f"{len(list(KILLED.glob('*.json')))} killed to date"],
+            cwd=config.ORC_ROOT, check=False, capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+        if committed.returncode != 0:
+            # The pre-commit hook refuses a commit while the suite is red, and
+            # refusing is correct -- but this code went on to push, found
+            # nothing to push, and printed "committed and pushed". That is the
+            # exact defect section 10 is about: a claim with nothing in the
+            # same breath that would fail if it were false. It happened for
+            # real on 2026-09-03: the hook blocked this commit because the
+            # tests were red, the pass reported success, and the proposals sat
+            # STAGED and unregistered -- questions nobody would ever answer.
+            why = ((committed.stderr or "") + (committed.stdout or "")).strip()
+            print(f"COMMIT REFUSED: {why[:400]}")
+            print("The proposals are staged and NOT registered on the remote. "
+                  "Nothing was pushed. Fix what the hook objected to and "
+                  "commit by hand, or the next pass will re-propose against "
+                  "the same report.")
+            # The .jsonl row for this pass was already appended above; only the
+            # single-pass JSON is rewritten, so the refusal is on the record
+            # without the pass appearing twice in the history.
+            report["steps"]["commit"] = f"refused: {why[:400]}"
+            (config.REPORTS / "REASONING_LOG.json").write_text(
+                json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+            return 4
         subprocess.run(["git", "pull", "--rebase", "--autostash", "-q"],
                        cwd=config.ORC_ROOT, check=False)
         pushed = subprocess.run(["git", "push", "-q"], cwd=config.ORC_ROOT,
                                 capture_output=True, text=True, check=False)
         if pushed.returncode == 0:
             print("committed and pushed")
+            if registered:
+                note = wake_the_worker()
+                _log(note)
+                report["steps"]["dispatch"] = note
         else:
             # Reported, but NOT retried, and the day is still stamped as spent.
             # The hypotheses in this commit are registered: a retry would find

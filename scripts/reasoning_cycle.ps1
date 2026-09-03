@@ -24,6 +24,21 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# The gate and the notifier answer in Korean, and this console is cp949.  Python
+# then encodes the reason with replacement characters, PowerShell decodes those
+# bytes as something else again, and the log line arrives as mojibake -- which
+# for a log whose entire job is to say why a cycle did not run is the same as
+# having no line at all.  Fixing it at both ends: Python emits UTF-8, and this
+# session reads UTF-8.
+$env:PYTHONIOENCODING = "utf-8"
+try {
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+    $OutputEncoding = [Console]::OutputEncoding
+} catch {
+    # A redirected or absent console refuses the assignment.  The cycle is the
+    # point, not the transcript.
+}
+
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $LogDir   = Join-Path $RepoRoot "logs"
 
@@ -32,7 +47,20 @@ $Log = Join-Path $LogDir ("reasoning_" + (Get-Date -Format "yyyy-MM-dd") + ".log
 
 function Write-Log($msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $msg
-    Add-Content -Path $Log -Value $line -Encoding utf8
+    # Add-Content is a cmdlet, so under $ErrorActionPreference = "Stop" a
+    # transient failure -- the file held open by something else reading it, a
+    # sharing violation -- is TERMINATING, and it would take the cycle down
+    # from inside the function whose only job is to describe the cycle.  On
+    # 2026-09-03 a run reached the end of its pipeline and left no log line
+    # for it at all.  The transcript is never worth the run.
+    try {
+        Add-Content -Path $Log -Value $line -Encoding utf8 -ErrorAction Stop
+    } catch {
+        # Retried once after a moment, then given up on.  Silently: a warning
+        # here would go to a console that does not exist.
+        Start-Sleep -Milliseconds 200
+        try { Add-Content -Path $Log -Value $line -Encoding utf8 -ErrorAction Stop } catch { }
+    }
 }
 
 function Invoke-Native($Tag, [scriptblock]$Cmd) {
@@ -50,10 +78,16 @@ function Invoke-Native($Tag, [scriptblock]$Cmd) {
     # workstation had always been the last one to push.  A latent defect whose
     # trigger was the worker getting there first.
     #
+    # Streamed, not collected.  Assigning the whole run to a variable first
+    # would hold every line until the process exits, and the pipeline step here
+    # makes eight to ten model calls over tens of minutes -- so the log, whose
+    # entire job is to say what is happening, would stay empty for the whole
+    # run and then arrive at once.  Each line is logged as it comes and also
+    # passed on, so a caller can still capture the output.
+    #
     # $LASTEXITCODE is global, so the caller reads it exactly as before.
-    $out = & { $ErrorActionPreference = "Continue"; & $Cmd 2>&1 }
-    foreach ($line in $out) { Write-Log "${Tag}: $line" }
-    return $out
+    & { $ErrorActionPreference = "Continue"; & $Cmd 2>&1 } |
+        ForEach-Object { Write-Log "${Tag}: $_"; $_ }
 }
 
 function Show-Toast($title, $text) {

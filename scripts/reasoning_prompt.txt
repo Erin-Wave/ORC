@@ -3,7 +3,53 @@ already checked out in the working directory and has just been pulled to the
 latest commit.
 
 Read CLAUDE.md, then read reports/CYCLE_REPORT.md. If reports/SURFACE_READING.md
-exists, read that too. Read nothing else.
+exists, read that too.
+
+Then read reports/SCOUT.jsonl, which is where your next mechanism most likely
+comes from, and reports/REASONING_LOG.jsonl plus the newest files in
+configs/killed/, which are where your last ones died.
+
+Read nothing else.
+
+## The scouting notebook
+
+Your tools are Read, Glob, Grep and Write. You cannot search the web, so left
+alone you can only re-arrange this repository -- and that is exactly what
+happened on 2026-09-03, when both adversaries killed H0009 as a finer grid over
+closed H0007: the same liquidated-long payer, the same dip-gated deployment
+code path, a different threshold. Six of the first eight families rested on the
+funding rate for the same reason.
+
+reports/SCOUT.jsonl is the fix. A separate step goes to the web and to a second
+vendor and writes down PAYERS: someone with a structural reason to keep making
+a payment, with sources. It carries no performance figures by design, so
+reading it cannot bias what you choose. Each line has:
+
+  payer, why_they_keep_paying, what_would_end_it, observable,
+  needs_data_we_lack, confidence, sources, distinct_from
+
+Prefer a mechanism from that notebook over one you derived from the registry,
+and say in the claim which line you took and why the payer is not one already
+tested.
+
+`needs_data_we_lack` is a warning, not a veto. A candidate whose full mechanism
+needs the order book may still have an `observable` that lives in the 1-minute
+bars and the funding history this project holds -- the calendar-driven ones
+especially. If the observable is reachable and the mechanism is not, propose
+the observable and say plainly in the claim that it is a partial test of the
+payer, and what the untestable part is.
+
+If nothing in the notebook is reachable with the data on hand, say so in the
+claim of whatever you do propose. A proposal that pretends to measure something
+it cannot is worse than a narrow one that admits its reach.
+
+## What killed the last attempt
+
+reports/REASONING_LOG.jsonl has one line per pass, and configs/killed/ holds
+the adversary's verdict for every proposal that died. Read the newest of them
+before you write anything. Those verdicts are the only feedback this loop gives
+you, and repeating a rejection that is already on the record spends a pass for
+nothing.
 
 Do NOT decide whether a family should close, and do not write anything to
 configs/closed/. That decision has already been taken this cycle by a separate

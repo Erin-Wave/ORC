@@ -225,7 +225,68 @@ def running_section() -> list[str]:
                 " — 다음 추론 패스가 만들 차례") + " |")
     L.append(f"| 열린 가족 | — | "
              f"{', '.join(a['open_families']) if a['open_families'] else '없음'} |")
+    sup = a.get("supervisor") or {}
+    L.append(f"| 24시간 감독자 | "
+             f"{runstate.kst(sup.get('heartbeat_utc')) if sup.get('heartbeat_utc') else '기록 없음'} | "
+             + ("살아 있음 (pid {}, 박동 {})".format(
+                 sup.get("pid"), runstate.ago(sup.get("heartbeat_utc"), now))
+                if sup.get("alive") else
+                "**떠 있지 않습니다** — `python scripts/schedule.py --install` "
+                "로 등록하거나 `python scripts/forever.py` 로 띄웁니다")
+             + " |")
+    act, act_why = a.get("next_action") or ("?", "")
+    L.append(f"| 지금 할 일 | — | **{act}** — {act_why} |")
+    L.append(f"| 24시간 등록 예산 | — | "
+             f"{len(a.get('registrations_24h') or [])}/"
+             f"{a.get('registration_budget')} 사용"
+             + (f" ({', '.join(a['registrations_24h'])})"
+                if a.get("registrations_24h") else "")
+             + ". 제안·적대자 검토·웹 정찰은 N을 쓰지 않고, "
+               "등록만 씁니다 |")
     L.append("")
+
+    acts = runstate.activities(10)
+    if acts:
+        L.append("### 가동 기록 — 감독자가 실제로 한 일")
+        L.append("")
+        L.append("이 표가 비어 있거나 구멍이 나 있으면 감독자는 일하지 않은 "
+                 "것입니다. `reason` 만 연구가 아닙니다 — `scout`(웹에서 새 "
+                 "지불자 찾기), `kernel_review`(평가기 적대적 재독), "
+                 "`robustness`, `execution_realism`, `survivorship` 은 모두 "
+                 "원장에 한 줄도 더하지 않는 연구입니다.")
+        L.append("")
+        L.append("| 시각 (KST) | 한 일 | 소요 | 결과 |")
+        L.append("|---|---|---|---|")
+        for r in acts:
+            secs = r.get("seconds")
+            took = "—" if secs is None else (
+                f"{secs / 60:.0f}분" if secs >= 60 else f"{secs:.0f}초")
+            L.append(f"| {runstate.kst(r.get('utc'))} | "
+                     f"`{r.get('action')}` | {took} | "
+                     f"{str(r.get('detail'))[:150].replace('|', '/')} |")
+        L.append("")
+
+    scout_nb = config.REPORTS / "SCOUT.jsonl"
+    if scout_nb.exists():
+        rows = runstate._read_jsonl(scout_nb, 6, "utc")
+        total = len(runstate._read_jsonl(scout_nb, 10_000, "utc"))
+        L.append(f"### 정찰 노트북 — 외부에서 모은 지불자 {total}명")
+        L.append("")
+        L.append("제안자의 도구는 `Read/Glob/Grep/Write` 뿐이라 저장소 안의 "
+                 "것만 재배열할 수 있고, 그래서 첫 여덟 가족 중 여섯이 펀딩 "
+                 "요율에 얹혀 있었습니다. 이 노트북은 웹과 두 번째 벤더에서 "
+                 "**지불자**를 모아 그 구멍을 막습니다. 성능 숫자는 규칙으로 "
+                 "금지돼 있습니다 — 이 파일을 읽는 단계는 이 프로젝트의 결과를 "
+                 "보지 않아야 하기 때문입니다.")
+        L.append("")
+        L.append("| 언제 | 출처 | 확신 | 누가 지불하는가 |")
+        L.append("|---|---|---|---|")
+        for r in rows:
+            need = " ⚠︎ 보유 데이터 부족" if r.get("needs_data_we_lack") else ""
+            L.append(f"| {runstate.kst(r.get('utc'))} | {r.get('provider')} | "
+                     f"{r.get('confidence')} | "
+                     f"{str(r.get('payer'))[:150].replace('|', '/')}{need} |")
+        L.append("")
 
     tl = runstate.timeline(8)
     if tl:

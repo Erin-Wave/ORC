@@ -1378,6 +1378,19 @@
       "first_seen_utc": "2026-09-03T01:15:42.096768+00:00",
       "last_seen_utc": "2026-09-03T01:15:42.096768+00:00",
       "id": "73ab38ee0d4f"
+    },
+    "d62cd9b07a09": {
+      "id": "d62cd9b07a09",
+      "status": "open",
+      "first_seen_utc": "2026-09-03T14:21:26.404610+00:00",
+      "last_seen_utc": "2026-09-03T14:21:26.404610+00:00",
+      "disposition": "",
+      "file": "orc/ledger/trials.py",
+      "line": 96,
+      "severity": "medium",
+      "what": "N grows with CODE CHURN, not only with questions asked. The UNIQUE key includes code_hash, so every change under the hashed source tree makes the whole registry a fresh measurement and the next cycle re-appends it. Measured now: N = 6736 rows against 1210 distinct (config, symbol) pairs -- H0002: 4860 rows / 972 configs / 5 code versions; H0001: 1120 rows / 112 configs / 10 code versions; H0006: 432 rows / 72 configs / 6 code versions; H0007: 324 rows / 54 configs / 6 code versions. H0002 is closed and holds five copies of its 972 cells. Section 6 spends real design effort capping what one hypothesis may enumerate (MAX_PROBE_CONFIGURATIONS = 96) while an ordinary refactor multiplies the whole ledger, so the denominator of every multiple-testing correction is dominated by how often the code was edited rather than by how many questions were put.",
+      "trigger": "Any commit that changes a file inside code_hash()'s tree, followed by any cycle. Reproduce: note N, touch an evaluator, run daily_cycle.py, note N again.",
+      "why_silent": "Both readings are defensible on their own -- a different evaluator IS a different measurement -- so nothing errors and no report says which reading the correction is using. It surfaces only as N growing on cycles that asked nothing new, which until reports/CYCLE_LOG.jsonl existed was itself invisible."
     }
   }
 }

@@ -26,6 +26,7 @@ which is where the suite runs in CI.
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -37,6 +38,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from orc import config, runstate
 from orc.ledger.trials import Ledger
 from orc.orchestrator.spec import Hypothesis
+
+UTC = timezone.utc
 
 UTC = timezone.utc
 
@@ -262,11 +265,25 @@ def sandbox(tmp_path, monkeypatch):
     return tmp_path
 
 
+def _stamped(minutes_ago: int = 120, fingerprint: str | None = None) -> None:
+    """A completed pass, far enough back not to trip the rate limit.
+
+    reasoning_due() now puts a floor between two passes -- without it the
+    supervisor would start a fresh one the instant the adversary killed a
+    proposal, because a kill is new information -- so a test aimed at any other
+    branch has to place the previous pass outside that floor.
+    """
+    rec = {"utc": (datetime.now(UTC) - timedelta(minutes=minutes_ago)).isoformat(),
+           "fingerprint": fingerprint or runstate.evidence_fingerprint()}
+    runstate.LAST_REASONING.parent.mkdir(parents=True, exist_ok=True)
+    runstate.LAST_REASONING.write_text(json.dumps(rec), encoding="utf-8")
+
+
 def test_the_gate_refuses_while_the_queue_still_holds_a_question(sandbox):
     """Pre-registration is irreversible and every trial raises N, so a second
     batch against a report the worker has not answered yet is the one thing
     this gate exists to prevent."""
-    runstate.stamp_reasoning()
+    _stamped()
     (config.QUEUE / "H0009.json").write_text("{}", encoding="utf-8")
     due, why = runstate.reasoning_due()
     assert not due
@@ -274,7 +291,7 @@ def test_the_gate_refuses_while_the_queue_still_holds_a_question(sandbox):
 
 
 def test_the_gate_refuses_a_second_pass_on_identical_evidence(sandbox):
-    runstate.stamp_reasoning()
+    _stamped()
     due, why = runstate.reasoning_due()
     assert not due
     assert "그대로" in why
@@ -284,21 +301,21 @@ def test_the_gate_opens_as_soon_as_the_report_changes(sandbox):
     """The failure the calendar-day stamp actually caused.  Results landed at
     04:00Z, the morning pass had already been spent, and no question could be
     asked until the next day."""
-    runstate.stamp_reasoning()
+    _stamped()
     assert runstate.reasoning_due()[0] is False
     (config.REPORTS / "CYCLE_REPORT.md").write_text("v2", encoding="utf-8")
     assert runstate.reasoning_due()[0] is True
 
 
 def test_the_gate_opens_when_a_family_closes(sandbox):
-    runstate.stamp_reasoning()
+    _stamped()
     assert runstate.reasoning_due()[0] is False
     (config.CONFIGS / "closed" / "H0002.json").write_text("{}", encoding="utf-8")
     assert runstate.reasoning_due()[0] is True
 
 
 def test_the_gate_opens_when_the_ledger_grows(sandbox):
-    runstate.stamp_reasoning()
+    _stamped()
     assert runstate.reasoning_due()[0] is False
     with Ledger(config.LEDGER_DB) as led:
         led.record(run_id="r1", family="f", symbol="S0", evaluator="analytic",
@@ -310,7 +327,7 @@ def test_the_gate_opens_when_the_ledger_grows(sandbox):
 def test_a_held_proposal_is_judged_before_anything_new_is_asked(sandbox):
     (config.CONFIGS / "proposed").mkdir(parents=True, exist_ok=True)
     (config.CONFIGS / "proposed" / "H0009.json").write_text("{}", encoding="utf-8")
-    runstate.stamp_reasoning()
+    _stamped()
     due, why = runstate.reasoning_due()
     assert due
     assert "보류" in why or "심사" in why
@@ -370,6 +387,35 @@ def test_the_reasoning_slots_are_thirty_five_minutes_before_a_worker_slot():
         hh, mm = (int(x) for x in slot.split(":"))
         assert mm == 25
         assert (hh + 1) % 24 in worker_kst, slot
+
+
+# --------------------------------------------------------------------------
+# the loop does not idle waiting for a cron
+# --------------------------------------------------------------------------
+def test_the_worker_is_woken_and_never_takes_the_pass_down_with_it(monkeypatch):
+    """A hypothesis registered a minute after a worker slot used to wait nearly
+    six hours, and the gate refuses to ask anything else while the queue holds
+    an unanswered question -- so the loop idled by construction.  The dispatch
+    removes that, and it must never be able to fail the pass: it runs AFTER the
+    commit and push, so the hypotheses are already registered, and a raise here
+    would make the scheduler retry a pass whose questions are already asked."""
+    import subprocess as sp
+    sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
+    import reasoning
+
+    monkeypatch.setattr(reasoning.shutil, "which", lambda _: None)
+    assert "next cron" in reasoning.wake_the_worker()
+
+    monkeypatch.setattr(reasoning.shutil, "which", lambda _: "gh")
+
+    def _boom(*a, **k):
+        raise sp.TimeoutExpired(cmd="gh", timeout=60)
+    monkeypatch.setattr(reasoning.subprocess, "run", _boom)
+    assert "unavailable" in reasoning.wake_the_worker()
+
+    monkeypatch.setattr(reasoning.subprocess, "run",
+                        lambda *a, **k: sp.CompletedProcess(a, 0, "", ""))
+    assert "dispatched" in reasoning.wake_the_worker()
 
 
 # --------------------------------------------------------------------------

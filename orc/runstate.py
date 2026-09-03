@@ -61,6 +61,14 @@ WORKER_SLOTS_UTC = (0, 6, 12, 18)
 # is rendering it.  schedule.py applies these; nothing else may.
 REASONING_SLOTS_KST = ("02:25", "08:25", "14:25", "20:25")
 
+# The floor between two reasoning passes, once the supervisor is driving rather
+# than a four-times-a-day trigger.  A pass makes eight to ten model calls and
+# takes tens of minutes; a kill is new information, so without a floor the loop
+# would start a fresh pass the instant the adversary rejected one and never
+# stop.  Forty-five minutes is longer than a pass takes and short enough that a
+# day still has room for far more attempts than the budget allows registrations.
+MIN_REASONING_INTERVAL_MIN = 45
+
 # How long the newest trial may stand still before the loop is described as
 # stalled rather than idle.  One worker slot plus GitHub's routine delay is
 # ~10 h, and a reasoning pass fires at least once a day, so a full day with no
@@ -485,6 +493,28 @@ def stamp_reasoning(fingerprint: str | None = None) -> dict:
     return rec
 
 
+def registrations_last_24h(now: datetime | None = None) -> list[str]:
+    """Hypotheses registered in the last rolling 24 hours.
+
+    Read from the registry's own `registered_utc`, which is written by
+    Hypothesis.register() at the moment the claim and the grid are hashed -- the
+    moment of no return.  A killed proposal is deliberately not counted: it
+    cost a file in configs/killed/ and zero rows in the ledger, so it is not
+    the thing the budget exists to ration.
+    """
+    now = now or datetime.now(timezone.utc)
+    out = []
+    for p in sorted(config.REGISTRY.glob("*.json")) if config.REGISTRY.exists() else []:
+        try:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        t = _utc(rec.get("registered_utc"))
+        if t is not None and (now - t) < timedelta(hours=24):
+            out.append(rec.get("hypothesis_id", p.stem))
+    return out
+
+
 def reasoning_due(now: datetime | None = None) -> tuple[bool, str]:
     """May a reasoning pass run?  (due, one-line reason either way).
 
@@ -500,35 +530,77 @@ def reasoning_due(now: datetime | None = None) -> tuple[bool, str]:
        completed pass.  New results, a closed family, a grown N -- any of them
        is a new question to ask.  None of them is a reason to re-ask the old one.
     """
+    now = now or datetime.now(timezone.utc)
     queued = sorted(config.QUEUE.glob("*.json")) if config.QUEUE.exists() else []
     if queued:
         return False, (f"큐에 {len(queued)}개가 답을 기다립니다 "
                        f"({', '.join(p.stem for p in queued)}) — "
                        "워커가 가져가기 전에는 새로 묻지 않습니다")
+
+    # A rate limit, not a budget.  The pass itself makes eight to ten model
+    # calls and takes tens of minutes; without this the supervisor would start
+    # a second one on top of the first the moment a proposal was killed, since
+    # a kill is new information and the branch below would say so forever.
+    passes = reasoning_passes(1)
+    last_pass = _utc(passes[0].get("utc")) if passes else \
+        _utc(last_reasoning().get("utc"))
+    if last_pass is not None and (now - last_pass) < timedelta(
+            minutes=MIN_REASONING_INTERVAL_MIN):
+        return False, (f"마지막 패스가 {ago(last_pass, now)}입니다 — "
+                       f"패스 간 최소 {MIN_REASONING_INTERVAL_MIN}분을 둡니다")
+
     proposed = config.CONFIGS / "proposed"
     held = sorted(proposed.glob("*.json")) if proposed.exists() else []
     if held:
         return True, f"심사 대기 제안 {len(held)}건이 있어 먼저 판정합니다"
+
+    # The budget.  Proposing is free in N and registration is not, and the
+    # continuous loop is only safe because this line is the thing it cannot
+    # spend past.  Checked before the evidence branches, so a day of fresh
+    # reports cannot talk it into a fifth registration.
+    booked = registrations_last_24h(now)
+    if len(booked) >= config.MAX_REGISTRATIONS_PER_DAY:
+        return False, (f"24시간 등록 예산 소진 "
+                       f"({len(booked)}/{config.MAX_REGISTRATIONS_PER_DAY}: "
+                       f"{', '.join(booked)}) — 제안은 공짜지만 등록은 N을 "
+                       "영구히 올립니다")
+
     fp = evidence_fingerprint()
     prev = last_reasoning()
-    if prev.get("fingerprint") == fp:
-        return False, (f"마지막 패스({kst(prev.get('utc'))}) 이후 증거가 "
-                       "그대로입니다 — 같은 리포트에 두 번 등록하지 않습니다")
-    if prev.get("fingerprint"):
+    if prev.get("fingerprint") and prev.get("fingerprint") != fp:
         return True, f"마지막 패스({kst(prev.get('utc'))}) 이후 증거가 바뀌었습니다"
-    return True, "이 저장소에서 지문이 기록된 패스가 없습니다"
+    if not prev.get("fingerprint"):
+        return True, "이 저장소에서 지문이 기록된 패스가 없습니다"
+
+    # The evidence is unchanged, and that used to end it.  But a pass whose
+    # proposals were all killed has produced something the next pass does not
+    # have: the adversary's reasons.  H0009 was killed as a finer grid over
+    # closed H0007 and H0010 for misreading a metric; a proposer that gets to
+    # read those two verdicts is asking a better question than one that waits
+    # six hours for a report with a new timestamp in it.  Registering nothing
+    # costs zero rows, so this branch cannot raise N -- only the budget above
+    # can, and it is already spent-checked.
+    if passes and not passes[0].get("registered"):
+        return True, (f"마지막 패스({kst(passes[0].get('utc'))})는 아무것도 "
+                      "등록하지 못했습니다 — 적대자의 기각 사유가 다음 제안이 "
+                      "가진 새 정보입니다")
+    return False, (f"마지막 패스({kst(prev.get('utc'))}) 이후 증거가 "
+                   "그대로이고 그 패스는 등록에 성공했습니다 — 같은 리포트에 "
+                   "두 번 등록하지 않습니다")
 
 
 # ---------------------------------------------------------------------------
 # the one-line answer
 # ---------------------------------------------------------------------------
-RUNNING, QUEUED, IDLE, STALLED, STOPPED = (
-    "RUNNING", "QUEUED", "IDLE", "STALLED", "STOPPED")
-MARK = {RUNNING: "🟢", QUEUED: "🟢", IDLE: "🟡", STALLED: "🟠", STOPPED: "🔴"}
+RUNNING, QUEUED, WORKING, IDLE, STALLED, STOPPED = (
+    "RUNNING", "QUEUED", "WORKING", "IDLE", "STALLED", "STOPPED")
+MARK = {RUNNING: "🟢", QUEUED: "🟢", WORKING: "🟢",
+        IDLE: "🟡", STALLED: "🟠", STOPPED: "🔴"}
 HEADLINE = {
     RUNNING: "**지금 백테스트가 돌고 있습니다.**",
     QUEUED: "**살아 있습니다** — 질문이 등록돼 다음 워커 발화에서 평가됩니다.",
-    IDLE: "**살아 있지만 지금은 유휴입니다** — 다음 추론 패스가 질문을 만듭니다.",
+    WORKING: "**24시간 감독자가 살아 있고 지금도 일하고 있습니다.**",
+    IDLE: "**감독자가 떠 있지 않습니다** — 예약된 추론 발화까지 아무것도 하지 않습니다.",
     STALLED: "**멈춰 가고 있습니다** — 워커는 돌지만 새로 묻는 것이 없습니다.",
     STOPPED: "**멈췄습니다.** 사람이 고쳐야 다시 돕니다.",
 }
@@ -578,6 +650,14 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
     facts["reasoning_task"] = next(
         (t for t in (tasks or []) if "Reasoning" in str(t.get("name", ""))), None)
     facts["reasoning_due"] = reasoning_due(now)
+    facts["supervisor"] = supervisor(now)
+    facts["registrations_24h"] = registrations_last_24h(now)
+    facts["registration_budget"] = config.MAX_REGISTRATIONS_PER_DAY
+    facts["last_activity"] = (activities(1) or [None])[0]
+    try:
+        facts["next_action"] = next_action(now)
+    except Exception as exc:                                       # noqa: BLE001
+        facts["next_action"] = ("unknown", f"{type(exc).__name__}: {exc}")
 
     try:
         sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
@@ -636,6 +716,26 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
                            f"다음 워커 발화({kst(facts['next_worker_slot'])}, "
                            f"{until(facts['next_worker_slot'], now)})에 "
                            "평가됩니다")
+        elif facts["supervisor"]["alive"]:
+            # The supervisor decides what to do on every tick, and only
+            # sometimes is that a new hypothesis.  An empty queue with a live
+            # supervisor is not idling: it is scouting, reviewing the kernel,
+            # re-running the robustness gate -- work that costs zero ledger
+            # rows, which is why it can run around the clock.
+            status = WORKING
+            act, why = facts["next_action"]
+            last = facts["last_activity"] or {}
+            reasons.append(f"감독자 살아 있음 (pid {facts['supervisor']['pid']}, "
+                           f"박동 {ago(facts['supervisor']['heartbeat_utc'], now)}). "
+                           f"지금 할 일: **{act}** — {why}")
+            if last:
+                reasons.append(f"마지막으로 한 일: {last.get('action')} "
+                               f"({ago(last.get('utc'), now)}) — "
+                               f"{str(last.get('detail'))[:140]}")
+            reasons.append(f"24시간 등록 예산 "
+                           f"{len(facts['registrations_24h'])}/"
+                           f"{facts['registration_budget']} 사용 — 제안과 검토는 "
+                           "공짜고, N을 올리는 것은 등록뿐입니다")
         elif stale_h is None or stale_h > STALE_HOURS:
             status = STALLED
             reasons.append(f"신규 시행이 {ago(newest, now)}로 멈춰 있고 "
@@ -643,13 +743,170 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
                            "새로 묻는 것이 없습니다")
         else:
             reasons.append(f"마지막 신규 시행 {ago(newest, now)}, 큐는 비었고 "
-                           "다음 추론 패스가 새 질문을 만들 차례입니다")
+                           "감독자도 떠 있지 않습니다 — "
+                           "`python scripts/forever.py` 또는 "
+                           "`python scripts/schedule.py --install`")
 
     facts["status"] = status
     facts["mark"] = MARK[status]
     facts["headline"] = HEADLINE[status]
     facts["reasons"] = reasons
     return facts
+
+
+# ---------------------------------------------------------------------------
+# what to do right now
+# ---------------------------------------------------------------------------
+# Work that costs ZERO ledger rows, with how stale each is allowed to get.
+#
+# This table is what makes "never idle" a true statement rather than a faster
+# poll.  Before it, the only thing the loop knew how to do was ask a new
+# question, so a day in which the adversary rejected every proposal -- which is
+# the adversary working -- was a day the machine sat still.  Every entry here
+# is real research that cannot raise N:
+#
+#   scout      goes to the web for a payer this repository has no way to hear
+#              about.  The proposer's tools are Read/Glob/Grep/Write, which is
+#              why it re-derived closed H0007 as H0009.
+#   kernel     an adversarial read of the evaluators.  Six silent defects were
+#              found in one day, one of them putting sealed funding data into
+#              the development window.  A defect here voids every result in the
+#              project, so this is the highest-value zero-N work there is, and
+#              weekly was a schedule chosen for a machine that had other things
+#              to do.
+#   robustness re-asks whether a recorded number survives cost stress, a walk
+#              forward and a regime split.  Cheap, and it reads the ledger
+#              rather than adding to it.
+#   execution  re-runs one cell on minute bars, which is where the hourly
+#              panel's "adverse first" and "one fill" assumptions get tested.
+#   survivorship KT-3 is INCONCLUSIVE and blocks every alt-basket hypothesis
+#              until the delisted sample is large enough.  Enlarging it is
+#              fact-gathering, not a hypothesis, and it unblocks a whole branch.
+ZERO_N_WORK = {
+    "scout": 90,
+    "kernel_review": 60 * 24,
+    "robustness": 60 * 6,
+    "execution_realism": 60 * 12,
+    "survivorship": 60 * 24 * 3,
+}
+
+ACTIVITY_LOG = config.REPORTS / "ACTIVITY.jsonl"
+
+
+def record_activity(action: str, detail: str, seconds: float | None = None,
+                    path: Path | None = None) -> None:
+    """One line per thing the supervisor actually did.
+
+    The claim "it never rests" has to be checkable, and this is the file that
+    would fail if it were false: a gap in it is a gap in the work.
+    """
+    _append(path or ACTIVITY_LOG,
+            {"utc": datetime.now(timezone.utc).isoformat(), "action": action,
+             "detail": detail[:400],
+             "seconds": None if seconds is None else round(seconds, 1)})
+
+
+def activities(limit: int = 20, path: Path | None = None) -> list[dict]:
+    return _read_jsonl(path or ACTIVITY_LOG, limit, "utc")
+
+
+def last_activity_at(action: str, path: Path | None = None) -> datetime | None:
+    for r in _read_jsonl(path or ACTIVITY_LOG, 2000, "utc"):
+        if r.get("action") == action:
+            return _utc(r.get("utc"))
+    return None
+
+
+# The supervisor's heartbeat.  Machine-local and gitignored: it says whether a
+# process is alive on THIS workstation, which is meaningless in a checkout
+# anywhere else.
+SUPERVISOR_LOCK = config.ORC_ROOT / "logs" / "forever.lock"
+
+# Older than this and the lock is a corpse, not a supervisor.  forever.py beats
+# it once per tick, and its longest tick is a reasoning pass.
+SUPERVISOR_STALE_MIN = 30
+
+
+def supervisor(now: datetime | None = None) -> dict:
+    """Is the 24-hour supervisor alive, and what did it last do?
+
+    Read from the lock rather than from a process table: the lock is what
+    forever.py itself uses to refuse a second copy, so this asks exactly the
+    question that matters and cannot disagree with the answer the supervisor
+    acted on.
+    """
+    now = now or datetime.now(timezone.utc)
+    out: dict = {"alive": False, "pid": None, "heartbeat_utc": None}
+    try:
+        rec = json.loads(SUPERVISOR_LOCK.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    beat = _utc(rec.get("heartbeat_utc"))
+    out["pid"] = rec.get("pid")
+    out["heartbeat_utc"] = rec.get("heartbeat_utc")
+    out["alive"] = beat is not None and (now - beat) < timedelta(
+        minutes=SUPERVISOR_STALE_MIN)
+    return out
+
+
+def next_action(now: datetime | None = None) -> tuple[str, str]:
+    """The single most useful thing to do at this instant, and why.
+
+    Ordered by what would be wasted by doing something else first.  A blocking
+    finding comes first because every number computed on top of it is void; the
+    queue comes next because a registered question already costs N and leaving
+    it unanswered is the one form of idling that has already been paid for.
+    """
+    now = now or datetime.now(timezone.utc)
+
+    try:
+        sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
+        import findings
+        blocking = findings.blocking()
+    except Exception:                                              # noqa: BLE001
+        blocking = []
+    if blocking:
+        # Not a full stop.  Research on code known to be wrong is forbidden,
+        # but reading that code harder is exactly the right response, so the
+        # kernel review is the one action allowed through.
+        due = last_activity_at("kernel_review")
+        if due is None or (now - due) > timedelta(minutes=ZERO_N_WORK["kernel_review"]):
+            return "kernel_review", (
+                f"high 결함 {len(blocking)}건이 열려 있어 연구는 멈춥니다 — "
+                "그 코드를 더 읽는 것만 허용됩니다")
+        return "blocked", (
+            f"high 결함 {len(blocking)}건: {', '.join(f['id'] for f in blocking)}. "
+            "사람이 고치거나 findings.py 로 결정을 기록해야 합니다")
+
+    queued = [p.stem for p in sorted(config.QUEUE.glob("*.json"))] \
+        if config.QUEUE.exists() else []
+    if queued:
+        # The worker evaluates on GitHub, so the workstation is free.  Fall
+        # through to zero-N work rather than waiting on it.
+        pass
+
+    due, why = reasoning_due(now)
+    if due:
+        return "reason", why
+
+    for action, max_age_min in sorted(ZERO_N_WORK.items(),
+                                      key=lambda kv: kv[1]):
+        at = last_activity_at(action)
+        if at is None:
+            return action, f"{action}: 이 저장소에서 한 번도 실행되지 않았습니다"
+        age = now - at
+        if age > timedelta(minutes=max_age_min):
+            return action, (f"{action}: 마지막 실행 {ago(at, now)} "
+                            f"(허용 {max_age_min}분)")
+
+    # Everything is fresh and no question is due.  Say which clock will expire
+    # first, so a supervisor tick that does nothing still explains itself.
+    soonest = min(
+        ((a, (last_activity_at(a) or now) + timedelta(minutes=m))
+         for a, m in ZERO_N_WORK.items()), key=lambda kv: kv[1])
+    return "rest", (f"모든 zero-N 작업이 최신이고 새 질문도 예정에 없습니다. "
+                    f"다음은 {soonest[0]}, {until(soonest[1], now)}. "
+                    f"게이트: {why}")
 
 
 def main(argv: list[str]) -> int:
@@ -678,6 +935,10 @@ def main(argv: list[str]) -> int:
         record_gate(due, why)
         print(("DUE: " if due else "SKIP: ") + why)
         return 0 if due else 10
+    if "--next" in argv:
+        action, why = next_action()
+        print(f"{action}: {why}")
+        return 0
     a = activity()
     print(f"{a['mark']} {a['status']}  {a['headline']}")
     for r in a["reasons"]:
