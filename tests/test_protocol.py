@@ -1243,3 +1243,88 @@ def test_a_split_close_vote_is_raised_as_news(tmp_path, monkeypatch):
     assert len(split) == 1
     assert "H9400" in split[0] and "claude=CONTINUE" in split[0] and "codex=CLOSE" in split[0]
     assert not any("H9401" in n for n in news)     # agreement is not news
+
+
+# --------------------------------------------------------------------------
+# two machines write the ledger, so a conflict must union rather than choose
+# --------------------------------------------------------------------------
+def test_a_ledger_conflict_unions_and_never_picks_a_side(tmp_path):
+    """Run #19 computed 112 trials over 39 minutes and lost every one: the
+    ledger is a binary SQLite file, two machines write it, and the rebase
+    stopped on a conflict. Rows are the one thing here that cannot be resolved
+    by choosing -- N is the denominator of every correction, and taking one
+    side's file discards the other side's questions with nothing to say so."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import merge_ledger
+    from orc.ledger.trials import Ledger
+
+    def build(path, run, n, shared):
+        with Ledger(path) as led:
+            for i in range(shared):
+                led.record(run_id="shared", family="f", symbol="BTCUSDT",
+                           evaluator="analytic", cfg={"a": i},
+                           metrics={"tm_q05": 1.0}, n_starts=10,
+                           panel_hash="ph", code="ch")
+            for i in range(n):
+                led.record(run_id=run, family="f", symbol="BTCUSDT",
+                           evaluator="analytic", cfg={"only": f"{run}{i}"},
+                           metrics={"tm_q05": 1.0}, n_starts=10,
+                           panel_hash="ph", code="ch")
+
+    ours, theirs = tmp_path / "ours.sqlite", tmp_path / "theirs.sqlite"
+    build(ours, "workstation", 7, 20)
+    build(theirs, "worker", 112, 20)
+
+    n_a, n_b, total = merge_ledger.union(ours, theirs, ours)
+    assert (n_a, n_b) == (27, 132)
+    assert total == 20 + 7 + 112       # the shared twenty are one experiment
+    with Ledger(ours) as led:
+        got = dict(led.conn.execute(
+            "SELECT run_id, COUNT(*) FROM trials GROUP BY run_id"))
+    assert got["workstation"] == 7 and got["worker"] == 112 and got["shared"] == 20
+
+
+def test_the_merge_driver_refuses_rather_than_shrink_the_ledger(tmp_path):
+    """N can only grow. A union that returns fewer rows than one side had is a
+    bug, and a silent one is a deleted experiment."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import merge_ledger
+
+    empty_a, empty_b = tmp_path / "a.sqlite", tmp_path / "b.sqlite"
+    empty_a.write_bytes(b"")
+    empty_b.write_bytes(b"")
+    with pytest.raises(SystemExit, match="readable ledger"):
+        merge_ledger.union(empty_a, empty_b, empty_a)
+
+    # A side with no ledger at all contributes nothing and does not abort:
+    # having recorded no trials is a fact, not an error.
+    from orc.ledger.trials import Ledger
+    real = tmp_path / "real.sqlite"
+    with Ledger(real) as led:
+        led.record(run_id="r", family="f", symbol="BTCUSDT", evaluator="analytic",
+                   cfg={"a": 1}, metrics={"tm_q05": 1.0}, n_starts=1,
+                   panel_hash="ph", code="ch")
+    assert merge_ledger.union(real, tmp_path / "absent.sqlite", real)[2] == 1
+
+
+def test_the_ledger_is_pointed_at_the_union_driver():
+    """A driver nothing routes to is a driver that never runs."""
+    ga = (Path(__file__).resolve().parents[1] / ".gitattributes"
+          ).read_text(encoding="utf-8")
+    assert "ledger/trials.sqlite merge=orcledger" in ga
+    assert "reports/*.json merge=ours" in ga
+    wf = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
+          / "orc-cycle.yml").read_text(encoding="utf-8")
+    assert "merge.orcledger.driver" in wf and "merge_ledger.py" in wf
+    assert "merge.ours.driver" in wf
+
+
+def test_the_surface_takes_the_newest_row_by_time_not_by_rowid():
+    """A union re-assigns trial_id by insertion order, so rows that arrived
+    from another machine carry ids that say nothing about when they were
+    computed. 'The last write wins by construction' stopped being true of the
+    surrogate key the moment the ledger acquired a merge driver."""
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+    assert "ORDER BY created_utc, trial_id" in src
+    assert "ORDER BY trial_id" not in src

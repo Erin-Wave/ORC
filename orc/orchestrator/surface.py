@@ -116,7 +116,8 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     with Ledger() as led:
         rows = led.conn.execute(
             "SELECT symbol, config_json, metrics_json, n_starts, code_hash, "
-            "panel_hash FROM trials WHERE hypothesis_id=? ORDER BY trial_id",
+            "panel_hash FROM trials WHERE hypothesis_id=? "
+            "ORDER BY created_utc, trial_id",
             (h.hypothesis_id,)).fetchall()
 
     values: dict[str, dict[tuple, float]] = {}
@@ -129,9 +130,15 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     # between revisions. One surface could therefore mix cells computed by
     # different kernels on different panels, and plateau_score would compare
     # them as though they were neighbours in the same experiment. Take the
-    # newest row per cell explicitly -- trial_id is monotonic, so the last write
-    # wins by construction rather than by luck -- and record what the surface
-    # was actually assembled from.
+    # newest row per cell explicitly, ordered by created_utc.
+    #
+    # It used to order by trial_id, on the reasoning that the surrogate key is
+    # monotonic so the last write wins by construction. That stopped being true
+    # the moment the ledger acquired a merge driver: a union re-assigns
+    # trial_id by insertion order, so rows that arrived from another machine
+    # carry ids that say nothing about when they were computed. created_utc is
+    # recorded by the run that produced the row and survives being merged.
+    # trial_id remains the tie-break for rows written in the same instant.
     provenance: dict[str, dict] = {}
     for sym, cfg_json, met_json, n_starts, code_h, panel_h in rows:
         cfg = json.loads(cfg_json)

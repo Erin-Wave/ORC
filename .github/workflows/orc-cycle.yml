@@ -98,17 +98,49 @@ jobs:
 
       - name: Commit results
         run: |
-          set -euo pipefail
+          set -uo pipefail
           git config user.name  "orc-cycle"
           git config user.email "orc-cycle@users.noreply.github.com"
-          git add -A reports ledger configs/registry configs/queue
+
+          # The ledger is a binary SQLite file and two machines write to it, so
+          # a concurrent push is a conflict git cannot resolve on its own. Run
+          # #19 computed 112 trials over 39 minutes and lost all of them: the
+          # rebase stopped on reports/H0001_SURFACE.json and the push never
+          # happened. Rows are the one thing here that must never be resolved by
+          # picking a side, so .gitattributes points the ledger at a union
+          # driver and the derived reports at `ours`, which the next cycle
+          # regenerates anyway.
+          git config merge.orcledger.name   "union the ORC trial ledger"
+          git config merge.orcledger.driver "python scripts/merge_ledger.py %O %A %B"
+          git config merge.ours.name        "keep the published version"
+          git config merge.ours.driver      true
+
+          git add -A reports ledger configs/registry configs/queue configs/closed
           if git diff --cached --quiet; then
             echo "no change"
-          else
-            git commit -m "orc cycle $(date -u +%Y-%m-%dT%H:%MZ)"
-            git pull --rebase --autostash
-            git push
+            exit 0
           fi
+          git commit -m "orc cycle $(date -u +%Y-%m-%dT%H:%MZ)"
+
+          # Retry, because the collision window is the length of a cycle -- 39
+          # minutes with the honest search test -- and anything can land in it.
+          for attempt in 1 2 3; do
+            if git pull --rebase --autostash; then
+              if git push; then
+                echo "pushed on attempt $attempt"
+                exit 0
+              fi
+              echo "push rejected on attempt $attempt; someone else got there first"
+              continue
+            fi
+            echo "rebase did not complete cleanly on attempt $attempt"
+            git rebase --abort || true
+            git status --short
+          done
+          echo "::error::could not land the cycle after 3 attempts. The trials are"
+          echo "::error::deterministic and the next cycle recomputes them, but the"
+          echo "::error::merge drivers or .gitattributes are not doing their job."
+          exit 1
 
       # Runs whatever the cycle did, refusing included. A blocked cycle is the
       # most important thing to be told about: the loop has stopped itself and

@@ -1,9 +1,22 @@
-# The ledger hashes the evaluation code to decide whether a trial is a repeat.
-# With core.autocrlf a checkout rewrites line endings per platform, so the same
-# commit hashed differently on Windows and on the Linux runner and no trial
-# ever deduped across the two.  The hash normalises endings now, but the files
-# themselves should stop churning as well: one commit, one set of bytes.
-* text=auto eol=lf
-*.png binary
-*.parquet binary
-*.tar.gz binary
+# The ledger is the one file in this repository that must never be resolved by
+# picking a side. Rows are experiments, N is the denominator of every
+# multiple-testing correction, and taking one machine's file silently discards
+# the other machine's questions with nothing downstream to say so. The driver
+# unions them on the table's own UNIQUE key.
+#
+# Run #19 is why this exists: the worker computed 112 trials over 39 minutes,
+# hit a conflict on a report file during `git pull --rebase`, and lost them.
+ledger/trials.sqlite merge=orcledger -text
+
+# Reports are DERIVED. Every cycle regenerates them from the ledger, so a
+# conflict here has no information in it -- keeping either side is correct and
+# the next cycle overwrites both. `ours` keeps what is already on the branch
+# being rebased onto, which is the version already published.
+reports/*.json merge=ours
+reports/*.md   merge=ours
+
+# Text files this project writes on Windows and the runner reads on Linux.
+*.py    text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
