@@ -185,7 +185,37 @@ python -m pytest tests -q                       # must be green before anything
 5. Never edit a registered hypothesis. Never touch `ledger/`. Never widen a
    threshold after seeing a result.
 
-## 10. Style
+## 10. A claim is checked before it is written down
+
+Six defects entered this project in one session and every one of them was the
+same habit: saying a thing was done without checking it.
+
+| claimed | actually |
+|---|---|
+| a provider was "verified" by a one-line probe | its real 2 KB prompt arrived empty, exit 0 |
+| "a split vote is raised as news" | nothing read `CLOSE_VOTES.json` |
+| "tm_q05 is still evaluated against its kill condition" | it had fallen out of the surface entirely |
+| a concurrent-write risk, named out loud | never guarded; a run lost 39 minutes and 112 trials |
+| an IRR fixed to use realised deposits | the first version used a bar COUNT as elapsed time |
+| `git add -A` | committed 193 lines written by a tool, unread |
+
+So:
+
+- **A claim in a commit message, a docstring or a report must be backed by
+  something in the same commit that would fail if it were false** — a test, a
+  measurement printed into the message, or a re-run against the ledger. "It now
+  does X" with nothing exercising X is the defect, not the documentation of one.
+- **Verify with the payload the real caller sends.** A check that passes on a
+  smaller, simpler input than production verifies nothing and reports success.
+- **A risk you can articulate goes into the findings ledger, not into a
+  sentence.** Prose in a conversation is not a record and does not survive the
+  session that produced it.
+- **Never stage by wildcard.** Name the paths. `scripts/precommit.py` enforces
+  what it can: the suite must be green, the ledger may not shrink, no conflict
+  markers, and a new file outside the expected tree has to be deliberate.
+  Install it with `python scripts/precommit.py --install`.
+
+## 11. Style
 
 Match the existing code: numpy-first, no backtesting framework, no ML stack,
 no GPU. Comments explain *why* a rule exists, not what a line does. Every

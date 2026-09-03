@@ -1328,3 +1328,33 @@ def test_the_surface_takes_the_newest_row_by_time_not_by_rowid():
            / "surface.py").read_text(encoding="utf-8")
     assert "ORDER BY created_utc, trial_id" in src
     assert "ORDER BY trial_id" not in src
+
+
+def test_the_precommit_guard_is_installed_and_refuses_what_it_says():
+    """The guard exists because six defects in one session were all the same
+    habit: claiming a thing was done without checking it. A guard that is
+    documented but not installed is that habit again."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import precommit
+
+    root = Path(__file__).resolve().parents[1]
+    hook = root / ".git" / "hooks" / "pre-commit"
+    if hook.exists():
+        assert "precommit.py" in hook.read_text(encoding="utf-8")
+
+    # a new top-level file is where a tool writing into the tree lands
+    assert precommit.check_new_files([("A", "SOMETHING_WROTE_THIS.md")])
+    assert not precommit.check_new_files([("A", "orc/eval/new_module.py")])
+    assert not precommit.check_new_files([("M", "SOMETHING_WROTE_THIS.md")])
+    assert not precommit.check_new_files([("A", "CLAUDE.md")])
+    # and a file outside the tree's shape
+    assert precommit.check_new_files([("A", "vendor/somelib/thing.py")])
+
+
+def test_the_constitution_carries_the_rule_the_guard_enforces():
+    """A guard whose reason lives only in a commit message is a guard the next
+    session removes."""
+    s = (Path(__file__).resolve().parents[1] / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "## 10. A claim is checked before it is written down" in s
+    assert "Never stage by wildcard" in s
+    assert "goes into the findings ledger, not into a" in s
