@@ -120,6 +120,24 @@ The parameter space is enumerated exhaustively, never sampled. Consequently:
 - **The grid handles parameters. The reasoning layer handles rule SHAPE.**
   Proposing a finer grid over an existing rule form is not a new hypothesis; it
   is noise mining. Propose a different mechanism.
+- **Breadth first, and depth is earned by a result.** A mechanism with no rows
+  in the ledger gets a **probe**: at most `MAX_PROBE_CONFIGURATIONS` cells,
+  spent only on the axes that decide whether the mechanism is there at all. If
+  it survives its own kill condition, a second registration under a **new id**
+  may enumerate it as wide as `MAX_CONFIGURATIONS_PER_HYPOTHESIS`. Enforced at
+  intake, not advised.
+
+  The ledger is why. H0002 registered 972 cells on the first and only test its
+  mechanism ever got and now holds **73 % of N** while closed; H0006 answered
+  its question with 72 cells and H0007 with 54, together costing 11 %. Width is
+  not what buys an answer. Spending it before a mechanism has survived anything
+  is how one guess ends up owning the multiple-testing denominator for the life
+  of the project.
+- **Count the mechanisms, not the hypotheses.** Six of the first eight families
+  rested on the funding rate. A tree that re-arranges one idea is narrower than
+  its hypothesis count suggests, and if that idea is dead the whole tree is. A
+  proposal must say what makes its payer *different* from the payer of every
+  family already tested.
 - Every trial lands in the append-only ledger. The row count is `N` and feeds
   the multiple-testing correction. It cannot be reduced.
 - Read the **shape** column before the value. A `SPIKE` is not a finding no

@@ -56,6 +56,28 @@ COST_STRESS_MULTIPLIERS = (1.0, 2.0, 3.0)
 # retroactively rejecting anything the ledger already holds.
 MAX_CONFIGURATIONS_PER_HYPOTHESIS = 2000
 
+# A mechanism nobody has tested gets a PROBE, not an enumeration.
+#
+# The ledger says why. 73.4 % of N -- 4,860 of 6,624 rows -- went to H0002,
+# which registered 972 cells on the first and only test its mechanism ever got
+# and is now closed. The two narrow families that came after it, H0006 at 72
+# cells and H0007 at 54, cost 11.4 % of N between them and answered their
+# questions just as well: H0006's own pre-registration says a failing mirror
+# closes the funding question on both sides, and 72 cells are enough to say so.
+#
+# So width is not what buys an answer, and spending it before the mechanism has
+# survived anything is how one guess ends up owning the multiple-testing
+# denominator for the life of the project. A family with no rows in the ledger
+# is capped here. Once it has been probed and not closed, a second registration
+# under a NEW id may go as wide as the ceiling above -- which is depth earned by
+# a result rather than assumed before one.
+#
+# Chosen AFTER seeing results, deliberately, and it is not a threshold any
+# result is judged against: it constrains what may be asked, never what counts
+# as an answer, so no finding can be biased by it. It is set where it separates
+# what H0002 should have been from what H0006 and H0007 already were.
+MAX_PROBE_CONFIGURATIONS = 96
+
 # --------------------------------------------------------------------------
 # Panel build
 # --------------------------------------------------------------------------

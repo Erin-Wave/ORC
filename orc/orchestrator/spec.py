@@ -264,6 +264,29 @@ class Hypothesis:
         return h
 
 
+def probe_ceiling(family: str, tested: set[str] | None = None) -> int:
+    """How many configurations this family may enumerate on its first outing.
+
+    A mechanism with no rows in the ledger has survived nothing, so it gets a
+    probe.  Depth is earned by a result: once the family has been tested and
+    not closed, a second registration under a new id may go as wide as
+    MAX_CONFIGURATIONS_PER_HYPOTHESIS.
+
+    `tested` is the set of families the ledger already holds; it is read from
+    the ledger when not supplied, so intake enforces this against what has
+    actually been run rather than against what happens to be on disk.
+    """
+    if tested is None:
+        try:
+            from orc.ledger.trials import Ledger
+            with Ledger() as led:
+                tested = {f for f, _ in led.families()}
+        except Exception:                                          # noqa: BLE001
+            tested = set()
+    return (config.MAX_CONFIGURATIONS_PER_HYPOTHESIS if family in tested
+            else config.MAX_PROBE_CONFIGURATIONS)
+
+
 def closed_families(directory: Path | None = None) -> dict[str, dict]:
     """Families the reasoning layer has closed against their kill condition.
 

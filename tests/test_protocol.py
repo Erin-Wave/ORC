@@ -492,7 +492,10 @@ def test_a_grid_beyond_the_ceiling_is_refused_whole(tmp_path, monkeypatch):
     queue.mkdir(); registry.mkdir()
     monkeypatch.setattr(config, "QUEUE", queue)
     monkeypatch.setattr(config, "REGISTRY", registry)
+    # Both ceilings: an untested family gets the probe one, and this family has
+    # no rows in the ledger, so that is the one that has to bind here.
     monkeypatch.setattr(config, "MAX_CONFIGURATIONS_PER_HYPOTHESIS", 10)
+    monkeypatch.setattr(config, "MAX_PROBE_CONFIGURATIONS", 10)
 
     big = _hyp(grid={"stride_days": list(range(1, 12))})
     (queue / "H9999.json").write_text(
@@ -1051,3 +1054,44 @@ def test_the_handoff_lists_only_fields_the_evaluator_has():
     # the axes that killed H0003, H0004 and H0005
     for ghost in ("side", "spread_enter", "gate_rate", "oi_lookback_days"):
         assert ghost not in a and ghost not in b
+
+
+def test_an_untested_mechanism_gets_a_probe_not_an_enumeration(monkeypatch):
+    """73.4 % of N went to H0002: 972 cells on the first and only test its
+    mechanism ever got, now closed. H0006 answered its question with 72 and
+    H0007 with 54. Width is not what buys an answer, and spending it before a
+    mechanism has survived anything is how one guess ends up owning the
+    multiple-testing denominator for the life of the project."""
+    from orc import config as cfg
+    from orc.orchestrator.spec import probe_ceiling
+
+    tested = {"already_probed"}
+    assert probe_ceiling("brand_new_mechanism", tested) == cfg.MAX_PROBE_CONFIGURATIONS
+    assert probe_ceiling("already_probed", tested) == cfg.MAX_CONFIGURATIONS_PER_HYPOTHESIS
+    # calibration: what H0002 was, against what H0006 and H0007 already were
+    assert 972 > cfg.MAX_PROBE_CONFIGURATIONS >= 72
+
+
+def test_intake_refuses_a_wide_grid_on_an_untested_mechanism(tmp_path, monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import reasoning
+
+    monkeypatch.setattr("orc.orchestrator.spec.probe_ceiling",
+                        lambda family, tested=None: 96)
+    wide = tmp_path / "H9200.json"
+    wide.write_text(json.dumps({
+        "hypothesis_id": "H9200", "family": "never_tested", "claim": "c",
+        "kill_condition": "k", "universe": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+        "grid": {"stride_days": [1.0, 7.0, 30.0], "n_contributions": [26, 52, 104, 156],
+                 "hold_days": [0.0, 30.0, 90.0], "include_funding": [True, False],
+                 "leverage": [1.0, 2.0]}}), encoding="utf-8")
+    why = reasoning.expandable(wide)
+    assert why and "PROBE" in why and "H0002" in why
+
+    narrow = tmp_path / "H9201.json"
+    narrow.write_text(json.dumps({
+        "hypothesis_id": "H9201", "family": "never_tested", "claim": "c",
+        "kill_condition": "k", "universe": ["BTCUSDT", "ETHUSDT"],
+        "grid": {"stride_days": [1.0, 7.0, 30.0], "n_contributions": [52, 104, 156]}}),
+        encoding="utf-8")
+    assert reasoning.expandable(narrow) is None

@@ -129,10 +129,21 @@ def expandable(path: Path) -> str | None:
     # Intake refuses this too, but a proposal killed here never reaches the
     # queue, so the reason is written into configs/killed/ next to the proposal
     # rather than discovered by the worker six hours later.
-    if len(cfgs) > config.MAX_CONFIGURATIONS_PER_HYPOTHESIS:
-        return (f"{len(cfgs)} configurations exceeds the ceiling of "
-                f"{config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}; every one of them would "
-                "enter the ledger and raise the multiple-testing bar permanently")
+    from orc.orchestrator.spec import probe_ceiling
+    ceiling = probe_ceiling(h.family)
+    if len(cfgs) > ceiling:
+        if ceiling == config.MAX_PROBE_CONFIGURATIONS:
+            return (f"{len(cfgs)} configurations, but a mechanism with no rows in "
+                    f"the ledger gets a PROBE of at most {ceiling}. H0002 spent "
+                    "73 % of N enumerating 972 cells on the first and only test "
+                    "its mechanism ever got, and it is closed; H0006 answered its "
+                    "question with 72 and H0007 with 54. Narrow the grid to the "
+                    "axes that decide whether the mechanism is there at all -- if "
+                    "it survives, a second registration under a new id may go as "
+                    f"wide as {config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}.")
+        return (f"{len(cfgs)} configurations exceeds the ceiling of {ceiling}; "
+                "every one of them would enter the ledger and raise the "
+                "multiple-testing bar permanently")
     if not h.shape_is_measurable():
         return ('no grid axis has three or more numeric levels, so plateau_score '
                 'returns no shape and verdict.py counts an unmeasured shape as a '

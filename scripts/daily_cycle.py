@@ -30,7 +30,8 @@ from orc import config, holdout
 from orc.facts import panel as panel_mod
 from orc.ledger.trials import Ledger
 from orc.orchestrator.runner import run_hypothesis
-from orc.orchestrator.spec import Hypothesis, closed_families, load_registry
+from orc.orchestrator.spec import (Hypothesis, closed_families, load_registry,
+                                   probe_ceiling)
 from orc.orchestrator.surface import summarise, write_report
 from orc.orchestrator.verdict import disqualifiers
 
@@ -54,12 +55,20 @@ def intake_queue() -> list[Hypothesis]:
             # apply and it can only grow.  A grid is refused whole rather than
             # trimmed: trimming would edit a pre-registered grid, which is the
             # one thing section 3 forbids outright.
-            if h.size() > config.MAX_CONFIGURATIONS_PER_HYPOTHESIS:
+            # Depth is earned by a result. A mechanism with no rows in the
+            # ledger has survived nothing and gets a probe; a family that has
+            # been tested and not closed may go wide under a new id.
+            ceiling = probe_ceiling(h.family)
+            if h.size() > ceiling:
                 raise ValueError(
-                    f"{h.size()} configurations exceeds the registered ceiling of "
-                    f"{config.MAX_CONFIGURATIONS_PER_HYPOTHESIS}. Propose a smaller "
-                    "grid under a new id; the grid of a registered hypothesis "
-                    "cannot be trimmed after the fact.")
+                    f"{h.size()} configurations exceeds the ceiling of {ceiling} "
+                    f"for this family"
+                    + (" -- it has no rows in the ledger, so it gets a probe of at "
+                       f"most {config.MAX_PROBE_CONFIGURATIONS} before it may be "
+                       "enumerated wide"
+                       if ceiling == config.MAX_PROBE_CONFIGURATIONS else "")
+                    + ". Propose a smaller grid under a new id; the grid of a "
+                    "registered hypothesis cannot be trimmed after the fact.")
 
             # A grid with no ordinal axis returns no shape, and an unmeasured
             # shape is a disqualifier: every cell would enter N and none could
