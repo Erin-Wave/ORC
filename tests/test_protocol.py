@@ -1149,3 +1149,68 @@ def test_a_read_only_call_that_dirties_the_tree_is_recorded(monkeypatch, tmp_pat
     llm.ask.tree_violations.clear()
     llm.ask("prompt", cwd=tmp_path, provider="toy")
     assert llm.ask.tree_violations == []
+
+
+def test_closing_a_family_needs_agreement_and_a_split_closes_nothing(monkeypatch, tmp_path):
+    """Section 9 step 2 was being decided by the proposer in prose -- one model,
+    one paragraph, no cross-check -- on the decision that matters most. A family
+    closed too early is a question abandoned; one left open is re-enumerated
+    every six hours, which is how H0002 came to hold 73 % of N."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import reasoning
+    from orc import config as cfg
+    from orc import llm
+
+    reg, closed, reports = tmp_path / "reg", tmp_path / "closed", tmp_path / "rep"
+    for d in (reg, closed, reports):
+        d.mkdir()
+    h = _hyp(hypothesis_id="H9300", kill_condition="Closed if PBO is at or above 0.5.")
+    h.register().save(reg / "H9300.json")
+    (reports / "H9300_SURFACE.json").write_text(json.dumps(
+        {"metric": "tm_q05", "pbo": {"BTCUSDT": {"pbo": 0.82}}, "surfaces": {}}),
+        encoding="utf-8")
+
+    monkeypatch.setattr(cfg, "REGISTRY", reg)
+    monkeypatch.setattr(cfg, "CONFIGS", tmp_path)
+    monkeypatch.setattr(cfg, "REPORTS", reports)
+    monkeypatch.setattr(reasoning, "CLOSED", closed)
+    monkeypatch.setattr(llm, "availability", lambda: {"claude": "ready", "codex": "ready"})
+    monkeypatch.setattr(llm, "load_prompt", lambda *a, **k: "prompt")
+
+    say = {"claude": {"verdict": "CLOSE", "clause": "PBO at or above 0.5",
+                      "clause_met": True, "reason": "0.82"},
+           "codex": {"verdict": "CLOSE", "clause": "PBO at or above 0.5",
+                     "clause_met": True, "reason": "0.82 on BTCUSDT"}}
+    monkeypatch.setattr(llm, "ask_json",
+                        lambda prompt, provider="claude", **kw: say[provider])
+    out = reasoning.close_votes()
+    assert out["families"]["H9300"]["decision"] == "CLOSE"
+    assert (closed / "H9300.json").exists()
+    rec = json.loads((closed / "H9300.json").read_text(encoding="utf-8"))
+    assert rec["closed_by"] == "close_vote:claude,codex"
+    assert "[codex]" in rec["reason"] and "[claude]" in rec["reason"]
+
+    # A split closes nothing. Two models reading one pre-registered sentence
+    # differently is a fact about the sentence, and the owner should see it.
+    (closed / "H9300.json").unlink()
+    say["codex"] = {"verdict": "CONTINUE", "clause": "PBO at or above 0.5",
+                    "clause_met": False, "reason": "only one symbol was computable"}
+    out = reasoning.close_votes()
+    assert out["families"]["H9300"]["decision"] == "SPLIT"
+    assert not (closed / "H9300.json").exists()
+
+    # A vote that says CONTINUE while reporting a met clause contradicts itself
+    # and is not counted, so one coherent CLOSE vote stands alone.
+    say["codex"] = {"verdict": "CONTINUE", "clause": "PBO", "clause_met": True,
+                    "reason": "self-contradictory"}
+    out = reasoning.close_votes()
+    assert out["families"]["H9300"]["votes"]["codex"]["broken"]
+    assert out["families"]["H9300"]["decision"] == "CLOSE"
+
+
+def test_the_proposer_is_no_longer_asked_to_close_a_family():
+    """Two closing paths is one too many: the vote is the authority now."""
+    txt = (Path(__file__).resolve().parents[1] / "scripts" / "reasoning_prompt.txt"
+           ).read_text(encoding="utf-8")
+    assert "Do NOT decide whether a family should close" in txt
+    assert "write configs/closed/" not in txt

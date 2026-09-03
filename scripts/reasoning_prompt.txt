@@ -5,15 +5,16 @@ latest commit.
 Read CLAUDE.md, then read reports/CYCLE_REPORT.md. If reports/SURFACE_READING.md
 exists, read that too. Read nothing else.
 
-For each family in the report, decide against its own pre-registered kill
-condition: continue, or close.
+Do NOT decide whether a family should close, and do not write anything to
+configs/closed/. That decision has already been taken this cycle by a separate
+step, in which every available provider votes on whether the family's own
+pre-registered kill condition applies to its numbers, and closing requires
+them to agree. reports/CLOSE_VOTES.json holds the result if you want to see it.
+It was moved out of this prompt because it was being decided in prose as a side
+effect of the step whose real job is asking new questions -- one model, one
+paragraph, no cross-check, on the decision that matters most.
 
-If a family should CLOSE, write configs/closed/<hypothesis_id>.json containing
-{"hypothesis_id": "...", "family": "...", "reason": "why the kill condition is
-met, quoting the numbers"}. A post-mortem is written from it afterwards, so say
-what happened rather than what to do next.
-
-Then propose 1-3 NEW hypotheses.
+Your job here is the next question. Propose 1-3 NEW hypotheses.
 
 Rules:
 - Propose a different RULE SHAPE, never a finer grid over an existing one.

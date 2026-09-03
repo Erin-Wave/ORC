@@ -145,6 +145,11 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
         pv["panel"].add(panel_h)
         context.setdefault(sym, {})[key] = {
             "n_starts": int(n_starts),
+            # The metric the kill condition was pre-registered against, read
+            # from the row under its own name. Without this the surface carried
+            # the RANKING metric and nothing else, so a clause naming tm_q05 had
+            # no number in the report to be evaluated against at all.
+            "primary": met.get(h.primary_metric),
             # Absent on trials from code revisions predating the span figure.
             "effective_independent_paths": met.get("effective_independent_paths"),
             # tm_q05 is a multiple of contributed capital, so it grows with the
@@ -218,7 +223,21 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             # thousands.
             "n_starts_best": ctx.get("n_starts"),
             "independent_paths_best": ctx.get("effective_independent_paths"),
-            "mwrr_q05_best": ctx.get("mwrr_q05"),
+            # The metric the KILL CONDITION names, at the reported cell, under
+            # its own name -- always, and separately from best_value.
+            #
+            # When the ranking moved to the annualised MWRR the commit claimed
+            # "tm_q05 is still reported and its pre-registered kill conditions
+            # are still evaluated against it". That was false: tm_q05 fell out
+            # of the per-symbol summary entirely, so H0001's clause -- "no cell
+            # reaches a 5th-percentile terminal MULTIPLE above 1.0" -- had no
+            # number left to be evaluated against. Two providers voting on it
+            # split, one reading best_value as a return (break-even 0.0) and
+            # one as a multiple (break-even 1.0). Both were reasoning from a
+            # payload that did not contain what the sentence asked for.
+            "primary_metric": h.primary_metric,
+            "primary_metric_best": ctx.get("primary"),
+            "ranked_on": metric,
             "mwrr_q50_best": ctx.get("mwrr_q50"),
             "horizon_days_best": ctx.get("horizon_days"),
             "cagr_best": ctx.get("cagr"),

@@ -10,12 +10,23 @@ permanently raises the bar for everything else.
 So this spends model calls on the things that reduce what enters the ledger, or
 that read what is already in it, and never on producing more of it:
 
+  close vote  every available provider votes on whether each open family's own
+              pre-registered kill condition applies to its numbers. Agreement
+              closes; disagreement closes nothing and is raised as news. This
+              costs zero rows and SAVES them -- a closed family stops being
+              re-enumerated, which is 972 cells for H0002 and 72 for H0006
   propose     one pass over the cycle report, proposing rule shapes
-  adversary   tries to kill each proposal BEFORE registration -- the only step
-              that spends judgement to protect N rather than to consume it
+  adversary   tries to kill each proposal BEFORE registration -- with the same
+              per-provider veto, so any one of them can refuse and none can
+              approve alone
   mechanism   checks with sources whether the named payer actually exists
   surfaces    describes the response surfaces rather than their maxima
-  postmortem  when the proposer closes a family, writes down why it broke
+  postmortem  for each family the vote closed, writes down why it broke
+
+The two vote-taking steps are where a second vendor belongs, and the asymmetry
+is the point: both can only REFUSE things into the ledger or REMOVE things from
+it. A second proposer would raise N, and N is the one quantity here that cannot
+be undone.
 
 Nothing here touches a number. The evaluators stay deterministic, the verdict
 thresholds stay pre-registered constants, and a model that could argue a cell
@@ -222,6 +233,135 @@ def research(claim: str) -> dict:
                         tools=RESEARCH_TOOLS, cwd=config.ORC_ROOT)
 
 
+def close_votes() -> dict:
+    """Ask every provider whether each open family's kill condition is met.
+
+    Section 9 step 2 -- continue, or close -- was being decided by the proposer
+    in prose, as a side effect of the step whose real job is asking new
+    questions. One model, one paragraph, no cross-check, on the decision that
+    matters most: a family closed too early is a question abandoned, and one
+    left open is re-enumerated every six hours, which is how H0002 came to hold
+    73 % of N.
+
+    So it becomes its own step with a vote per provider, and this is the right
+    place to spend a second vendor. Unlike the adversary, which judges whether a
+    mechanism is real, this asks a FACTUAL question -- does the clause as written
+    apply to these numbers -- which is exactly the kind of thing two models can
+    check each other on. It also costs zero rows: closing a family cannot add to
+    N and stops it being re-run, so H0002's closure saved 972 cells this morning
+    and H0006's saves 72 on the next cycle.
+
+    Agreement closes. DISAGREEMENT DOES NOT, and does not quietly continue
+    either: it is written to reports/CLOSE_VOTES.json and raised as news,
+    because two models reading one pre-registered sentence differently is a
+    fact about the sentence, and the owner should see it.
+    """
+    from orc.orchestrator.spec import closed_families, load_registry
+
+    ready = [n for n, s in llm.availability().items() if s == "ready"]
+    out: dict = {"utc": datetime.now(timezone.utc).isoformat(),
+                 "providers": ready, "families": {}}
+    if not ready:
+        raise llm.LLMUnavailable("no provider is available to vote")
+
+    already = closed_families()
+    for h in load_registry():
+        if h.hypothesis_id in already:
+            continue
+        surface = config.REPORTS / f"{h.hypothesis_id}_SURFACE.json"
+        if not surface.exists():
+            continue
+        rep = json.loads(surface.read_text(encoding="utf-8"))
+        # The grids and every symbol's best cell, not the summary rows: the
+        # clause usually turns on PBO, shape or the independent-path count.
+        #
+        # `scales` exists because the first live vote split on it. The surface
+        # is RANKED on the annualised MWRR and the clause names tm_q05, whose
+        # break-even is 1.0 rather than 0.0; one provider read best_value as a
+        # return and one as a multiple, and neither could see the number the
+        # sentence asked for. Both scales are now labelled explicitly and the
+        # prompt is told to refuse rather than convert between them.
+        trimmed = {
+            "metric": rep.get("metric"), "track": rep.get("track"),
+            "scales": {
+                "primary_metric_best": (
+                    f"{h.primary_metric} at the reported cell -- THE METRIC THIS "
+                    "FAMILY'S KILL CONDITION WAS PRE-REGISTERED AGAINST. "
+                    + ("a multiple of contributed capital, so break-even is 1.0"
+                       if h.primary_metric == "tm_q05" else
+                       "a ratio of return to deepest drawdown, so break-even is 0.0")),
+                "best_value": (f"the same cell scored on {rep.get('metric')}, which is "
+                               "what the surface is RANKED by. Not the metric the "
+                               "clause names unless the two happen to coincide."),
+                "mwrr_q05_best": ("annualised money-weighted return at the 5th "
+                                  "percentile of start dates: a RETURN, break-even 0.0"),
+            },
+            "trials_in_family": rep.get("trials_in_family"),
+            "pbo": rep.get("pbo"), "search_test": rep.get("search_test"),
+            "surfaces": {s: {k: v.get(k) for k in (
+                "best_value", "best_config", "shape_diagnostic",
+                "independent_paths_best", "cagr_best", "max_drawdown_best",
+                "n_liquidations_best", "mwrr_q05_best", "headline",
+                "primary_metric", "primary_metric_best", "ranked_on",
+                "axes", "axis_values", "grid")}
+                for s, v in rep.get("surfaces", {}).items()},
+        }
+        prompt = llm.load_prompt(
+            "close_vote", hypothesis_id=h.hypothesis_id, family=h.family,
+            kill_condition=h.kill_condition,
+            surface=json.dumps(trimmed, ensure_ascii=False, default=str))
+
+        votes, unreachable = {}, {}
+        for name in ready:
+            try:
+                v = llm.ask_json(prompt, cwd=config.ORC_ROOT, provider=name)
+            except llm.LLMUnavailable as exc:
+                unreachable[name] = str(exc)
+                continue
+            # A vote that says CONTINUE while reporting a met clause is
+            # self-contradictory; it is recorded and not counted.
+            if v.get("verdict") == "CONTINUE" and v.get("clause_met") is True:
+                v["broken"] = ("verdict CONTINUE with clause_met true; the vote "
+                               "contradicts itself and is not counted")
+            votes[name] = v
+
+        counted = {k: v for k, v in votes.items() if not v.get("broken")}
+        decided = {k: v.get("verdict") for k, v in counted.items()}
+        agree_close = bool(decided) and all(x == "CLOSE" for x in decided.values())
+        split = len(set(decided.values())) > 1
+
+        out["families"][h.hypothesis_id] = {
+            "family": h.family, "votes": votes,
+            "unreachable": unreachable,
+            "decision": "CLOSE" if agree_close else ("SPLIT" if split else "CONTINUE"),
+        }
+
+        if agree_close:
+            first = counted[sorted(counted)[0]]
+            reason = " | ".join(
+                f"[{n}] clause: {v.get('clause', '')} -- {v.get('reason', '')}"
+                for n, v in sorted(counted.items()))
+            (CLOSED / f"{h.hypothesis_id}.json").write_text(json.dumps({
+                "hypothesis_id": h.hypothesis_id, "family": h.family,
+                "closed_utc": out["utc"],
+                "closed_by": f"close_vote:{','.join(sorted(counted))}",
+                "clause": first.get("clause"),
+                "unevaluable_clauses": first.get("unevaluable_clauses"),
+                "reason": reason,
+            }, indent=2, ensure_ascii=False), encoding="utf-8")
+            _log(f"{h.hypothesis_id} CLOSE     agreed by {', '.join(sorted(counted))}")
+        elif split:
+            _log(f"{h.hypothesis_id} SPLIT     " + "; ".join(
+                f"{n}={v}" for n, v in sorted(decided.items()))
+                + " -- left open, raised as news")
+        else:
+            _log(f"{h.hypothesis_id} continue  {', '.join(sorted(counted))}")
+
+    (config.REPORTS / "CLOSE_VOTES.json").write_text(
+        json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+    return out
+
+
 def read_surfaces() -> str:
     """Describe the response surfaces instead of their maxima."""
     out = []
@@ -284,6 +424,21 @@ def main() -> int:
     # the next attempt twenty-four hours away -- the retry policy existed
     # precisely for the failure it was unreachable for.
     unavailable: list[str] = []
+
+    # Before proposing. The proposer reads the cycle report to decide what to
+    # ask next, and a family that has just been closed must already look closed
+    # -- otherwise the pass spends its one registration slot working around a
+    # question that is no longer open.
+    print("close votes")
+    try:
+        cv = close_votes()
+        report["steps"]["close_votes"] = {
+            k: {"decision": v["decision"], "family": v["family"]}
+            for k, v in cv["families"].items()}
+    except llm.LLMUnavailable as exc:
+        _log(f"SKIPPED: {exc}")
+        report["steps"]["close_votes"] = f"skipped: {exc}"
+        unavailable.append(f"close_votes: {exc}")
 
     print("propose")
     try:
@@ -380,6 +535,15 @@ def main() -> int:
             report["steps"].setdefault("postmortem", []).append(f.stem)
         except llm.LLMUnavailable as exc:
             _log(f"{f.stem} SKIPPED: {exc}")
+
+    # A read-only step that changed the tree broke a documented invariant, so
+    # the fact belongs in the record rather than only on a console that nobody
+    # reads. codex, under --sandbox read-only, wrote a copy of the constitution
+    # into AGENTS.md during an adversary review.
+    if llm.ask.tree_violations:
+        report["steps"]["tree_violations"] = list(llm.ask.tree_violations)
+        _log(f"WARNING: {len(llm.ask.tree_violations)} read-only call(s) changed "
+             "the working tree; see REASONING_LOG.json")
 
     (config.REPORTS / "REASONING_LOG.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
