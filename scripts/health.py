@@ -1,0 +1,295 @@
+"""ORC | Is it running, is it producing, is anything stuck?  One screen.
+
+status.py answers "where does the research stand". This answers the different
+question an owner actually has between sessions: is the machine alive right now,
+and would I know if it were not.
+
+Everything else in this project reports into a commit message, a JSON file or a
+chat summary, none of which can be checked at a glance. So this reads the four
+things that decide whether the loop is working and prints them together:
+
+  MACHINE    the schedules -- cloud worker, local reasoning pass, watchdog,
+             kernel review -- with when each last ran, what it returned, and
+             when it fires next. Including whether a run is happening AS YOU
+             READ THIS.
+  RESEARCH   N, when it last grew, which families are open, which are closed,
+             and how many cells clear every check.
+  HEALTH     the things that stop the loop or make it lie: blocking findings,
+             split close votes, staleness, and whether the kernel tests pass.
+
+What "working" means here is worth stating plainly, because it is not what a
+backtester usually means. This project's product is a MAP OF WHERE RULES BREAK.
+Three families closed today and no cell has ever cleared every check. That is
+the machine working, not failing. It would be failing if it produced a winner it
+could not defend, or stopped and did not say so.
+
+  python scripts/health.py            once
+  python scripts/health.py --watch    every 30s until Ctrl-C
+  python scripts/health.py --no-tests skip the 3-second suite
+
+Exit code is the worst line on the screen: 0 all clear, 1 something to look at,
+2 something is broken. So `python scripts/health.py --no-tests || echo check it`
+works in a shell.
+
+A local task showing "exited 1" is not necessarily broken. The reasoning pass
+REFUSES to run while a high-severity finding is open, and refusing is the
+behaviour that protects every number in the ledger. logs/reasoning_<date>.log
+says which it was.
+"""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+try:
+    sys.stdout.reconfigure(errors="replace")
+except (AttributeError, OSError):                                  # pragma: no cover
+    pass
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from orc import config                                             # noqa: E402
+
+KST = timezone(timedelta(hours=9))
+OK, WARN, BAD, DIM = "  ok  ", " WARN ", " BAD  ", "  --  "
+
+
+def _ago(stamp: str | None) -> str:
+    if not stamp:
+        return "never"
+    try:
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return str(stamp)[:19]
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    d = datetime.now(timezone.utc) - t
+    if d.days > 0:
+        return f"{d.days}d {d.seconds // 3600}h ago"
+    if d.seconds >= 3600:
+        return f"{d.seconds // 3600}h {(d.seconds % 3600) // 60}m ago"
+    return f"{max(d.seconds, 0) // 60}m ago"
+
+
+def _load(name: str):
+    p = config.REPORTS / name
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+
+
+def worker_state() -> list[tuple[str, str, str]]:
+    """The cloud half, from the GitHub CLI.  Its cron is nominal: scheduled runs
+    on a public repository are routinely delayed two to four hours, so 'next' is
+    an estimate and lateness alone is not a fault."""
+    try:
+        r = subprocess.run(
+            ["gh", "run", "list", "--limit", "6", "--json",
+             "databaseId,status,conclusion,createdAt,workflowName,event"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=45, cwd=config.ORC_ROOT)
+        runs = json.loads(r.stdout) if r.returncode == 0 else None
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        runs = None
+    if runs is None:
+        return [(DIM, "worker (GitHub Actions)",
+                 "cannot reach the GitHub CLI; check `gh auth status`")]
+
+    out = []
+    live = [x for x in runs if x["status"] not in ("completed",)]
+    for x in live:
+        out.append((WARN, f"{x['workflowName']} #{x['databaseId']}",
+                    f"RUNNING NOW, started {_ago(x['createdAt'])} "
+                    f"(a full cycle takes ~40m)"))
+    for wf in ("orc-cycle", "orc-watchdog"):
+        done = [x for x in runs if x["workflowName"] == wf and x["status"] == "completed"]
+        if not done:
+            out.append((DIM, wf, "no completed run in the last 6"))
+            continue
+        last = done[0]
+        mark = OK if last["conclusion"] == "success" else BAD
+        note = f"last {last['conclusion']} {_ago(last['createdAt'])}"
+        if last["conclusion"] != "success":
+            note += (f"  -> gh run view {last['databaseId']} --log-failed")
+        out.append((mark, wf, note))
+    return out
+
+
+def local_tasks() -> list[tuple[str, str, str]]:
+    """The workstation half.  It needs the machine awake; WakeToRun is set, but
+    a powered-off machine still misses its slot and catches up later."""
+    cmd = ("Get-ScheduledTask | Where-Object {$_.TaskName -like 'ORC*'} | "
+           "ForEach-Object { $i = Get-ScheduledTaskInfo $_; "
+           "[pscustomobject]@{name=$_.TaskName; state=[string]$_.State; "
+           "last=[string]$i.LastRunTime; result=$i.LastTaskResult; "
+           "next=[string]$i.NextRunTime} } | ConvertTo-Json -Compress")
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive",
+                            "-Command", cmd], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+        data = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        data = None
+    if data is None:
+        return [(DIM, "local schedules", "not queryable (not Windows, or no tasks)")]
+    if isinstance(data, dict):
+        data = [data]
+
+    out = []
+    for t in sorted(data, key=lambda x: x["name"]):
+        rc = t.get("result")
+        # 267011 is SCHED_S_TASK_HAS_NOT_RUN: scheduled, never yet due.
+        if rc == 0:
+            mark, why = OK, "last run succeeded"
+        elif rc == 267011:
+            mark, why = DIM, "never run yet (not due before now)"
+        elif rc == 1:
+            mark, why = WARN, "last run exited 1 -- refused or failed"
+        else:
+            mark, why = WARN, f"last result {rc}"
+        last = t.get("last", "")
+        if last.startswith("11/30/1999"):
+            last = "never"
+        out.append((mark, t["name"],
+                    f"{why}; last {last}; next {t.get('next')}"))
+    return out
+
+
+def research_state() -> list[tuple[str, str, str]]:
+    from orc.orchestrator.spec import closed_families, load_registry
+
+    out = []
+    try:
+        from orc.ledger.trials import Ledger
+        with Ledger() as led:
+            n, newest = led.total_trials(), led.newest_trial_utc()
+        grew = _ago(newest)
+        stale = newest is None or (
+            datetime.now(timezone.utc) - datetime.fromisoformat(
+                newest.replace("Z", "+00:00")).replace(
+                    tzinfo=timezone.utc) if newest else timedelta(0)) > timedelta(days=2)
+        out.append((WARN if stale else OK, "ledger",
+                    f"N = {n}; a question nobody had asked was last answered {grew}"))
+    except Exception as exc:                                       # noqa: BLE001
+        out.append((BAD, "ledger", f"cannot open: {type(exc).__name__}: {exc}"))
+
+    try:
+        # load_registry() narrates each closed family it skips, which belongs in
+        # a cycle log and not on a status screen.
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            openf = [h.hypothesis_id for h in load_registry()]
+        closed = closed_families()
+    except Exception as exc:                                       # noqa: BLE001
+        return out + [(BAD, "registry", f"{type(exc).__name__}: {exc}")]
+
+    out.append((OK if openf else WARN, "open families",
+                ", ".join(openf) if openf else
+                "NONE -- every registered mechanism is closed, so the next "
+                "reasoning pass must name a new one or the loop has nothing to do"))
+    out.append((OK, "closed and answered",
+                ", ".join(f"{k} ({v.get('family')})" for k, v in sorted(closed.items()))
+                or "none yet"))
+
+    # The number the whole apparatus exists to produce, and it is allowed to be
+    # zero: a map of where rules break is the deliverable, not a winner.
+    cleared, judged = 0, 0
+    try:
+        from orc.orchestrator.verdict import survivors
+        for hid in openf:
+            rep = _load(f"{hid}_SURFACE.json")
+            if rep is None:
+                continue
+            judged += len(rep.get("surfaces", {}))
+            cleared += len(list(survivors(rep)))
+    except Exception:                                              # noqa: BLE001
+        pass
+    out.append((OK, "cells clearing every check",
+                f"{cleared} of {judged} reported cells. Zero is a normal, "
+                "publishable result here -- FAIL is the product"))
+    return out
+
+
+def health_state(run_tests: bool) -> list[tuple[str, str, str]]:
+    out = []
+    try:
+        import findings as ledger
+        blocking = ledger.blocking()
+        allf = ledger.load()["findings"]
+        openn = sum(1 for f in allf.values() if f["status"] == "open")
+        out.append((BAD if blocking else OK, "blocking findings",
+                    (f"{len(blocking)} HIGH finding(s) open -- every cycle "
+                     f"refuses until fixed: "
+                     + ", ".join(f['id'] for f in blocking)) if blocking else
+                    f"none. {openn} open at medium/low, {len(allf)} recorded total"))
+    except Exception as exc:                                       # noqa: BLE001
+        out.append((WARN, "findings", f"{type(exc).__name__}: {exc}"))
+
+    votes = (_load("CLOSE_VOTES.json") or {}).get("families") or {}
+    splits = [k for k, v in votes.items() if v.get("decision") == "SPLIT"]
+    out.append((WARN if splits else OK, "close votes",
+                f"SPLIT on {', '.join(splits)} -- providers disagree about "
+                f"whether a pre-registered clause applies; nothing was closed"
+                if splits else "no disagreement between providers"))
+
+    try:
+        import notify_issue
+        quiet = notify_issue.watchdog_message()
+        out.append((WARN if quiet else OK, "staleness",
+                    "the watchdog would raise: " + quiet[1].splitlines()[2][:90]
+                    if quiet else "nothing has gone quiet"))
+    except Exception as exc:                                       # noqa: BLE001
+        out.append((WARN, "staleness", f"{type(exc).__name__}: {exc}"))
+
+    if run_tests:
+        r = subprocess.run([sys.executable, "-m", "pytest", "tests", "-q"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", cwd=config.ORC_ROOT)
+        tail = [l for l in (r.stdout or "").splitlines() if "passed" in l or "failed" in l]
+        out.append((OK if r.returncode == 0 else BAD, "kernel tests",
+                    tail[-1].strip() if tail else "no result"))
+        out.append((OK, "", "if the two evaluators ever disagree that test fails "
+                            "and every result in the project is void"))
+    return out
+
+
+def render(run_tests: bool = True) -> int:
+    now = datetime.now(KST)
+    print(f"\nORC health   {now:%Y-%m-%d %H:%M} KST   ({now.astimezone(timezone.utc):%H:%M}Z)")
+    worst = 0
+    for title, rows in (("MACHINE -- is it running", worker_state() + local_tasks()),
+                        ("RESEARCH -- is it producing", research_state()),
+                        ("HEALTH -- would I know if it broke", health_state(run_tests))):
+        print(f"\n{title}")
+        for mark, name, note in rows:
+            worst = max(worst, {BAD: 2, WARN: 1}.get(mark, 0))
+            print(f"  [{mark}] {name:26s} {note}")
+    print("\nnext: python scripts/status.py   (the research itself, family by family)")
+    print("      gh run watch <id>          (a live run, bar by bar)\n")
+    return worst
+
+
+def main(argv: list[str]) -> int:
+    run_tests = "--no-tests" not in argv
+    if "--watch" not in argv:
+        return render(run_tests)
+    try:
+        while True:
+            print("\033[2J\033[H", end="")
+            render(run_tests)
+            print("watching; Ctrl-C to stop")
+            time.sleep(30)
+    except KeyboardInterrupt:
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

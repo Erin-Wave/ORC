@@ -1358,3 +1358,25 @@ def test_the_constitution_carries_the_rule_the_guard_enforces():
     assert "## 10. A claim is checked before it is written down" in s
     assert "Never stage by wildcard" in s
     assert "goes into the findings ledger, not into a" in s
+
+
+def test_health_reports_every_section_without_touching_anything(monkeypatch, capsys):
+    """The one screen an owner can check between sessions. It must be readable
+    with no network, no scheduler and no gh, and it must never write."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import health
+
+    # No gh, no PowerShell, no test run: the screen still has to render.
+    monkeypatch.setattr(health.subprocess, "run",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("absent")))
+    worst = health.render(run_tests=False)
+    out = capsys.readouterr().out
+    assert "MACHINE -- is it running" in out
+    assert "RESEARCH -- is it producing" in out
+    assert "HEALTH -- would I know if it broke" in out
+    # the two facts that are easiest to misread as failure
+    assert "FAIL is the product" in out
+    assert "N = " in out
+    assert isinstance(worst, int) and 0 <= worst <= 2
+    # and it says nothing about a closed family being skipped
+    assert "not re-run" not in out
