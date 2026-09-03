@@ -1,65 +1,53 @@
 {
-  "run_id": "4385d559554b",
-  "started_utc": "2026-09-02T20:19:18.590330+00:00",
-  "finished_utc": "2026-09-02T20:24:24.314954+00:00",
+  "run_id": "37f90244960e",
+  "started_utc": "2026-09-02T23:25:55.865332+00:00",
+  "finished_utc": "2026-09-03T00:04:33.644050+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
   "hypotheses_run": [
     "H0001",
-    "H0002",
     "H0006",
     "H0007"
   ],
   "trials_before": 6386,
-  "trials_after": 6386,
-  "trials_added": 0,
+  "trials_after": 6624,
+  "trials_added": 238,
   "results": [
     {
       "hypothesis_id": "H0001",
       "family": "unconditional_dca_spot_style",
-      "run_id": "4385d559554b",
+      "run_id": "37f90244960e",
       "configurations": 162,
       "evaluated": 112,
-      "new_trials": 0,
+      "new_trials": 112,
       "skipped": 50,
       "skip_reasons": {
         "horizon_exceeds_history": 50
       },
-      "ledger_total_trials": 6386
-    },
-    {
-      "hypothesis_id": "H0002",
-      "family": "funding_carry_short",
-      "run_id": "4385d559554b",
-      "configurations": 972,
-      "evaluated": 972,
-      "new_trials": 0,
-      "skipped": 0,
-      "skip_reasons": {},
-      "ledger_total_trials": 6386
+      "ledger_total_trials": 6498
     },
     {
       "hypothesis_id": "H0006",
       "family": "negative_funding_carry_long",
-      "run_id": "4385d559554b",
+      "run_id": "37f90244960e",
       "configurations": 72,
       "evaluated": 72,
-      "new_trials": 0,
+      "new_trials": 72,
       "skipped": 0,
       "skip_reasons": {},
-      "ledger_total_trials": 6386
+      "ledger_total_trials": 6570
     },
     {
       "hypothesis_id": "H0007",
       "family": "dislocation_gated_dca",
-      "run_id": "4385d559554b",
+      "run_id": "37f90244960e",
       "configurations": 54,
       "evaluated": 54,
-      "new_trials": 0,
+      "new_trials": 54,
       "skipped": 0,
       "skip_reasons": {},
-      "ledger_total_trials": 6386
+      "ledger_total_trials": 6624
     }
   ]
 }

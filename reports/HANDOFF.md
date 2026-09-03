@@ -1,7 +1,107 @@
+# ORC hand-off: propose one hypothesis
+
+You are proposing research on Binance USD-M perpetuals for a project whose deliverable is a MAP OF WHERE RULES BREAK, not an optimal setting. A result of FAIL is publishable and closing a family is a success. Read the rules, then the state of play, then answer with one JSON object and nothing else.
+
+## Rules that will get your proposal rejected mechanically
+
+1. **Name who is structurally paying, and why they keep paying even though it is known.** "This pattern backtests well" is rejected without being run. A payer with no choice about timing (a liquidated leveraged long, a hedger who needs immediacy) is a mechanism; a payer who is simply wrong is not.
+2. **Propose a different rule SHAPE, never a finer grid over a shape already tested.** The parameter space is enumerated exhaustively, so a narrower grid is noise mining by definition.
+3. **Write the kill condition BEFORE any number exists**, as something computable from the metrics below. It must be able to close your own family.
+4. **Every configuration you enumerate enters an append-only ledger** whose row count N is the denominator of the multiple-testing correction. N is currently **6624** and can never be reduced. The grid ceiling is **2000** configurations and a grid over it is refused whole, not trimmed.
+5. **At least one grid axis must have three or more NUMERIC levels**, or the shape diagnostic cannot run, and an unmeasured shape is an automatic disqualifier -- every cell would cost N and none could ever be a finding.
+6. Data begins 2020 and **everything from 2024-03-01 onward is sealed** and physically absent. Do not propose anything that needs it.
+
+## Established results -- do not re-litigate these
+
+- **KT-1**: a long perpetual DCA pays a median funding bill of **36 % of contributed capital** over three years, 87 % of BTC settlements positive. Long-side perp accumulation is CLOSED. Worse than stated: routed through the simulator, the funded 1x long liquidates on 0.69 of ADAUSDT start dates and 0.82 of SOLUSDT's.
+- **KT-2**: liquidation reaches **100 % at 2x and above** for averaging down. Leverage above 1x is CLOSED for that shape.
+- **KT-3**: 986 symbols ever traded, 481 archived, 266 delisted; the usable delisted sample is still too small. **No alt-basket hypothesis** until that is resolved.
+- **H0002 `funding_carry_short`** is CLOSED. The kill condition required a single cell with positive Calmar on at least five of the nine symbols and a liquidation on none. Six of the nine - SOLUSDT -0.0399, AVAXUSDT -0.0612, BNBUSDT -0.1249, ADAUSDT -0.1677, ETHUSDT -0.1691, DOGEUSDT -0.2928 - have no positive cell anywhere in the 108-cell grid. Counting the 108 cells across the nine symbols, the best any SINGLE cell manages is TWO symbols (e.g. lookback 21d / enter 0.0002 / leverage 0.25 / max_hold 30d: BTCUSDT +0.0763 and LTCUSDT +0.0907). Five is not merely unreached, it is arithmetically unreachable. The condition is met and the fami
+
+## The fields the evaluator can actually express
+
+A grid or `fixed` block naming anything not on these lists cannot be run and will be killed before registration. This is the single most common way a good idea is wasted here.
+
+**Track A** (`track: "A"`, accumulation: deposits arrive on a schedule, judged on `tm_q05` and annualised MWRR because there is no fixed capital to compute a CAGR against):
+
+```
+  contribution
+  stride_days
+  n_contributions
+  hold_days
+  leverage
+  gate
+  take_profit
+  stop_loss
+  include_funding
+  clock
+  fee_bps
+  slippage_bps
+  cost_multiplier
+```
+`gate` is a string: `"none"`, `"dip:<drop>:<lookback_days>"` (e.g. `"dip:0.20:30"`), or `"sma:<days>"`. `take_profit` and `stop_loss` are fractions of the position's own margin.
+
+**Track B** (`track: "B"`, one position at a time from fixed capital, entered long or short on a signal and closed on a signal, stop or liquidation; judged on Calmar, CAGR, max equity drawdown and Sharpe):
+
+```
+  rule
+  lookback_days
+  enter_rate
+  exit_rate
+  capital
+  leverage
+  stop_loss
+  take_profit
+  max_hold_days
+  clock
+  fee_bps
+  slippage_bps
+  cost_multiplier
+```
+`rule` must be one of: ['carry_funding', 'carry_funding_long']. A rule that does not exist in the code cannot be proposed -- if your idea needs a new signal generator, say so in the claim and it will be written first, rather than registering a grid that cannot run.
+
+## What counts as a finding
+
+A cell must clear ALL of: shape not SPIKE (a peak whose neighbours are worse and of the opposite sign is a grid corner, not a mechanism); enough effective independent paths (millions of overlapping start offsets over six years are still a handful of experiments); PBO below 0.5 (at 0.5 the selection carries no information at all); a p-value against a null built by re-running the SAME grid on bootstrapped histories; and a robustness gate of doubled costs, walk-forward, regime split and minute-bar execution. Nothing has cleared all of them yet.
+
+## Answer with exactly this, and nothing else
+
+```json
+{
+  "hypothesis_id": "H0008",
+  "track": "B",
+  "family": "short_lowercase_with_underscores",
+  "claim": "Who is structurally paying, why they keep paying even though it is known, and what would have to be true for this to be a mechanism rather than a pattern. Several sentences.",
+  "kill_condition": "The computable result that would close this family, written now, before any number exists.",
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "grid": {
+    "an_axis_from_the_lists_above": [
+      1,
+      2,
+      3
+    ]
+  },
+  "fixed": {
+    "another_field_from_the_lists_above": 1.0
+  }
+}
+```
+
+Ids already spent, do not reuse: H0001 (registered), H0002 (closed), H0003 (killed), H0004 (killed), H0005 (killed), H0006 (registered), H0007 (registered). Use `H0008`.
+
+---
+
+## The state of play
+
+Everything below is development data. The ranking is not a result; read the shape column and the independent-path count first.
+
 # ORC cycle report
 
-- run `37f90244960e` finished 2026-09-03T00:04:33.644050+00:00
-- trials in project: **6624** (+238 this cycle)
+- run `4385d559554b` finished 2026-09-02T20:24:24.314954+00:00
+- trials in project: **6386** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
 
@@ -22,6 +122,15 @@ Best cell per family per symbol, ranked on the metric that survives a horizon ch
 | H0001 | LTCUSDT | -23.7% | 130.6% | invested | at or below 0, shape unmeasured, 1.39 paths, PBO unmeasured, search test unmeasured |
 | H0001 | AVAXUSDT | -29.9% | 311.0% | invested | at or below 0, shape unmeasured, 1.16 paths, PBO unmeasured, search test unmeasured |
 | H0001 | ADAUSDT | -32.0% | 418.8% | invested | at or below 0, shape unmeasured, 1.37 paths, PBO unmeasured, search test unmeasured |
+| H0002 | BTCUSDT | +14.3% | 59.0% | equity | spike, p=0.360 vs a random search |
+| H0002 | LTCUSDT | +3.4% | 37.4% | equity | spike, p=0.705 vs a random search |
+| H0002 | XRPUSDT | +1.7% | 44.4% | equity | spike, PBO 0.65, search test unmeasured |
+| H0002 | AVAXUSDT | -2.2% | 35.5% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | SOLUSDT | -2.5% | 62.7% | equity | at or below 0, shape unmeasured, 2 paths, PBO unmeasured, search test unmeasured |
+| H0002 | BNBUSDT | -7.4% | 59.6% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | ETHUSDT | -7.9% | 46.7% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | ADAUSDT | -10.3% | 61.4% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
+| H0002 | DOGEUSDT | -21.0% | 71.8% | equity | at or below 0, shape unmeasured, PBO unmeasured, search test unmeasured |
 | H0006 | SOLUSDT | +93.4% | 66.7% | equity | shape unmeasured, PBO 0.52, p=0.650 vs a random search |
 | H0006 | BNBUSDT | +88.1% | 64.0% | equity | shape unmeasured, p=0.615 vs a random search |
 | H0006 | DOGEUSDT | +25.2% | 21.3% | equity | shape unmeasured, 4 paths, PBO unmeasured, search test unmeasured |
@@ -43,21 +152,13 @@ Best cell per family per symbol, ranked on the metric that survives a horizon ch
 
 No cell clears every check. Nothing in this table is a result.
 
-## Closed families -- answered, do not re-propose
-
-These are not gaps in the map. Each was closed against its own pre-registered kill condition and its grid is no longer enumerated. The reason is the finding.
-
-| family | closed because | post-mortem |
-|---|---|---|
-| H0002 `funding_carry_short` | The kill condition required a single cell with positive Calmar on at least five of the nine symbols and a liquidation on none. Six of the nine - SOLUSDT -0.0399, AVAXUSDT -0.0612, BNBUSDT -0.1249, ADAUSDT -0.1677, ETHUSDT -0.1691, DOGEUSDT -0.2928 - have no positive cell anywhere in the 108-cell grid. Counting the 108 cells across the nine symbols, the best any SINGLE cell manages is TWO symbols (... | `reports/POSTMORTEM_H0002.md` |
-
 ## H0001 — unconditional_dca_spot_style (track A, metric `mwrr_q05`)
 
 **Claim.** Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 1008. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 896. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -77,13 +178,41 @@ Trials in this family: 1008. Pre-registration hash `16461da7e4b64a49`.
 - PBO on **SOLUSDT** could not be computed: fewer than two configurations share a horizon
 - PBO on **BTCUSDT** could not be computed: fewer than two configurations share a horizon
 
+## H0002 — funding_carry_short (track B, metric `calmar`)
+
+**Claim.** Leveraged long demand on a perpetual pays the funding rate every eight hours for as long as it stays crowded, and keeps paying because the leverage is the whole point of being there: someone who merely wanted the asset would buy spot. KT-1 measured that tax from the paying side at a median 36 percent of contributed capital over a three-year weekly DCA, with 87 percent of BTC settlements positive, and closed long perpetual accumulation over it. This stands on the receiving side of the same trade and asks the only question that side has: can the tax be collected without the directional move that produces it taking the position first? The rule shorts while the trailing mean settlement rate is rich and flattens when it decays, so it is short precisely when long crowding is most expensive - and therefore precisely when a squeeze is most likely. The grid exists to find whether any combination of stop, exposure and holding limit separates the two.
+
+**Kill condition.** Closed if no cell reaches a positive Calmar on at least five of the nine symbols while liquidating on none of them. Collecting funding on the way to a liquidation is not a strategy, and a rule that survives on two symbols out of nine has been selected, not discovered.
+
+Trials in this family: 4860. Pre-registration hash `0d6e7ca037976c0c`.
+
+| symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
+|---|---:|---|---:|---:|---:|---|
+| BTCUSDT | +0.2433 | SPIKE | -0.115 | 1 | 47 | `{'enter_rate': 0.0002, 'leverage': 1.0, 'lookback_days': 21.0, 'max_hold_days': 7.0, 'stop_loss': None}` |
+| LTCUSDT | +0.0907 | SPIKE | -0.645 | 1 | 17 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 21.0, 'max_hold_days': 30.0, 'stop_loss': 0.25}` |
+| XRPUSDT | +0.0385 | SPIKE | -4.778 | 1 | 21 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': 30.0, 'stop_loss': 0.1}` |
+| SOLUSDT | -0.0399 | ? | nan | 1 | 2 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': None, 'stop_loss': None}` |
+| AVAXUSDT | -0.0612 | ? | nan | 1 | 5 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': None, 'stop_loss': 0.1}` |
+| BNBUSDT | -0.1249 | ? | nan | 1 | 17 | `{'enter_rate': 0.0001, 'leverage': 0.25, 'lookback_days': 7.0, 'max_hold_days': None, 'stop_loss': None}` |
+| ADAUSDT | -0.1677 | ? | nan | 1 | 23 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 21.0, 'max_hold_days': 30.0, 'stop_loss': 0.1}` |
+| ETHUSDT | -0.1691 | ? | nan | 1 | 56 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': 7.0, 'stop_loss': 0.25}` |
+| DOGEUSDT | -0.2928 | ? | nan | 1 | 21 | `{'enter_rate': 0.0002, 'leverage': 0.25, 'lookback_days': 60.0, 'max_hold_days': 30.0, 'stop_loss': 0.1}` |
+
+`start offsets` is how many start dates the evaluator scored. `indep. paths` is a generous upper bound on how many of those are genuinely separate experiments, since overlapping windows over the same history are not independent draws. When the two differ by three orders of magnitude, the second is the honest sample size.
+
+| PBO symbol | PBO | verdict | covers best cell | configs | splits |
+|---|---:|---|---|---:|---:|
+| BTCUSDT | 0.317 | SELECTION_WEAK | yes | 108 | 252 |
+| LTCUSDT | 0.385 | SELECTION_WEAK | yes | 108 | 252 |
+| XRPUSDT | 0.647 | SELECTION_IS_NOISE | yes | 108 | 252 |
+
 ## H0006 — negative_funding_carry_long (track B, metric `calmar`)
 
 **Claim.** H0002 closed the short side of the funding trade for a structural reason, not a numerical one: shorting a rich settlement rate puts the coupon and the directional exposure on opposite sides of the book, because the rate is rich exactly when leveraged long demand is strongest, which is exactly when price is rising. Six of nine symbols had no positive cell anywhere in 972 trials. This is the leg that was never tested, and it is the leg where the two point the same way. Negative funding means the shorts are paying the longs. It appears when leveraged bearish positioning is crowded - inside drawdowns and just after capitulation - and a crowded short base is the same condition that produces upward squeezes, so the coupon is collected while the directional move, when it comes, is in the position's favour rather than against it. Who pays: the leveraged bear, and the desk holding spot that needs protection now. They keep paying because the demand to be short in a drawdown is a demand for immediacy - a hedge deferred until the rate normalises is not a hedge, and a bear who waits for cheap funding has missed the move they are positioning for - so the rate stays negative until the crowd unwinds. This does not re-open KT-1. KT-1 closed unconditional long perpetual accumulation because it pays the tax at a median 36 percent of contributed capital; this rule holds the perpetual only while that tax is a rebate and flattens once the trailing rate crosses back above the 0.01 percent baseline at which the tax resumes. The real deliverable is the asymmetry. The evaluator's own note on this rule is that if the mirror pays as well as the original then what is being harvested is not the funding tax but something else; H0002 established that the original does not pay, so a mirror that also fails would say that the funding level carries no tradable information on either side, and a mirror that pays would locate the effect in the rarity and depth of the negative case rather than in carry as such. Either outcome closes a question rather than opening one.
 
 **Kill condition.** Closed if no single cell reaches a positive Calmar on at least five of the nine symbols with funding included while liquidating on none of them - the same bar H0002 failed, so the two sides are directly comparable. Closed also, whatever the Calmar, if every cell that clears that bar has shape SPIKE: a positive sitting in a negative neighbourhood is a grid corner, and that is precisely what closed H0002. Closed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed, since selection then carries no information at all. Closed also if the effective independent-path count at the best cell is below 5 on a majority of the nine symbols - negative funding is rarer and shallower than the positive case, and a Calmar resting on fewer than five genuinely separate episodes describes those episodes, not a mechanism, and must not be reported as a result.
 
-Trials in this family: 432. Pre-registration hash `d6b50b9b2c14f44f`.
+Trials in this family: 360. Pre-registration hash `d6b50b9b2c14f44f`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
@@ -111,7 +240,7 @@ Trials in this family: 432. Pre-registration hash `d6b50b9b2c14f44f`.
 
 **Kill condition.** Closed if, with include_funding true, no gated cell's annualised IRR exceeds the gate none cell at the same symbol, stride and contribution count on at least five of the nine symbols. Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual. Closed also if every cell that clears the first clause has shape SPIKE, or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms, then the gate never fired often enough to change anything and the family has not been tested.
 
-Trials in this family: 324. Pre-registration hash `5c39d5b986fce8ca`.
+Trials in this family: 270. Pre-registration hash `5c39d5b986fce8ca`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
