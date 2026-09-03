@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-03T14:08:03.338903+00:00",
+  "utc": "2026-09-03T14:34:59.161025+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,87 +7,7 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": [
-      "H0009.json",
-      "H0010.json"
-    ],
-    "adversary": [
-      {
-        "file": "H0009.json",
-        "verdict": "KILL",
-        "reason": "[claude] The payer is verbatim H0007's registered payer — H0007's claim already reads 'Who pays: the liquidated leveraged long... the selling arrives in cascades' and already enumerated the cascade timescale (dip:0.10:7) — so 'this payer is different from every family already tested' is false against the registry; and the claimed novel shape is not novel: `orc/eval/simulate.py` has always held gated contributions as `powder` and deployed them when the gate opens, the identical code path H0007 ran, leaving `dip:0.08:1` as a third parameter pair on the same gate axis, i.e. a finer grid over an existing rule form (section 6). Compounding it, H0009 fixes include_funding=true and drops the with/without-funding control that is the exact clause H0007 closed on, so it cannot re-answer the question that killed its predecessor. | [codex] This is a finer-grid re-skin of closed H0007: it names the same liquidated-long payer and uses the same dip-gated cash-deployment rule, changing only the drawdown threshold and lookback from 10%/7 days and 20%/30 days to 8%/24 hours. The shorter lookback does not create a different rule shape, and an hourly trailing-peak gate still cannot identify or stand against the seconds-scale liquidation flow.",
-        "payer_is_structural": true,
-        "kill_condition_is_falsifiable": true,
-        "configurations": 60,
-        "killed_by": "adversary:claude,codex",
-        "reviewed_by": [
-          "claude",
-          "codex"
-        ]
-      },
-      {
-        "file": "H0010.json",
-        "verdict": "KILL",
-        "reason": "[codex] The claimed payer is not established: a mandate or margin rule normally constrains equity, leverage, or peak-to-trough loss, not pnl divided by cumulative contributions with permanent cessation of deposits. The proposal also misreads H0001’s drawdown-on-invested-capital metric: a 1344.9% peak-to-trough profit drawdown does not mean the account was thirteen times its contributed capital underwater.",
-        "payer_is_structural": false,
-        "kill_condition_is_falsifiable": true,
-        "configurations": 45,
-        "killed_by": "adversary:codex",
-        "reviewed_by": [
-          "claude",
-          "codex"
-        ]
-      }
-    ],
-    "surfaces": "written",
-    "postmortem": [
-      "H0007"
-    ],
-    "tree_violations": [
-      {
-        "provider": "claude",
-        "files": [
-          "configs/proposed/"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "scripts/reasoning.py",
-          "scripts/reasoning_cycle.ps1",
-          "tests/test_runstate.py"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "reports/FINDINGS.json"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "configs/prompts/scout.md"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "scripts/scout.py"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "orc/config.py",
-          "orc/runstate.py",
-          "reports/SCOUT.jsonl",
-          "scripts/forever.py",
-          "scripts/forever_hidden.vbs",
-          "scripts/schedule.py",
-          "tests/test_forever.py"
-        ]
-      }
-    ]
+    "propose": "skipped: exit 1: ",
+    "surfaces": "skipped: exit 1: "
   }
 }

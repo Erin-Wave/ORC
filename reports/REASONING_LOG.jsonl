@@ -1,3 +1,4 @@
 {"utc": "2026-09-03T14:08:02.944799+00:00", "gate": "DUE", "why": "이 저장소에서 지문이 기록된 패스가 없습니다"}
 {"utc": "2026-09-03T14:20:27.263518+00:00", "gate": "DUE", "why": "심사 대기 제안 1건이 있어 먼저 판정합니다"}
 {"utc": "2026-09-03T14:08:03.338903+00:00", "blocked": [], "registered": [], "killed": ["H0009.json", "H0010.json"], "held": [], "proposed": ["H0009.json", "H0010.json"], "unavailable": []}
+{"utc": "2026-09-03T14:34:59.161025+00:00", "blocked": [], "registered": [], "killed": [], "held": [], "proposed": [], "unavailable": ["propose", "surfaces"]}
