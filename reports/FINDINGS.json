@@ -1358,6 +1358,19 @@
       "first_seen_utc": "2026-09-03T00:09:22.777989+00:00",
       "last_seen_utc": "2026-09-03T00:09:22.777989+00:00",
       "id": "c2d7f0603664"
+    },
+    "73ab38ee0d4f": {
+      "file": "orc/llm.py",
+      "line": 46,
+      "severity": "medium",
+      "what": "The codex provider is invoked with `--sandbox read-only` and wrote to the working tree anyway: during an adversary review it created AGENTS.md, a verbatim 193-line copy of CLAUDE.md. READ_ONLY_TOOLS is enforced for the claude provider by --allowedTools, but the codex spec carries tools_flag None, so nothing this project controls restricts what that vendor may do to the repository -- only a flag whose meaning belongs to the vendor. The docstring's promise that 'a model that goes wrong produces a bad answer rather than a bad repository' is therefore unenforced for every provider but one.",
+      "trigger": "Run scripts/reasoning.py with codex verified in configs/providers.json. The adversary step reviewed H0008 correctly and AGENTS.md appeared in the tree, untracked, 193 lines, byte-identical to CLAUDE.md including amendments made an hour earlier. Reproduced on run 2026-09-03T01:0xZ.",
+      "why_silent": "The content was benign and the review was correct, so the only trace was an extra path in `git status` -- which was then swept into a commit by `git add -A`. A review step that can write is also a review step that can edit an evaluator or a threshold, and the next one might not be a copy of a file that was already there. tree_fingerprint() now detects and records it; it does not prevent it, because prevention needs a sandbox this project controls.",
+      "status": "open",
+      "disposition": "",
+      "first_seen_utc": "2026-09-03T01:15:42.096768+00:00",
+      "last_seen_utc": "2026-09-03T01:15:42.096768+00:00",
+      "id": "73ab38ee0d4f"
     }
   }
 }

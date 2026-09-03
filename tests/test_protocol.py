@@ -1095,3 +1095,57 @@ def test_intake_refuses_a_wide_grid_on_an_untested_mechanism(tmp_path, monkeypat
         "grid": {"stride_days": [1.0, 7.0, 30.0], "n_contributions": [52, 104, 156]}}),
         encoding="utf-8")
     assert reasoning.expandable(narrow) is None
+
+
+# --------------------------------------------------------------------------
+# a review step may read and answer; it may not change the repository
+# --------------------------------------------------------------------------
+def test_the_agent_pointer_is_not_a_second_constitution():
+    """AGENTS.md exists because the Codex CLI reads it the way Claude Code
+    reads CLAUDE.md. It was briefly a verbatim 193-line copy of the
+    constitution, written by an adversary review that was supposed to be
+    read-only. Two copies of a protocol document is how a protocol rots: one
+    gets an amendment and nothing tells the other."""
+    root = Path(__file__).resolve().parents[1]
+    agents = root / "AGENTS.md"
+    if not agents.exists():
+        return
+    a = agents.read_text(encoding="utf-8")
+    c = (root / "CLAUDE.md").read_text(encoding="utf-8")
+    assert len(a) < len(c) / 4, "AGENTS.md has grown into a copy of the constitution"
+    assert "CLAUDE.md" in a, "AGENTS.md must point at the constitution"
+    # the section headings that make it a constitution rather than a pointer
+    for heading in ("## 1. Clean room", "## 4. Metrics", "## 9. What a reasoning"):
+        assert heading not in a
+
+
+def test_a_read_only_call_that_dirties_the_tree_is_recorded(monkeypatch, tmp_path):
+    """--allowedTools enforces this for one vendor. A second vendor has its own
+    flags and its own idea of a sandbox, and codex wrote to the tree under
+    `--sandbox read-only`, so the promise needed enforcing rather than
+    restating. Nothing is reverted: deleting a file the project did not expect
+    is a worse failure than reporting one."""
+    from orc import llm
+
+    monkeypatch.setattr(llm, "providers", lambda: {
+        "toy": {"binary": "toy", "argv": [], "stdin": True, "verified": True}})
+    monkeypatch.setattr(llm, "_binary", lambda provider="toy": "toy")
+
+    states = iter([" M orc/eval/signal.py\n",
+                   " M orc/eval/signal.py\n?? AGENTS.md\n"])
+    monkeypatch.setattr(llm, "tree_fingerprint", lambda cwd=None: next(states))
+
+    class R:
+        returncode, stdout, stderr = 0, "a verdict", ""
+    monkeypatch.setattr(llm.subprocess, "run", lambda *a, **k: R())
+
+    llm.ask.tree_violations.clear()
+    assert llm.ask("prompt", cwd=tmp_path, provider="toy") == "a verdict"
+    assert llm.ask.tree_violations == [{"provider": "toy", "files": ["AGENTS.md"]}]
+
+    # A call that leaves the tree alone records nothing.
+    same = iter([" M orc/eval/signal.py\n", " M orc/eval/signal.py\n"])
+    monkeypatch.setattr(llm, "tree_fingerprint", lambda cwd=None: next(same))
+    llm.ask.tree_violations.clear()
+    llm.ask("prompt", cwd=tmp_path, provider="toy")
+    assert llm.ask.tree_violations == []

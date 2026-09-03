@@ -33,6 +33,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 # Judgement work, so the larger model.  A cheaper one is a false economy on a
@@ -91,6 +92,27 @@ BUILTIN_PROVIDERS: dict[str, dict] = {
 
 class LLMUnavailable(RuntimeError):
     """No CLI, no credentials, or the call failed.  Callers degrade, never guess."""
+
+
+def tree_fingerprint(cwd: str | Path | None = None) -> str | None:
+    """`git status --porcelain`, or None if it cannot be read.
+
+    The docstring above promises that none of these calls edits the working
+    tree, and for the Claude CLI that is enforced by --allowedTools. A second
+    vendor has its own flags and its own idea of a sandbox, so the promise
+    needed enforcing rather than restating: codex, invoked with
+    `--sandbox read-only`, wrote a 193-line copy of the constitution into
+    AGENTS.md during an adversary review. Benign content, broken invariant --
+    and it was then committed by a `git add -A` that trusted the promise.
+    """
+    try:
+        r = subprocess.run(["git", "status", "--porcelain"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=30,
+                           cwd=str(cwd) if cwd else None)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return r.stdout if r.returncode == 0 else None
 
 
 def providers() -> dict[str, dict]:
@@ -161,6 +183,7 @@ def ask(prompt: str, *, model: str | None = None,
         cmd += [spec["tools_flag"], *tools]
     use_stdin = spec.get("stdin", True)
     cmd += [a.replace("{prompt}", prompt) if not use_stdin else a for a in argv]
+    before = tree_fingerprint(cwd) if cwd else None
     try:
         r = subprocess.run(cmd, input=prompt if use_stdin else None,
                            capture_output=True, text=True,
@@ -174,7 +197,28 @@ def ask(prompt: str, *, model: str | None = None,
         raise LLMUnavailable(f"exit {r.returncode}: {(r.stderr or '').strip()[:300]}")
     if not (r.stdout or "").strip():
         raise LLMUnavailable("the model returned nothing")
+
+    # A read-only call that changed the tree has broken its contract, so the
+    # answer is recorded together with the fact rather than quietly trusted.
+    # Nothing is reverted here: deleting a file this project did not expect is
+    # a worse failure than reporting one.
+    if before is not None:
+        after = tree_fingerprint(cwd)
+        if after is not None and after != before:
+            b = {ln[3:] for ln in before.splitlines()}
+            a = {ln[3:] for ln in after.splitlines()}
+            touched = sorted(a - b) or ["(a tracked file changed)"]
+            ask.tree_violations.append({"provider": provider, "files": touched})
+            print(f"WARNING: the {provider!r} call was read-only and changed the "
+                  f"working tree: {', '.join(touched)}. The answer is kept and "
+                  "the violation is recorded; nothing was reverted.",
+                  file=sys.stderr)
     return r.stdout.strip()
+
+
+# Appended to by ask(); the reasoning pass writes it into REASONING_LOG.json so
+# a broken invariant is visible in the record rather than only on a console.
+ask.tree_violations = []
 
 
 def ask_json(prompt: str, **kw) -> dict:
