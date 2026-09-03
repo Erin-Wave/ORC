@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-03T21:55:40.054734+00:00",
+  "utc": "2026-09-03T21:58:29.471157+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,19 +7,43 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": "skipped: call timed out after 900s",
+    "propose": [
+      "H0011.json"
+    ],
+    "adversary": [
+      {
+        "file": "H0011.json",
+        "verdict": "KILL",
+        "reason": "[claude] The proposal asserts \"nothing here terminates early\" at leverage 1.0, but funding-driven liquidation does: on the very cells its kill condition names I measure liquidation_rate 0.430 on DOGEUSDT and 0.190 on ETHUSDT, which floors tm_q05 and makes G a distance-to-ruin measure rather than a bill — clause 1 then evaluates to 2.66x/2.54x/1.24x/0.37x (BTC/ETH/BNB/DOGE), fires on \"at least 3 of the 4\", and would permanently close a mechanism that funding_frac_q50 on the funded arm alone shows at 4.91x/4.91x/1.81x. That same metric, funding_paid/invested, is already profiled per start date on every funded row, so the include_funding axis spends 36 of the 72 configurations reconstructing by tail-differenced subtraction a quantity the runner records exactly and for free — the notional-time question is answerable today by a script with zero ledger rows. | [codex] This is a finer grid over H0001’s unconditional DCA rule form—varying the existing hold_days and stride_days parameters—not a new rule shape; it also re-litigates the structural long-perpetual funding tax already closed by KT-1. The fixed-horizon comparison is well specified, but novelty in experimental contrast does not make a new mechanism family.",
+        "payer_is_structural": true,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 72,
+        "killed_by": "adversary:claude,codex",
+        "reviewed_by": [
+          "claude",
+          "codex"
+        ]
+      }
+    ],
     "surfaces": "written",
     "tree_violations": [
       {
         "provider": "claude",
         "files": [
-          "_confound_tmp.py"
+          "configs/proposed/"
         ]
       },
       {
         "provider": "claude",
         "files": [
-          "configs/killed/H0011.json"
+          "reports/REASONING_LOG.json",
+          "reports/SURFACE_READING.md"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "reports/ACTIVITY.jsonl"
         ]
       }
     ]
