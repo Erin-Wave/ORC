@@ -198,12 +198,31 @@ def beat_lock() -> None:
         # first writer, and then every beat fails silently into the OSError
         # below and the lock the supervisor is holding looks like a corpse.
         LOCK.parent.mkdir(parents=True, exist_ok=True)
-        LOCK.write_text(json.dumps(
+        # Written to a side name and RENAMED, never truncated in place.  The
+        # heartbeat thread rewrites this file every minute, and everything that
+        # asks whether the loop is alive reads it: claim_lock, runstate.
+        # supervisor, the briefing, health.py, both watchdogs.  write_text
+        # truncates before it writes, so a reader landing in that window got a
+        # ZERO-LENGTH file, json.loads raised, and the supervisor read as dead
+        # while it was working -- the briefing reports nobody home mid-pass and
+        # the watchdog starts a second supervisor on top of the first, which is
+        # the exact failure HEARTBEAT_S below exists to prevent.  os.replace
+        # swaps the name in one step, so a reader sees the previous beat or the
+        # new one and never half of either.  The runner caught it as an empty
+        # read; the workstation had only been winning the race by luck.
+        tmp = LOCK.with_name(f"{LOCK.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(
             {"pid": os.getpid(),
              "heartbeat_utc": datetime.now(timezone.utc).isoformat()}),
             encoding="utf-8")
+        os.replace(tmp, LOCK)
     except OSError:                                                # pragma: no cover
-        pass
+        # A rename that did not happen leaves the side file behind, and a
+        # process that beats every minute would fill logs/ with them.
+        try:
+            tmp.unlink(missing_ok=True)
+        except (OSError, UnboundLocalError):
+            pass
 
 
 # Beating only between ticks was not enough.  A reasoning pass runs for tens of

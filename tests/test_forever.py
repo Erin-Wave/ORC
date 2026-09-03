@@ -384,6 +384,42 @@ def test_the_heartbeat_outlives_the_longest_action(monkeypatch, tmp_path):
         stop.set()
 
 
+def test_the_lock_is_beaten_atomically(monkeypatch):
+    """The beat above is written every minute and read by everything that asks
+    whether the loop is alive.  `write_text` truncates the file before it
+    writes it, so a reader landing in that window opened a ZERO-LENGTH file and
+    json.loads raised -- the supervisor reads as dead while it is working, and
+    the watchdog starts a second one on top of it.
+
+    It is a race, so the workstation kept winning it and the runner did not:
+    the suite was green here and failed there on an empty read.  This test does
+    not race.  It watches the swap itself and asserts that the name a reader
+    would open holds a COMPLETE previous beat at that instant, which is only
+    true of a rename.  Revert beat_lock to writing LOCK directly and os.replace
+    is never called, so `swaps` is empty and this fails.
+    """
+    import forever
+    swaps: list[str | None] = []
+    real_replace = forever.os.replace
+
+    def _spy(src, dst):
+        p = Path(dst)
+        swaps.append(p.read_text(encoding="utf-8") if p.exists() else None)
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(forever.os, "replace", _spy)
+    forever.beat_lock()                      # nothing at the name yet
+    forever.beat_lock()                      # this one lands on a live lock
+    assert len(swaps) == 2, "a beat reached the lock without going through a rename"
+    assert swaps[0] is None
+    assert json.loads(swaps[1])["pid"] == forever.os.getpid(), \
+        "a reader at the moment of the swap saw a partial lock"
+    assert json.loads(forever.LOCK.read_text(encoding="utf-8"))["heartbeat_utc"]
+    # A supervisor beats sixty times an hour; a side file left behind each time
+    # would fill logs/.
+    assert list(forever.LOCK.parent.glob("*.tmp")) == []
+
+
 def test_a_research_verdict_is_not_read_as_a_failure():
     """FAIL is the product here -- the deliverable is a map of where rules
     break -- so several of these scripts return non-zero to report a VERDICT.

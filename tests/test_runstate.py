@@ -67,6 +67,29 @@ def test_a_task_pointing_at_the_old_checkout_is_a_problem(tmp_path):
     assert any("스크립트" in p for p in problems)
 
 
+def test_a_windows_task_path_is_never_read_as_inside_a_posix_checkout():
+    r"""The docstring at the top of this file claims the path comparison is
+    covered on a machine with no Task Scheduler, "which is where the suite runs
+    in CI".  That was the one claim here that was false.
+
+    On Linux ``Path(r"D:\Project\ORC")`` is not an absolute path: it is a
+    single ordinary FILENAME that happens to contain backslashes, so resolve()
+    hangs it off the current directory -- which during a run IS this repository
+    -- and is_relative_to said yes.  A task pointing at a checkout that no
+    longer exists read as living inside the repo, so the runner's activity()
+    returned STALLED ("the worker is quiet") where the workstation returned
+    STOPPED ("the reasoning layer cannot even be launched").  The suite was
+    green here and red there, on the same commit.
+
+    The answer must come from the flavour of the PATH, so that it is the same
+    on both hosts.  These assertions hold on Windows and on Linux; before the
+    fix the last one returned [] on Linux.
+    """
+    assert not runstate._same_tree(r"D:\Project\ORC", config.ORC_ROOT)
+    assert not runstate._same_tree(r"\\nas\share\ORC", config.ORC_ROOT)
+    assert len(runstate.task_path_problems([_task()])) == 2
+
+
 def test_a_task_inside_this_repository_is_not_a_problem(tmp_path):
     root = tmp_path / "repo"
     (root / "scripts").mkdir(parents=True)

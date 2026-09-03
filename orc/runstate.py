@@ -39,6 +39,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -400,9 +402,34 @@ def local_tasks() -> list[dict] | None:
     return sorted(data, key=lambda t: str(t.get("name", "")))
 
 
+# A task registered with Windows Task Scheduler carries a Windows path no
+# matter which machine later READS it, and CI reads it on Linux.  Matches a
+# drive letter ("D:\..." or "D:/...") and a UNC share ("\\server\share").
+_WINDOWS_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
+
+
 def _same_tree(path: str, root: Path) -> bool:
+    r"""Is `path` inside `root`?
+
+    Decided by the flavour of the PATH, never by the flavour of the host.  On
+    Linux ``Path(r"D:\Project\ORC")`` is not an absolute path at all: it is one
+    ordinary FILENAME that happens to contain backslashes, so ``resolve()``
+    hangs it off the current directory -- which during a run IS this
+    repository.  A task pointing at a checkout that no longer exists therefore
+    read as living inside the repo, and the check that exists to catch a moved
+    checkout returned the opposite answer on the runner from the one it returns
+    on the workstation.  That is how a green suite here failed there.
+
+    A Windows path cannot be inside a POSIX checkout, so on any host that is
+    not Windows the answer is False and does not depend on the cwd.
+    """
+    text = str(path).strip().strip('"')
+    if not text:
+        return False
+    if _WINDOWS_ABSOLUTE.match(text) and os.name != "nt":
+        return False
     try:
-        return Path(path).resolve().is_relative_to(root.resolve())
+        return Path(text).resolve().is_relative_to(Path(root).resolve())
     except (OSError, ValueError):
         return False
 
@@ -796,8 +823,18 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
 #   survivorship KT-3 is INCONCLUSIVE and blocks every alt-basket hypothesis
 #              until the delisted sample is large enough.  Enlarging it is
 #              fact-gathering, not a hypothesis, and it unblocks a whole branch.
+#
+# The numbers are minutes, and they are a judgement about what is worth a model
+# call rather than a measurement.  The scout is the one worth stating: at 90
+# minutes it would run sixteen times a day against two providers, and it
+# dedupes on the payer, so once the notebook is fed most of those calls return
+# "0 new, N already known" -- effort spent, nothing gained.  Three hours feeds
+# it and does not grind it.  Being wrong here costs model calls and not N,
+# which is why it is a tunable and not a threshold; reports/ACTIVITY.jsonl
+# shows what each scout actually added, so the cadence can be judged from
+# evidence later instead of guessed at again.
 ZERO_N_WORK = {
-    "scout": 90,
+    "scout": 180,
     "kernel_review": 60 * 24,
     "robustness": 60 * 6,
     "execution_realism": 60 * 12,
