@@ -205,6 +205,27 @@ def watchdog_message() -> tuple[str, str] | None:
                      "every registered grid is exhausted. The reports stay fresh "
                      "and the research has stopped.")
 
+    # The supervisor, from the only angle a remote watchdog has. Its heartbeat
+    # lock is machine-local and gitignored, so this cannot ask whether the
+    # process is alive -- but reports/ACTIVITY.jsonl is committed, and it
+    # answers the better question: has the machine DONE anything. A supervisor
+    # that is alive and doing nothing is the same failure as one that is dead.
+    acts = runstate.activities(1)
+    if not acts:
+        quiet.append("- **the supervisor has never recorded an action.** "
+                     "reports/ACTIVITY.jsonl is empty or absent, so either it "
+                     "has never run or its commits are not landing.")
+    else:
+        age = _age(acts[0].get("utc"))
+        if age is not None and age > notify.SUPERVISOR_SILENT_AFTER:
+            quiet.append(
+                f"- **the supervisor has done nothing for {age.days}d "
+                f"{age.seconds // 3600}h.** Its longest single action is capped "
+                f"at three hours, so this is a stop, not a long run. Nothing is "
+                f"scouting the web for a new payer, re-reading the kernel, or "
+                f"proposing. On the workstation: "
+                f"`Start-ScheduledTask -TaskName 'ORC Forever'`.")
+
     try:
         import findings as ledger
         blocking = ledger.blocking()

@@ -431,6 +431,77 @@ def test_the_commit_paths_name_files_and_never_a_wildcard():
 
 
 # --------------------------------------------------------------------------
+# if the supervisor dies, something has to say so
+# --------------------------------------------------------------------------
+@pytest.fixture()
+def notifiable(sandbox):
+    """A tree with a fresh worker cycle in it, so the only thing collect() can
+    complain about is the supervisor."""
+    now = datetime.now(UTC)
+    (config.REPORTS / "CYCLE_SUMMARY.json").write_text(json.dumps({
+        "run_id": "r1", "started_utc": (now - timedelta(minutes=40)).isoformat(),
+        "finished_utc": (now - timedelta(minutes=5)).isoformat(),
+        "trials_before": 1, "trials_after": 1, "trials_added": 0,
+        "hypotheses_run": ["H0001"], "results": []}), encoding="utf-8")
+    import notify
+    return notify
+
+
+def _supervisor_alarms(notify) -> list[str]:
+    return [n for n in notify.collect() if "supervisor" in n]
+
+
+def test_a_live_supervisor_that_just_worked_raises_nothing(notifiable):
+    now = datetime.now(UTC)
+    runstate.SUPERVISOR_LOCK.write_text(json.dumps(
+        {"pid": 1, "heartbeat_utc": now.isoformat()}), encoding="utf-8")
+    runstate.record_activity("scout", "2 new payers", 40.0)
+    assert _supervisor_alarms(notifiable) == []
+
+
+def test_a_stopped_heartbeat_is_raised(notifiable):
+    """The alarm the whole continuous loop turns on.  If the supervisor dies,
+    every other screen looks exactly as it did while it was alive -- which is
+    the failure mode this entire session was spent recovering from, one layer
+    up."""
+    dead = datetime.now(UTC) - timedelta(minutes=runstate.SUPERVISOR_STALE_MIN + 5)
+    runstate.SUPERVISOR_LOCK.write_text(json.dumps(
+        {"pid": 4242, "heartbeat_utc": dead.isoformat()}), encoding="utf-8")
+    runstate.record_activity("scout", "2 new payers", 40.0)
+    alarms = _supervisor_alarms(notifiable)
+    assert alarms, "a dead supervisor must be news"
+    assert any("DEAD" in a and "4242" in a for a in alarms), alarms
+
+
+def test_a_supervisor_that_is_alive_and_doing_nothing_is_also_raised(notifiable):
+    """Alive and idle is the same failure as dead, and the committed activity
+    log is the only angle a remote watchdog has on it."""
+    now = datetime.now(UTC)
+    runstate.SUPERVISOR_LOCK.write_text(json.dumps(
+        {"pid": 1, "heartbeat_utc": now.isoformat()}), encoding="utf-8")
+    runstate._append(runstate.ACTIVITY_LOG, {
+        "utc": (now - notifiable.SUPERVISOR_SILENT_AFTER
+                - timedelta(hours=1)).isoformat(),
+        "action": "scout", "detail": "long ago", "ok": True})
+    alarms = _supervisor_alarms(notifiable)
+    assert any("done nothing" in a for a in alarms), alarms
+
+
+def test_the_remote_watchdog_sees_it_too(notifiable, monkeypatch):
+    """notify_issue runs on the GitHub worker, where the heartbeat lock does
+    not exist.  It has to reach the same conclusion from the committed log."""
+    import notify_issue
+    monkeypatch.setattr(notify_issue, "config", config, raising=False)
+    now = datetime.now(UTC)
+    runstate._append(runstate.ACTIVITY_LOG, {
+        "utc": (now - timedelta(days=2)).isoformat(),
+        "action": "scout", "detail": "long ago", "ok": True})
+    out = notify_issue.watchdog_message()
+    assert out is not None
+    assert "supervisor has done nothing" in out[1]
+
+
+# --------------------------------------------------------------------------
 # the scout may not carry this project's numbers to the proposer
 # --------------------------------------------------------------------------
 def test_a_candidate_carrying_a_performance_figure_is_refused():

@@ -74,6 +74,14 @@ REASONING_STALE_DAYS = 2
 # like a failure from the outside.
 LEDGER_IDLE_DAYS = 2
 
+# The supervisor is the thing that is supposed to be working right now, so its
+# silence is measured in hours rather than days. Its longest single action is a
+# reasoning pass with a three-hour ceiling, and it writes a row when that
+# finishes -- so four hours of nothing means it is not running, not that it is
+# busy. This is the alarm the whole continuous loop turns on: if the supervisor
+# dies, every other screen looks exactly as it did while it was alive.
+SUPERVISOR_SILENT_AFTER = timedelta(hours=4)
+
 
 def _load(name: str):
     p = config.REPORTS / name
@@ -195,6 +203,44 @@ def collect() -> list[str]:
             if days >= REASONING_STALE_DAYS:
                 news.append(f"ORC reasoning has asked nothing for {days} days; "
                             f"the worker keeps reporting but the queue stays empty")
+    except Exception:                                              # noqa: BLE001
+        pass
+
+    # The supervisor, from two different angles, because they fail differently.
+    #
+    # The LOCK says whether a process is alive on this machine right now. It is
+    # gitignored, so this branch only means anything where the supervisor
+    # actually runs -- which is the workstation, which is where this function
+    # is called from a cycle.
+    try:
+        sup = runstate.supervisor()
+        if sup.get("heartbeat_utc") and not sup.get("alive"):
+            news.append(
+                f"ORC supervisor is DEAD: its heartbeat stopped "
+                f"{runstate.ago(sup['heartbeat_utc'])} (pid {sup.get('pid')}). "
+                f"Nothing is scouting, reviewing or proposing. "
+                f"Start-ScheduledTask -TaskName 'ORC Forever'")
+        elif not sup.get("heartbeat_utc") and runstate.activities(1):
+            news.append("ORC supervisor has no heartbeat at all, but has worked "
+                        "before -- the lock was removed or the process was "
+                        "killed without releasing it")
+    except Exception:                                              # noqa: BLE001
+        pass
+
+    # The ACTIVITY LOG is committed, so this branch works from anywhere -- and
+    # it answers the question the lock cannot: has the supervisor DONE anything
+    # lately, as opposed to merely being alive.
+    try:
+        acts = runstate.activities(1)
+        if acts:
+            quiet = datetime.now(timezone.utc) - datetime.fromisoformat(
+                str(acts[0]["utc"]).replace("Z", "+00:00"))
+            if quiet > SUPERVISOR_SILENT_AFTER:
+                news.append(
+                    f"ORC supervisor has done nothing for {quiet.days}d "
+                    f"{quiet.seconds // 3600}h; its longest single action is "
+                    f"capped at three hours, so this is a stop and not a "
+                    f"long run")
     except Exception:                                              # noqa: BLE001
         pass
 
