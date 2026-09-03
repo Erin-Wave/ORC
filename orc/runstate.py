@@ -103,8 +103,21 @@ LAUNCH_FAILURES = {
     2147943712: "the saved credentials were rejected (0x80070520)",
 }
 
-# SCHED_S_TASK_HAS_NOT_RUN: registered, never yet due.  Not a failure.
-NEVER_RAN = 267011
+# SCHED_S_* informational codes.  None of these is a failure, and reading them
+# as one is how a screen ends up printing WARN while everything is right.
+# 267009 in particular is what a HEALTHY supervisor reports for as long as it
+# runs, which is meant to be always -- so getting it wrong means the row that
+# answers "is it working" says WARN forever.
+NEVER_RAN = 267011                 # SCHED_S_TASK_HAS_NOT_RUN
+TASK_RUNNING = 267009              # SCHED_S_TASK_RUNNING
+NO_MORE_RUNS = 267012              # SCHED_S_TASK_NO_MORE_RUNS
+TASK_TERMINATED = 267014           # SCHED_S_TASK_TERMINATED
+BENIGN_RESULTS = {
+    0: "마지막 실행 성공",
+    NEVER_RAN: "등록됐고 아직 발화 시각이 오지 않았음",
+    TASK_RUNNING: "**지금 실행 중입니다**",
+    NO_MORE_RUNS: "더 예정된 실행이 없음 (트리거를 확인하십시오)",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -427,10 +440,11 @@ def task_result_note(result) -> tuple[str, str]:
         rc = int(result)
     except (TypeError, ValueError):
         return "warn", f"결과 코드 불명 ({result})"
-    if rc == 0:
-        return "ok", "마지막 실행 성공"
-    if rc == NEVER_RAN:
-        return "ok", "등록됐고 아직 발화 시각이 오지 않았음"
+    if rc in BENIGN_RESULTS:
+        return "ok", BENIGN_RESULTS[rc]
+    if rc == TASK_TERMINATED:
+        return "warn", ("마지막 실행이 강제 종료됐음 — 시간 제한에 걸렸거나 "
+                        "사람이 멈췄습니다")
     if rc in LAUNCH_FAILURES:
         return "bad", f"실행되지 못했음 — {LAUNCH_FAILURES[rc]}"
     if rc == 1:

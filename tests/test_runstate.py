@@ -115,6 +115,33 @@ def test_exit_one_is_a_refusal_not_a_launch_failure():
     assert runstate.task_result_note(runstate.NEVER_RAN)[0] == "ok"
 
 
+def test_a_running_task_is_not_a_warning():
+    """267009 is SCHED_S_TASK_RUNNING, and it is what a HEALTHY supervisor
+    reports for as long as it runs -- which is meant to be always.  Reading it
+    as a fault made the row that answers "is it working" say WARN at the exact
+    moment the machine was finally working."""
+    assert runstate.task_result_note(runstate.TASK_RUNNING)[0] == "ok"
+    assert "실행 중" in runstate.task_result_note(runstate.TASK_RUNNING)[1]
+    assert runstate.task_result_note(runstate.NO_MORE_RUNS)[0] == "ok"
+    # Terminated is worth looking at: a time limit or a human stopped it.
+    assert runstate.task_result_note(runstate.TASK_TERMINATED)[0] == "warn"
+
+
+def test_every_status_has_a_mark_and_a_headline():
+    """A new status used to make the health screen print
+    "loop  KeyError: 'WORKING'" -- the screen reporting a fault in itself."""
+    import health
+    for status in (runstate.RUNNING, runstate.QUEUED, runstate.WORKING,
+                   runstate.IDLE, runstate.STALLED, runstate.STOPPED):
+        assert status in runstate.MARK, status
+        assert status in runstate.HEADLINE, status
+    src = (config.ORC_ROOT / "scripts" / "health.py").read_text(encoding="utf-8")
+    # Indexed with .get and a default, so an unlisted status degrades to a
+    # warning row instead of an exception.
+    assert "runstate.STOPPED: BAD}.get(" in src
+    assert health is not None
+
+
 def test_a_never_run_task_prints_no_sentinel_date():
     assert runstate.task_time("11/30/1999 00:00:00") == "없음"
     assert runstate.task_time("09/03/2026 20:55:55") == "2026-09-03 20:55 KST"

@@ -146,6 +146,34 @@ def local_tasks(tasks: list[dict] | None = None,
 
     problems = runstate.task_path_problems(tasks)
     out = []
+
+    # The supervisor first, because it is the thing that is supposed to be
+    # working RIGHT NOW. The three tasks below are how it gets started; this
+    # row is whether it is running, and it is the only row on this screen that
+    # answers the question the screen is named after.
+    sup = runstate.supervisor()
+    acts = runstate.activities(1)
+    did = (f"last did {acts[0].get('action')} {runstate.ago(acts[0].get('utc'))}"
+           if acts else "has never recorded an action")
+    if sup.get("alive"):
+        try:
+            act, why = runstate.next_action()
+        except Exception as exc:                                   # noqa: BLE001
+            act, why = "unknown", f"{type(exc).__name__}: {exc}"
+        out.append((OK, "supervisor (24h)",
+                    f"alive, pid {sup['pid']}, heartbeat "
+                    f"{runstate.ago(sup['heartbeat_utc'])}; {did}; "
+                    f"next: {act} -- {why[:80]}"))
+    elif sup.get("heartbeat_utc"):
+        out.append((BAD, "supervisor (24h)",
+                    f"DEAD -- heartbeat stopped "
+                    f"{runstate.ago(sup['heartbeat_utc'])} (pid {sup['pid']}); "
+                    f"{did}. Start-ScheduledTask -TaskName 'ORC Forever'"))
+    else:
+        out.append((BAD, "supervisor (24h)",
+                    f"not running and no heartbeat; {did}. "
+                    f"Start-ScheduledTask -TaskName 'ORC Forever'"))
+
     if problems:
         out.append((BAD, "schedule -> repository",
                     "; ".join(problems)
@@ -178,8 +206,13 @@ def research_state(tasks: list[dict] | None = None,
     # done; this line says whether it is still doing any.
     try:
         a = runstate.activity(tasks=tasks if queried else None)
-        mark = {"RUNNING": OK, "QUEUED": OK, "IDLE": WARN,
-                "STALLED": WARN, "STOPPED": BAD}[a["status"]]
+        # .get, not [], and every status listed. A new status used to make this
+        # row read "KeyError: 'WORKING'" -- the screen reporting a fault in
+        # itself at the exact moment the machine was finally working.
+        mark = {runstate.RUNNING: OK, runstate.QUEUED: OK,
+                runstate.WORKING: OK, runstate.IDLE: WARN,
+                runstate.STALLED: WARN,
+                runstate.STOPPED: BAD}.get(a["status"], WARN)
         out.append((mark, "loop", f"{a['status']} -- "
                     + " / ".join(a["reasons"])[:160]))
     except Exception as exc:                                       # noqa: BLE001
