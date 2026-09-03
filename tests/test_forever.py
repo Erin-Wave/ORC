@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -37,6 +38,33 @@ UTC = timezone.utc
 ZERO_N_LONGEST = max(runstate.ZERO_N_WORK.values())
 
 
+@pytest.fixture(autouse=True)
+def never_touch_the_real_machine(tmp_path, monkeypatch):
+    """Autouse, because being careful per-test was not enough.
+
+    An earlier draft of test_an_inapplicable_action_still_resets_its_clock
+    called forever.tick() without pinning next_action.  next_action chose
+    `reason`, tick() ran the real pipeline for 8.9 minutes, and it pulled,
+    committed and pushed -- from inside `pytest`.  It registered nothing, so
+    the damage was a stray commit rather than a stray hypothesis, but the same
+    accident one branch over spends a registration slot and raises N forever.
+
+    So the two ways out of a test are closed here for every test in the file:
+    subprocess.run cannot be reached, and the supervisor's log cannot be
+    written to the real logs/ directory.
+    """
+    import forever
+    monkeypatch.setattr(forever, "LOG_DIR", tmp_path / "logs")
+    monkeypatch.setattr(forever, "LOCK", tmp_path / "logs" / "forever.lock")
+
+    def _refuse(*a, **k):
+        raise AssertionError(
+            f"a test tried to run a subprocess: {a[:1]}. Pin what you are "
+            "testing; the suite must not be able to start a research pass.")
+    monkeypatch.setattr(forever.subprocess, "run", _refuse)
+    yield
+
+
 @pytest.fixture()
 def sandbox(tmp_path, monkeypatch):
     """A private tree.  The real configs/queue/ must never be touched by a
@@ -50,6 +78,7 @@ def sandbox(tmp_path, monkeypatch):
     (tmp_path / "configs" / "proposed").mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(config, "LEDGER_DB", tmp_path / "trials.sqlite")
     monkeypatch.setattr(runstate, "LAST_REASONING", tmp_path / ".last_cycle")
+    monkeypatch.setattr(runstate, "SUPERVISOR_LOCK", tmp_path / "forever.lock")
     monkeypatch.setattr(runstate, "CYCLE_LOG", tmp_path / "reports" / "CYCLE_LOG.jsonl")
     monkeypatch.setattr(runstate, "REASONING_LOG",
                         tmp_path / "reports" / "REASONING_LOG.jsonl")
@@ -290,6 +319,32 @@ def test_only_one_supervisor_may_hold_the_lock(sandbox, monkeypatch, tmp_path):
     assert forever.claim_lock() is True         # a dead one is broken
     forever.release_lock()
     assert not forever.LOCK.exists()
+
+
+def test_the_heartbeat_outlives_the_longest_action(monkeypatch, tmp_path):
+    """Beating only between ticks was not enough: a reasoning pass is allowed
+    three hours, so the lock would go stale WHILE the supervisor was working --
+    reported dead in the briefing, and broken by the hourly watchdog trigger,
+    which is how a second supervisor gets started on top of the first."""
+    import forever
+    assert forever.HEARTBEAT_S * 3 < forever.LOCK_STALE_MIN * 60,         "a couple of missed beats must not make the lock look like a corpse"
+    assert max(forever.TIMEOUTS_S.values()) > forever.LOCK_STALE_MIN * 60,         "if no action can outlive the stale window, this thread is pointless"
+
+    monkeypatch.setattr(forever, "HEARTBEAT_S", 0.05)
+    forever.beat_lock()
+    first = json.loads(forever.LOCK.read_text(encoding="utf-8"))["heartbeat_utc"]
+    stop = forever.start_heartbeat()
+    try:
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline:
+            now = json.loads(forever.LOCK.read_text(encoding="utf-8"))["heartbeat_utc"]
+            if now != first:
+                break
+            time.sleep(0.05)
+        else:
+            pytest.fail("the heartbeat thread never beat the lock")
+    finally:
+        stop.set()
 
 
 def test_the_commit_paths_name_files_and_never_a_wildcard():

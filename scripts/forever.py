@@ -157,12 +157,41 @@ def claim_lock() -> bool:
 
 def beat_lock() -> None:
     try:
+        # Self-sufficient on purpose.  claim_lock() makes the directory today,
+        # so relying on it would work -- until the heartbeat thread is the
+        # first writer, and then every beat fails silently into the OSError
+        # below and the lock the supervisor is holding looks like a corpse.
+        LOCK.parent.mkdir(parents=True, exist_ok=True)
         LOCK.write_text(json.dumps(
             {"pid": os.getpid(),
              "heartbeat_utc": datetime.now(timezone.utc).isoformat()}),
             encoding="utf-8")
     except OSError:                                                # pragma: no cover
         pass
+
+
+# Beating only between ticks was not enough.  A reasoning pass runs for tens of
+# minutes and is allowed three hours, so the heartbeat would go stale WHILE THE
+# SUPERVISOR WAS WORKING -- runstate.supervisor() would report it dead, the
+# briefing would say nobody is home mid-pass, and claim_lock() would treat the
+# lock as a corpse and let a second supervisor start on top of the first.  Two
+# of them read the registration budget independently, so both could see three
+# booked and make the fifth and sixth.
+HEARTBEAT_S = 60
+
+
+def start_heartbeat() -> "threading.Event":
+    """Beat the lock on its own thread for the life of the process."""
+    import threading
+    stop = threading.Event()
+
+    def _beat() -> None:
+        while not stop.wait(HEARTBEAT_S):
+            beat_lock()
+
+    t = threading.Thread(target=_beat, name="orc-heartbeat", daemon=True)
+    t.start()
+    return stop
 
 
 def release_lock() -> None:
@@ -326,6 +355,7 @@ def main(argv: list[str]) -> int:
         return 3
     log(f"=== supervisor start (pid {os.getpid()}, "
         f"budget {config.MAX_REGISTRATIONS_PER_DAY} registrations/24h) ===")
+    stop_beat = None if dry else start_heartbeat()
     try:
         while True:
             try:
@@ -344,12 +374,13 @@ def main(argv: list[str]) -> int:
                 nap = IDLE_SLEEP_S
             if once:
                 return 0
-            beat_lock()
             time.sleep(nap)
     except KeyboardInterrupt:
         log("=== supervisor stopped by hand ===")
         return 0
     finally:
+        if stop_beat is not None:
+            stop_beat.set()
         if not dry:
             release_lock()
 

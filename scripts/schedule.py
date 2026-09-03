@@ -54,6 +54,7 @@ ROOT = config.ORC_ROOT
 
 REASONING_TASK = "ORC Reasoning Cycle"
 REVIEW_TASK = "ORC Kernel Review"
+FOREVER_TASK = "ORC Forever"
 
 # 35 minutes before each orc-cycle slot (03:00 / 09:00 / 15:00 / 21:00 KST,
 # from `cron: "0 */6 * * *"` in UTC).  A hypothesis registered at :25 is
@@ -234,12 +235,27 @@ def install() -> int:
             rc_all = max(rc_all, 2)
             continue
         if name == FOREVER_TASK:
-            trigs = ("(New-ScheduledTaskTrigger -AtLogOn); "
-                     "(New-ScheduledTaskTrigger -AtStartup); "
+            # -RepetitionDuration is OMITTED on purpose.  The documented way to
+            # say "repeat forever" is [TimeSpan]::MaxValue, and on this build
+            # that serialises to P99999999DT23H59M59S, which Task Scheduler's
+            # own XML schema then rejects with 0x80041318 -- so the task simply
+            # does not register.  Leaving the duration empty is what the
+            # scheduler reads as indefinite.
+            #
+            # -AtStartup is NOT here and cannot be: a boot trigger fires before
+            # any logon, so registering one needs elevation this account does
+            # not have.  -AtLogOn covers a reboot anyway, because the
+            # supervisor runs in the user's own session -- which is also why it
+            # is launched through wscript.
+            #
+            # -User is not decoration either.  An unscoped -AtLogOn means "any
+            # user logs on", and registering THAT also needs elevation:
+            # probed on this machine, unscoped fails with 0x80070005 "Access is
+            # denied" and the scoped form registers.
+            trigs = ('(New-ScheduledTaskTrigger -AtLogOn -User "$env:USERNAME"); '
                      "(New-ScheduledTaskTrigger -Once -At (Get-Date) "
                      "-RepetitionInterval (New-TimeSpan -Minutes "
-                     f"{FOREVER_WATCHDOG_MINUTES})"
-                     " -RepetitionDuration ([TimeSpan]::MaxValue))")
+                     f"{FOREVER_WATCHDOG_MINUTES}))")
         elif name == REASONING_TASK:
             trigs = "; ".join(f'(New-ScheduledTaskTrigger -Daily -At "{s}")'
                               for s in REASONING_SLOTS_KST)

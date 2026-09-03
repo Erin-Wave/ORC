@@ -247,6 +247,12 @@ def sandbox(tmp_path, monkeypatch):
     (tmp_path / "configs" / "closed").mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(config, "LEDGER_DB", tmp_path / "trials.sqlite")
     monkeypatch.setattr(runstate, "LAST_REASONING", tmp_path / ".last_cycle")
+    # The real supervisor's heartbeat must not reach a test.  Without this,
+    # activity() reads the live lock on this workstation and every verdict test
+    # says WORKING as soon as the machine is actually working -- which is the
+    # state the project is meant to be in, so the suite would go red exactly
+    # when everything was right.
+    monkeypatch.setattr(runstate, "SUPERVISOR_LOCK", tmp_path / "forever.lock")
     monkeypatch.setattr(runstate, "CYCLE_LOG", tmp_path / "reports" / "CYCLE_LOG.jsonl")
     monkeypatch.setattr(runstate, "REASONING_LOG",
                         tmp_path / "reports" / "REASONING_LOG.jsonl")
