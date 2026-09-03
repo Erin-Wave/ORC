@@ -1345,6 +1345,19 @@
       "what": "The opening is appended to the log before the token is consumed, with no lock around the read-then-append, so one hand-written token can burn two openings and a failed `unlink()` leaves an opening recorded that granted no read.",
       "trigger": "Two processes each entering `final_test()` within the same moment with one `FINAL_TEST_TOKEN` present: both `openings_used()` calls return the same N, both pass the token text check, both append a record (giving two records with ordinal N+1), then one `TOKEN_FILE.unlink()` succeeds and the other raises a bare `FileNotFoundError` — not `HoldoutViolation` — after its record is already on disk. Because that exception escapes `open_final_test`, `final_test` never reaches `_sealed_reads = []`, so the `finally` block never runs and `READS_FILE` gets no line for that opening. Same outcome from a single process if the token file is read-only or held open by another handle.",
       "why_silent": "The two files end up disagreeing in the direction that looks innocuous: `LOG_FILE` shows an opening, `READS_FILE` shows nothing against it, which reads as \"an opening that was consumed but measured nothing\" rather than as a lost record — and the count of openings still available has quietly dropped by one more than the number of tokens a human wrote."
+    },
+    "c2d7f0603664": {
+      "file": "orc/kernel/inference.py",
+      "line": 40,
+      "severity": "medium",
+      "what": "The Track A search-test null is a circular block bootstrap of RETURNS, which preserves the mean return, so on a series that rose two orders of magnitude the synthetic paths inherit the drift and resampling with replacement concatenates favourable blocks into paths far more extreme than the original. H0001 ETHUSDT reports null_q95 = 72.0 and SOLUSDT 102.9 against observed bests of 0.68 and 0.37, so p = 1.000 is not the statement 'this cell is unremarkable' but 'the null's upper tail is 100x the observable range'. A test whose null routinely produces outcomes the asset never produced cannot reject anything, and it will read as a clean INDISTINGUISHABLE_FROM_SEARCH forever.",
+      "trigger": "reports/H0001_SURFACE.json after run 37f90244960e: search_test ETHUSDT null_q95 71.9997, observed_best 0.6789, p_value 1.0; SOLUSDT null_q95 102.8552, observed_best 0.3727, p_value 1.0. The real BTCUSDT panel's own best tm_q05 over the whole grid is 2.05, so the null's 95th percentile is 35x anything the history contains. Track B is not affected the same way -- its null_q95 of 0.84 to 7.02 sits in the range Calmar actually occupies -- because a fixed-capital ratio does not compound the drift the way a terminal multiple does.",
+      "why_silent": "p = 1.000 is exactly what an honest test returns for a cell that is not a finding, and no cell is a finding, so the verdict has been right for the wrong reason on every Track A family so far. It only becomes visible as a defect when something is genuinely good and cannot clear a bar the asset itself could never clear. Nothing cross-checks null_q95 against the observable range of the metric.",
+      "status": "open",
+      "disposition": "",
+      "first_seen_utc": "2026-09-03T00:09:22.777989+00:00",
+      "last_seen_utc": "2026-09-03T00:09:22.777989+00:00",
+      "id": "c2d7f0603664"
     }
   }
 }
