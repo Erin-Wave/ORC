@@ -24,6 +24,12 @@ on:
 
 permissions:
   contents: write
+  # An issue is the only channel that reaches a phone with no new service, no
+  # secret and no bill: GitHub already notifies the owner by email and through
+  # its app. The local notifier raises a desktop toast and appends to
+  # logs/NEWS.md, both invisible while the workstation is asleep -- which is
+  # most of the time, and exactly when an unattended loop needs to speak.
+  issues: write
 
 concurrency:
   group: orc-cycle
@@ -84,6 +90,7 @@ jobs:
         run: python -m pytest tests -q
 
       - name: Research cycle
+        id: cycle
         run: |
           python scripts/daily_cycle.py \
             ${{ github.event.inputs.rerun_all == 'true' && '--all' || '' }} \
@@ -101,6 +108,34 @@ jobs:
             git commit -m "orc cycle $(date -u +%Y-%m-%dT%H:%MZ)"
             git pull --rebase --autostash
             git push
+          fi
+
+      # Runs whatever the cycle did, refusing included. A blocked cycle is the
+      # most important thing to be told about: the loop has stopped itself and
+      # stays stopped, every six hours, until a human fixes the finding or
+      # records a decision -- findings.py keeps that manual on purpose.
+      - name: Say something, wherever the workstation is
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          if [ "${{ steps.cycle.outcome }}" = "success" ]; then
+            python scripts/notify_issue.py > /tmp/orc_msg.txt || exit 0
+          else
+            python scripts/notify_issue.py --blocked > /tmp/orc_msg.txt || exit 0
+          fi
+          title=$(head -1 /tmp/orc_msg.txt)
+          sed -n '3,$p' /tmp/orc_msg.txt > /tmp/orc_body.md
+          # One rolling issue, not a new one every six hours: a loop that files
+          # four issues a day is a loop nobody reads.
+          n=$(gh issue list --label orc-notify --state open --limit 1                 --json number --jq '.[0].number // empty' || true)
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body-file /tmp/orc_body.md
+            gh issue edit "$n" --title "$title"
+          else
+            gh label create orc-notify --color ededed               --description "the loop talking" 2>/dev/null || true
+            gh issue create --title "$title" --body-file /tmp/orc_body.md               --label orc-notify
           fi
 
       - uses: actions/upload-artifact@v4
