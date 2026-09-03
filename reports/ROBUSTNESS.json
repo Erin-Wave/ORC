@@ -4,8 +4,7 @@
       "passed": false,
       "failed": [],
       "unmeasured": [
-        "regime",
-        "execution"
+        "regime"
       ],
       "checks": [
         {
@@ -50,8 +49,11 @@
         },
         {
           "check": "execution",
-          "passed": null,
-          "reason": "no minute panel here; certification has to happen locally"
+          "hourly_return": 2.6056116382051298,
+          "minute_return": 2.6153177585502414,
+          "relative_drift": 0.003725083279025299,
+          "sign_agrees": true,
+          "passed": true
         }
       ],
       "hypothesis_id": "H0001",
