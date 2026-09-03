@@ -1,0 +1,54 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0008",
+    "family": "forced_cover_release_dca",
+    "track": "A",
+    "claim": "Who pays: the perpetual short who has to buy back at a price it did not choose. Every Track A family so far is entry-only. H0001 decides how often money arrives, H0007 decides which bars are worth buying, and both then hold every coin to the terminal bar, so in 1332 Track A trials the accumulator has never once been on the receiving side of a flow. On this venue the short base is levered and its stop belongs to the exchange rather than to the trader: an advance that reaches maintenance margin closes the position at market, in whatever size it happens to be, and that forced market buy pushes price into the next short's maintenance level, so covering arrives in cascades rather than smoothly. Why they keep doing it: shorting the perpetual is the cheapest way both to hedge spot inventory and to express a bearish view, and the venue pays them a coupon to stand there - KT-1 measured 87 percent of BTC settlements positive - so the levered short base is continuously rebuilt by the same funding rate that H0002 and H0006 have just shown carries no tradable information as a signal. A rate that is useless as a signal is still an explanation for why a crowd of levered shorts exists to be squeezed. An unlevered accumulator is the only participant in that picture that holds coin, owes nothing, and has no obligation to sell at any other moment, which makes it the natural supplier to a buyer with no choice about timing. This payer is the mirror of H0007's: H0007 buys from the liquidated long, this sells to the liquidated short. It is the one side of the venue's liquidation engine the project has never stood on, and it is not the funding rate.\n\nWhat the evaluator can express, and what it cannot. TrialConfig has exactly one exit field that fires on the upside: take_profit, which the simulator reads as 'close the whole position and end the programme when profit reaches x times contributed capital'. It is a terminating exit on aggregate profit, not a per-lot release and not a cascade detector. The shape this mechanism actually wants - release one lot into a cascade and keep on accumulating - needs a field that does not exist, and re-entry after a take_profit does not exist either. take_profit is the closest expressible thing and its honest reading is narrower than the mechanism: the target is reached by any advance, cascade or grind, and this rule cannot tell them apart. That is why the funded-versus-unfunded contrast in the kill condition, and not the level of the return, is what decides this family.\n\ntake_profit is the axis expected to matter and is enumerated at four numeric levels spanning from 'fires on the first pop' to 'almost never fires'. Because the simulator measures profit against capital contributed so far, 0.10 can be reached within days of the first deposit on a volatile symbol while 1.00 requires the programme to double everything it has put in, so these are four different rules rather than four settings of one rule, and 0.25 and 0.50 have a neighbour on each side so that the shape diagnostic has something to compute. take_profit null is enumerated as an internal control at the identical schedule rather than compared against H0001 across hypotheses, because a terminating exit moves the horizon: tm_q05 is a multiple of contributed capital and grows with holding time, so the deciding comparison is the annualised IRR with tm_q05 reported beside it. Two of the ten cells - null at include_funding true and false - restate an H0001 configuration at stride 7 and 156 deposits. That duplication is the price of a matched control inside the family and it is the same price H0007 paid to enumerate gate none.\n\nThis does not re-open KT-1. The programme is long a perpetual for as long as it is open and is charged the tax for every hour of it, and include_funding sits on the grid so the tax is measured rather than assumed away. Leverage is fixed at 1.0 because KT-2 closed everything above it. gate is fixed at none deliberately: H0007 tested an entry alone and this tests an exit alone, so the two factorise instead of crossing, and a positive here cannot be a rediscovery of H0007's gate. Stride 7 with 156 deposits is KT-1's three-year weekly frame exactly, so the funding fraction this family reports is directly comparable to the 36 percent KT-1 measured on the same frame.\n\nThe real deliverable is the contrast, not a winner. Ending a programme early shortens time in market and time in market is precisely what the funding tax is charged on, so a take_profit will improve a funded result for a reason that has nothing to do with a forced buyer. If the improvement over the null control exists only with include_funding true and vanishes with it false, the exit was banking rent it would otherwise have paid to the short side, nobody bought the inventory at a price they did not choose, and the whole of this family's effect sits inside KT-1's tax - which says the forced-cover payer is not reachable by a price-target exit on this venue. If the improvement survives with funding off, then something outside the tax is paying, and the size of what survives is the first measurement of that payer this project has. Either way a question closes.",
+    "kill_condition": "Let IRR(tp, f) be the annualised money-weighted return at the 5th percentile of start dates for take_profit level tp at include_funding f, on the fixed schedule of stride 7 and 156 deposits. For each symbol s let D_funded(s) = max over the four numeric tp levels of [IRR(tp, true) - IRR(null, true)], let tp*(s) be the level attaining that maximum, and let D_unfunded(s) = IRR(tp*(s), false) - IRR(null, false).\n\nClosed if D_funded is at or below zero on at least five of the nine symbols. The terminating exit then fails to beat never exiting even with the funding tax on its side, and there is nothing left to isolate.\n\nClosed also, even if that bar is cleared, if D_unfunded is at or below zero on at least five of the nine symbols. The gain then exists only when funding is charged, which means it came from the hours of tax the early exit avoided and not from anyone buying the inventory, and the forced-cover payer this family was registered to find did not pay. This clause is the reason the family exists and it can close it on its own.\n\nClosed also if every take_profit level that clears the first clause has shape SPIKE. The axis carries four numeric levels precisely so that 0.25 and 0.50 have a neighbour on each side and this clause is computable: H0006's identical clause was made unrunnable by a grid of two-level axes and must not be again.\n\nClosed also if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed. Recorded with the expectation that it will be uncomputable and must not be allowed to pass silently: TrialConfig.uses_analytic requires take_profit None and include_funding false, so exactly one of these ten cells is analytic and Track A PBO needs at least two sharing a horizon. If PBO comes back uncomputed on all nine symbols, this family's selection has not been tested and the report must say so rather than count the clause as survived.\n\nClosed as unmeasurable, rather than false, if the exit does not bind: if on five or more symbols both the IRR and the tm_q05 of every take_profit cell differ from the null control by less than one percent in relative terms, then the target was never reached, nothing was sold to anyone, and the family has not been tested.\n\nClosed also if no cell clearing the first clause reports a liquidation rate of zero on at least five of the nine symbols - the same 'and liquidating on none' standard H0002 and H0006 were held to. At leverage 1.0 the only thing that can empty the wallet is the funding bill, so a family whose surviving cells all reach ruin is reporting KT-1 and not an exit rule.",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT",
+      "ADAUSDT",
+      "LTCUSDT",
+      "AVAXUSDT"
+    ],
+    "grid": {
+      "take_profit": [
+        null,
+        0.1,
+        0.25,
+        0.5,
+        1.0
+      ],
+      "include_funding": [
+        true,
+        false
+      ]
+    },
+    "fixed": {
+      "contribution": 100.0,
+      "stride_days": 7.0,
+      "n_contributions": 156,
+      "gate": "none",
+      "leverage": 1.0,
+      "stop_loss": null,
+      "clock": "1h"
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "[claude] kill_condition 전체가 IRR(tp, f) 위에 세워져 있는데, `orc/orchestrator/runner.py:279`의 경로 의존 분기는 MWRR을 `cfg.n_contributions`(156)와 명목 `horizon`(약 3.0년)으로 계산하고 시뮬레이터가 이미 돌려주는 `exit_bar`/실제 `contributed`를 쓰지 않는다 — 즉 take_profit이 조기 종료시킨 프로그램에 대해 실행되지 않은 입금 156회를 가격에 넣는다. 실측 결과 5주차에 tp=0.10이 발동한 셀의 진짜 연환산 IRR은 +415%인데 원장에는 브래킷 하한 -0.9999로 기록되어 D_funded = -1.096이 되므로, 첫 번째 절이 기계적으로 발동해 이 family가 존재하는 이유인 funded/unfunded 대비(2절)에 도달하기도 전에 회계 인공물로 닫히고 N에 90행이 영구히 남는다. Track A 1332 시행 중 take_profit이 설정된 행이 0건이라 이 버그는 아직 드러난 적이 없다: runner의 IRR을 실현 입금 수와 생존 구간으로 고치고 새 id로 등록하면 된다(그리드 수정이 아니므로 사전등록 원칙을 건드리지 않는다). | [codex] The named forced-cover payer is structural, but the proposed rule cannot identify or target it: a generic aggregate take-profit fires on any price rise, and a positive unfunded IRR contrast cannot distinguish liquidation-driven buying from ordinary trend or volatility. This is therefore a generic terminating take-profit hypothesis with a forced-cover mechanism attached only in prose.",
+    "payer_is_structural": true,
+    "kill_condition_is_falsifiable": true,
+    "configurations": 90,
+    "killed_by": "adversary:claude,codex",
+    "reviewed_by": [
+      "claude",
+      "codex"
+    ]
+  }
+}

@@ -1,10 +1,27 @@
 {
-  "utc": "2026-09-02T23:25:04.035632+00:00",
+  "utc": "2026-09-03T00:43:08.679550+00:00",
   "steps": {
-    "blocked": [
-      "db4ec5e581de",
-      "9cea2bbfc3ac",
-      "6641f54ee642"
+    "propose": [
+      "H0008.json"
+    ],
+    "adversary": [
+      {
+        "file": "H0008.json",
+        "verdict": "KILL",
+        "reason": "[claude] kill_condition 전체가 IRR(tp, f) 위에 세워져 있는데, `orc/orchestrator/runner.py:279`의 경로 의존 분기는 MWRR을 `cfg.n_contributions`(156)와 명목 `horizon`(약 3.0년)으로 계산하고 시뮬레이터가 이미 돌려주는 `exit_bar`/실제 `contributed`를 쓰지 않는다 — 즉 take_profit이 조기 종료시킨 프로그램에 대해 실행되지 않은 입금 156회를 가격에 넣는다. 실측 결과 5주차에 tp=0.10이 발동한 셀의 진짜 연환산 IRR은 +415%인데 원장에는 브래킷 하한 -0.9999로 기록되어 D_funded = -1.096이 되므로, 첫 번째 절이 기계적으로 발동해 이 family가 존재하는 이유인 funded/unfunded 대비(2절)에 도달하기도 전에 회계 인공물로 닫히고 N에 90행이 영구히 남는다. Track A 1332 시행 중 take_profit이 설정된 행이 0건이라 이 버그는 아직 드러난 적이 없다: runner의 IRR을 실현 입금 수와 생존 구간으로 고치고 새 id로 등록하면 된다(그리드 수정이 아니므로 사전등록 원칙을 건드리지 않는다). | [codex] The named forced-cover payer is structural, but the proposed rule cannot identify or target it: a generic aggregate take-profit fires on any price rise, and a positive unfunded IRR contrast cannot distinguish liquidation-driven buying from ordinary trend or volatility. This is therefore a generic terminating take-profit hypothesis with a forced-cover mechanism attached only in prose.",
+        "payer_is_structural": true,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 90,
+        "killed_by": "adversary:claude,codex",
+        "reviewed_by": [
+          "claude",
+          "codex"
+        ]
+      }
+    ],
+    "surfaces": "written",
+    "postmortem": [
+      "H0006"
     ]
   }
 }
