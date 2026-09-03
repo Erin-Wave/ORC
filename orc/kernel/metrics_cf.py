@@ -175,12 +175,21 @@ def start_date_profile(values: np.ndarray, quantiles=START_QUANTILES) -> dict:
     The mean is reported but must not be used for judgement: DCA outcomes are
     strongly right-skewed and the decision lives in the left tail.
     """
-    v = np.asarray(values, dtype=np.float64).ravel()
-    v = v[np.isfinite(v)]
+    raw = np.asarray(values, dtype=np.float64).ravel()
+    v = raw[np.isfinite(raw)]
+    dropped = int(raw.size - v.size)
     if v.size == 0:
-        return {"n": 0}
+        return {"n": 0, "n_non_finite": dropped}
     qs = np.quantile(v, quantiles)
     out = {f"q{int(q * 100):02d}": float(x) for q, x in zip(quantiles, qs)}
     out.update(n=int(v.size), mean=float(v.mean()), std=float(v.std(ddof=1)) if v.size > 1 else 0.0,
                worst=float(v.min()), best=float(v.max()))
+    # Non-finite paths were discarded silently and the reduced survivor count
+    # reported as `n`, so every quantile -- tm_q05 among them -- described only
+    # the paths that could be scored, while reading as though it described the
+    # ensemble. A left-tail metric computed after deleting the worst outcomes
+    # is the one error this project cannot afford, so the count travels with it.
+    out["n_non_finite"] = dropped
+    if dropped:
+        out["frac_non_finite"] = dropped / float(raw.size)
     return out

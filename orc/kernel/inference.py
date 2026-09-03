@@ -179,6 +179,17 @@ def best_of_g_pvalue(observed_best: float, null_bests: np.ndarray,
     nb = nb[np.isfinite(nb)]
     if nb.size == 0:
         raise ValueError("empty null distribution")
+    # The null is filtered for finiteness and the observed value was not, so a
+    # NaN observed_best made every `nb >= observed_best` False and produced the
+    # SMALLEST p-value this function can emit -- 1/(n+1), verdict
+    # SURVIVES_SEARCH -- for a cell that could not be scored at all. The one
+    # test in this project that consumes N would have reported the strongest
+    # possible result from the absence of a number.
+    if not np.isfinite(observed_best):
+        raise ValueError(
+            f"observed_best is {observed_best!r}; a cell that could not be "
+            "scored cannot be compared against a null, and treating it as one "
+            "yields the smallest p-value the test can emit")
     p = float((np.sum(nb >= observed_best) + 1.0) / (nb.size + 1.0))
     return BestOfGResult(
         observed_best=float(observed_best),

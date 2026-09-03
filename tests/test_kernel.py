@@ -651,3 +651,37 @@ def test_a_wipeout_reports_minus_one_however_few_deposits_landed():
         r = mwrr_equal_interval(100.0, np.array([n]), h, np.array([0.0]),
                                 horizon_years=np.array([T]))
         assert r[0] == pytest.approx(-1.0)
+
+
+def test_an_unscorable_cell_cannot_survive_the_search_test():
+    """The null is filtered for finiteness and observed_best was not, so a NaN
+    observed value made every `nb >= observed_best` False and produced the
+    SMALLEST p-value the test can emit -- verdict SURVIVES_SEARCH -- for a cell
+    that could not be scored at all."""
+    from orc.kernel.inference import best_of_g_pvalue
+
+    nulls = np.linspace(0.0, 1.0, 200)
+    ok = best_of_g_pvalue(0.5, nulls, 18)
+    assert 0.0 < ok.p_value < 1.0
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="could not be scored"):
+            best_of_g_pvalue(bad, nulls, 18)
+
+
+def test_a_left_tail_metric_says_how_many_paths_it_could_not_score():
+    """Non-finite paths were dropped and the reduced survivor count reported as
+    `n`, so tm_q05 described only the paths that could be scored while reading
+    as though it described the ensemble. A left-tail metric computed after
+    deleting outcomes is the one error this project cannot afford."""
+    from orc.kernel.metrics_cf import start_date_profile
+
+    v = np.array([0.5, 1.0, 1.5, 2.0, np.nan, np.inf])
+    prof = start_date_profile(v)
+    assert prof["n"] == 4
+    assert prof["n_non_finite"] == 2
+    assert prof["frac_non_finite"] == pytest.approx(2 / 6)
+
+    clean = start_date_profile(np.array([0.5, 1.0, 1.5, 2.0]))
+    assert clean["n_non_finite"] == 0
+    assert "frac_non_finite" not in clean
+    assert start_date_profile(np.array([np.nan, np.nan])) == {"n": 0, "n_non_finite": 2}

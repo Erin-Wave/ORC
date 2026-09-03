@@ -212,16 +212,17 @@
     },
     "9759da6ed11c": {
       "id": "9759da6ed11c",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T11:34:16.156106+00:00",
       "last_seen_utc": "2026-09-02T11:34:16.156106+00:00",
-      "disposition": "",
+      "disposition": "fixed by the signal.py rewrite (commit fd0e564), recorded in English as 6641f54ee642 -- the same defect from two review batches. A liquidated trade now reports its true accrued funding AND puts the rest on the price leg, so gross + funding == pnl per trade and funding_collected + gross_collected == pnl_total, cross-footed against the equity curve on every run.",
       "file": "orc/eval/signal.py",
       "line": 212,
       "severity": "medium",
       "what": "청산으로 끝난 트레이드는 `pnl = -cash`로 펀딩을 버리지만 같은 트레이드의 `funding` 값은 그대로 trade dict과 `funding_collected` 합계에 남으므로, 자본 곡선이 한 번도 받지 못한 캐리 수익이 집계된다.",
       "trigger": "원장에 이미 기록되어 있는 실제 시행. `run_signals(ADAUSDT 1h 패널, carry_funding, lookback_days=7, enter_rate=0.0001, exit_rate=5e-05, capital=10000, leverage=0.25, stop_loss=None)` — 4개 트레이드 중 마지막(2020-10-20 진입, 2021-02-05 청산)이 청산되어 `final_equity = 0.0`, `cagr = -1.0`이 된다. `funding_collected = 956.50`인데 그중 **503.77(52.7%)**이 그 청산 트레이드에서 왔고, 그 503.77은 `pnl = -7357.16 = -cash`에 포함되지 않았다. `runner.py:126`은 이를 `funding_frac_of_capital = 0.0957`로 보고하지만 자본 곡선이 실제로 받은 캐리는 `452.73 / 10000 = 0.0453`뿐이다 — 2.1배 과대. 원장의 signal 시행 2,088건 중 380건이 청산을 포함하므로 같은 왜곡을 안고 있다. 같은 트레이드에서 `gross + funding = -6794.0 ≠ pnl = -7357.16`이라는 내부 불일치도 함께 기록되지만 이를 대조하는 코드가 없다.",
-      "why_silent": "`funding_collected`는 부호도 맞고 크기도 그럴듯한 양수이며, 청산 사실은 `n_liquidations`라는 완전히 다른 필드에 기록되어 둘을 맞춰 보는 곳이 없다. 1차 지표인 Calmar/CAGR/MDD는 자본 곡선에서 나오므로 정상이고, 틀리는 것은 funding_carry 가문이 존재하는 이유 그 자체 — '세금을 실제로 걷었는가' — 를 재는 진단 지표뿐이다."
+      "why_silent": "`funding_collected`는 부호도 맞고 크기도 그럴듯한 양수이며, 청산 사실은 `n_liquidations`라는 완전히 다른 필드에 기록되어 둘을 맞춰 보는 곳이 없다. 1차 지표인 Calmar/CAGR/MDD는 자본 곡선에서 나오므로 정상이고, 틀리는 것은 funding_carry 가문이 존재하는 이유 그 자체 — '세금을 실제로 걷었는가' — 를 재는 진단 지표뿐이다.",
+      "decided_utc": "2026-09-03T01:30:57.335766+00:00"
     },
     "353f8b55c407": {
       "id": "353f8b55c407",
@@ -398,16 +399,17 @@
     },
     "ffe7777c6aee": {
       "id": "ffe7777c6aee",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T11:34:16.156106+00:00",
       "last_seen_utc": "2026-09-02T11:34:16.156106+00:00",
-      "disposition": "",
+      "disposition": "fixed in commit fd0e564: the Track A null scores through runner.tm_q05_on_path, which passes p.funding_flow when include_funding is set, so the include_funding axis no longer collapses to duplicates and the null carries the same shape as the search.",
       "file": "orc/orchestrator/surface.py",
       "line": 363,
       "severity": "medium",
       "what": "The Track A search-test null calls evaluate(close, spec) with no funding_flow, so every configuration is scored funding-free: an include_funding axis collapses to duplicates and the null is built from half the grid, while n_configs is reported at full width -- the exact failure the module docstring says manufactures significance.",
       "trigger": "H0001/BTCUSDT. run_dca_trial computes the observed cells with funding_flow attached for the include_funding=true half of the grid; search_test_for's score() ignores cfg.include_funding entirely, so its 18 configs produce 9 distinct values, each duplicated. reports/H0001_SURFACE.json records n_configs 18 for a null whose search width was 9, and best_of_g_pvalue is handed that 18.",
-      "why_silent": "score() returns a finite best on every synthetic path, best_of_g collects 199 finite nulls, and best_of_g_pvalue returns a normal p in (0,1) with status 'ok'. The two errors push in opposite directions (a funding-free null scores higher, a halved grid scores lower), so the p-value never looks anomalous."
+      "why_silent": "score() returns a finite best on every synthetic path, best_of_g collects 199 finite nulls, and best_of_g_pvalue returns a normal p in (0,1) with status 'ok'. The two errors push in opposite directions (a funding-free null scores higher, a halved grid scores lower), so the p-value never looks anomalous.",
+      "decided_utc": "2026-09-03T01:30:57.349622+00:00"
     },
     "58b1e1312cd2": {
       "id": "58b1e1312cd2",
@@ -424,16 +426,17 @@
     },
     "ce7b6f38a99c": {
       "id": "ce7b6f38a99c",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T11:34:16.156106+00:00",
       "last_seen_utc": "2026-09-02T11:34:16.156106+00:00",
-      "disposition": "",
+      "disposition": "fixed in commit c1c3e94: ranking_metric() ranks a surface on the annualised money-weighted return at the fifth percentile, which section 4 names as the comparison surviving a horizon change, so the ordering that aims PBO and the search test is no longer a horizon sort. tm_q05 is still reported and its kill conditions still evaluated -- a threshold is a per-cell test, not a ranking.",
       "file": "orc/orchestrator/surface.py",
       "line": 382,
       "severity": "medium",
       "what": "write_report ranks symbols by raw best_value to choose which get PBO (ranked[:3]) and the search test (ranked[:2]); on Track A best_value is tm_q05, which section 4 forbids comparing across cells with different horizons -- so the expensive checks are aimed by a horizon-confounded ordering and the cells they miss are then disqualified as 'unmeasured'.",
       "trigger": "H0001. BTCUSDT best_value 2.0510 at horizon_days 1530 with mwrr_q05 0.3616 ranks above SOLUSDT best_value 1.6619 at horizon_days 1085 with mwrr_q05 0.3727. ranked[:2] is therefore [ETHUSDT, BTCUSDT], the search test ran on BTCUSDT, and SOLUSDT -- the higher cell on the horizon-robust metric the constitution says to compare on -- was disqualified with 'search test unmeasured'.",
-      "why_silent": "The sort is total and deterministic, every symbol that misses the cut gets an honest 'unmeasured' disqualifier rather than a wrong number, and summarise() prints the same forbidden ordering, so the report is internally consistent with itself."
+      "why_silent": "The sort is total and deterministic, every symbol that misses the cut gets an honest 'unmeasured' disqualifier rather than a wrong number, and summarise() prints the same forbidden ordering, so the report is internally consistent with itself.",
+      "decided_utc": "2026-09-03T01:30:57.356859+00:00"
     },
     "14026adb65f3": {
       "id": "14026adb65f3",
@@ -570,16 +573,17 @@
     },
     "ab955117f75f": {
       "id": "ab955117f75f",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T12:13:52.765844+00:00",
       "last_seen_utc": "2026-09-02T12:13:52.765844+00:00",
-      "disposition": "",
+      "disposition": "fixed in commit 343cf23: the path-dependent branch now solves the IRR with the realised deposit count (invested / contribution) and the realised elapsed time (exit_bar), so it uses the same denominator terminal_multiple does. Verified against all 101 path-dependent Track A cells: 0 stored values moved.",
       "file": "orc/eval/simulate.py",
       "line": 204,
       "severity": "medium",
       "what": "`terminal_multiple`은 경로별로 실제 들어간 `contributed`로 나누는데(조기 종료 경로는 분모가 작다), 같은 실행에서 나온 IRR은 `runner.py:216`이 명목 스케줄(`cfg.n_contributions`회 입금, 명목 호라이즌)로 푼다 — 헌장이 나란히 놓으라고 요구하는 두 숫자가 서로 다른 투자를 서술하게 된다.",
       "trigger": "`take_profit` 또는 `stop_loss`가 설정된 DCA 셀(둘 다 `TrialConfig` 필드이고 runner가 `SimSpec`으로 그대로 넘긴다; 현재 등록된 가설 중에는 없지만 설정 표면은 열려 있다). 실측: `close=[100, 140, 140, ...]`, `SimSpec(contribution=100, stride_bars=7, n_contributions=52, take_profit=0.2)` 한 경로는 `exit_bar=1`, `invested=100`(명목 5200), `terminal_equity=139.85`로 끝나 `terminal_multiple = 1.398`을 보고하는 동시에, 같은 경로에 대해 runner가 계산하는 `mwrr = -0.9999`가 된다. 대부분의 경로가 TP에 걸리는 셀에서는 `tm_q05`가 계획 자본의 1/52만 넣고도 1.2 부근으로 올라가 정직한 셀들을 이긴다.",
-      "why_silent": "두 값 모두 형식상 완전히 그럴듯하다 — +40%와 연 -100%. 어느 쪽도 NaN이 아니고 경고도 없다. 경로별 입금 횟수와 생존 바 수는 (`invested`, `exit_bar`로) 반환되지만 IRR 계산에 쓰이지 않으므로, 불일치를 드러내는 정보가 원장에 `invested_usdt` 중앙값 하나로만 남는다."
+      "why_silent": "두 값 모두 형식상 완전히 그럴듯하다 — +40%와 연 -100%. 어느 쪽도 NaN이 아니고 경고도 없다. 경로별 입금 횟수와 생존 바 수는 (`invested`, `exit_bar`로) 반환되지만 IRR 계산에 쓰이지 않으므로, 불일치를 드러내는 정보가 원장에 `invested_usdt` 중앙값 하나로만 남는다.",
+      "decided_utc": "2026-09-03T01:30:57.343029+00:00"
     },
     "09e4a04b4e74": {
       "id": "09e4a04b4e74",
@@ -636,16 +640,17 @@
     },
     "fca1ddd38e95": {
       "id": "fca1ddd38e95",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T12:13:52.765844+00:00",
       "last_seen_utc": "2026-09-02T12:13:52.765844+00:00",
-      "disposition": "",
+      "disposition": "fixed: best_of_g_pvalue raises on a non-finite observed_best. It was filtering the null for finiteness and not the observed value, so a NaN produced the smallest p-value the test can emit and the verdict SURVIVES_SEARCH for a cell that could not be scored.",
       "file": "orc/kernel/inference.py",
       "line": 162,
       "severity": "medium",
       "what": "The null distribution is carefully filtered for finiteness at line 159 and guarded against emptiness at line 160, but `observed_best` is never checked, and a non-finite `observed_best` makes every `nb >= observed_best` comparison False, producing the smallest p-value the function can emit and the verdict SURVIVES_SEARCH.",
       "trigger": "`best_of_g_pvalue(float('nan'), rng.normal(size=999), 500)` returns `p_value=0.001`, `verdict()='SURVIVES_SEARCH'`. Measured. `search_test.py:72` passes `observed_best` through from `surface.py:439` (`surfaces[sym]['best_value']`) with no finiteness check anywhere on that path; today that value comes from `float(grid[best_idx])` under a `nanargmax` so it is finite, and `metrics_fc.calmar` returns NaN rather than inf when drawdown is zero — so the current chain is defended only by those two incidental facts, not by this function. Note the asymmetry is one-directional: `observed_best = -inf` gives p=1.0 and the safe verdict, `NaN` gives p=1/(n+1) and the strongest claim the module can make.",
-      "why_silent": "`(0 + 1) / (999 + 1)` is the normal arithmetic of the finite-sample p-value and returns 0.001, a value that is not merely plausible but is exactly what a genuinely dominant result would produce. The recorded `null_mean` and `null_q95` are computed from real nulls and look entirely healthy alongside it."
+      "why_silent": "`(0 + 1) / (999 + 1)` is the normal arithmetic of the finite-sample p-value and returns 0.001, a value that is not merely plausible but is exactly what a genuinely dominant result would produce. The recorded `null_mean` and `null_q95` are computed from real nulls and look entirely healthy alongside it.",
+      "decided_utc": "2026-09-03T01:31:43.465579+00:00"
     },
     "48d982c2b3bf": {
       "id": "48d982c2b3bf",
@@ -835,16 +840,17 @@
     },
     "ecf4a733e91d": {
       "id": "ecf4a733e91d",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "",
+      "disposition": "fixed by the same guard as fca1ddd38e95 -- the two findings are one defect recorded from two review batches.",
       "file": "orc/kernel/inference.py",
       "line": 182,
       "severity": "medium",
       "what": "`best_of_g_pvalue` filters the null distribution for finiteness (line 179) but never checks `observed_best`; a NaN or +inf observed value makes `nb >= observed_best` all-False and yields the smallest p-value the test can produce.",
       "trigger": "best_of_g_pvalue(float('nan'), rng.normal(1.0, 0.2, 199), 64) returns p_value=0.00500, n_null=199, verdict 'SURVIVES_SEARCH'. float('inf') gives the same. search_test.best_of_g applies `np.isfinite(v)` to every synthetic score but passes `observed_best` straight through, and surface.write_report feeds it `surfaces[sym]['best_value']` with no finiteness test either.",
-      "why_silent": "p = (0 + 1)/(199 + 1) is arithmetically identical to the answer for a real best that beat every synthetic, so the report shows a strong, well-formed p-value and `survives_search: true`, and verdict.disqualifiers accepts it. The NaN survives only in `observed_best`, a field nobody gates on. Current callers cannot reach it (nanargmax skips NaN cells and metrics_fc.calmar already guards zero-drawdown to NaN), so this is a latent asymmetry between two halves of one function rather than a live wrong number."
+      "why_silent": "p = (0 + 1)/(199 + 1) is arithmetically identical to the answer for a real best that beat every synthetic, so the report shows a strong, well-formed p-value and `survives_search: true`, and verdict.disqualifiers accepts it. The NaN survives only in `observed_best`, a field nobody gates on. Current callers cannot reach it (nanargmax skips NaN cells and metrics_fc.calmar already guards zero-drawdown to NaN), so this is a latent asymmetry between two halves of one function rather than a live wrong number.",
+      "decided_utc": "2026-09-03T01:31:43.473270+00:00"
     },
     "a6bb1be773c2": {
       "id": "a6bb1be773c2",
@@ -979,16 +985,17 @@
     },
     "781b0ff5506c": {
       "id": "781b0ff5506c",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T13:16:30.401651+00:00",
       "last_seen_utc": "2026-09-02T13:16:30.401651+00:00",
-      "disposition": "",
+      "disposition": "fixed: start_date_profile reports n_non_finite and frac_non_finite beside n, so a quantile computed after discarding paths says how many it discarded. A left-tail metric that silently deletes the worst outcomes is the one error this project cannot afford.",
       "file": "orc/kernel/metrics_cf.py",
       "line": 170,
       "severity": "medium",
       "what": "start_date_profile silently discards non-finite paths and then reports the reduced survivor count as `n`, so every quantile it returns — including tm_q05, the PRIMARY_METRIC — is conditional on survival.",
       "trigger": "Verified: `start_date_profile(np.array([nan]*500 + [2.0]*500))` returns `{'q05': 2.0, ..., 'n': 500, 'worst': 2.0}`. Nothing compares this `n` against the trial's own path count: runner.py records n_starts from the evaluator in a separate ledger column, so a row reading `n_starts: 1000, tm_n: 500` is written with no complaint from either side.",
-      "why_silent": "The returned dict is shaped exactly like a healthy one and the quantiles are perfectly plausible — they are just quantiles of the surviving half. The bias runs upward, in the left tail, which is the one place section 4 says the decision lives."
+      "why_silent": "The returned dict is shaped exactly like a healthy one and the quantiles are perfectly plausible — they are just quantiles of the surviving half. The bias runs upward, in the left tail, which is the one place section 4 says the decision lives.",
+      "decided_utc": "2026-09-03T01:31:43.479672+00:00"
     },
     "3ccf55f819fa": {
       "id": "3ccf55f819fa",
