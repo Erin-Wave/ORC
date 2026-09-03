@@ -245,6 +245,13 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             "primary_metric": h.primary_metric,
             "primary_metric_best": ctx.get("primary"),
             "ranked_on": metric,
+            # Deleted by the edit that added the three keys above, silently, for
+            # four hours: headline.return_pa reads it, so every Track A return
+            # in the committed cycle report read "n/a" while the median beside
+            # it printed fine. A block replacement that drops a line is exactly
+            # what section 10 is about, and the assertion below is why it will
+            # not be silent twice.
+            "mwrr_q05_best": ctx.get("mwrr_q05"),
             "mwrr_q50_best": ctx.get("mwrr_q50"),
             "horizon_days_best": ctx.get("horizon_days"),
             "cagr_best": ctx.get("cagr"),
@@ -543,6 +550,16 @@ def write_report(h: Hypothesis, metric: str | None = None,
             "mdd": mdd,
             "mdd_kind": "invested",
         }
+        # A headline field that is None because the surface never defined the
+        # key it reads is indistinguishable, in the report, from one that is
+        # None because the metric was genuinely unmeasured. The first is a bug
+        # and the second is a fact, so they must not print the same way.
+        for src in ("mwrr_q05_best", "mwrr_q50_best"):
+            if src not in srf:
+                raise KeyError(
+                    f"the surface for {sym} has no {src!r}; headline.return_pa "
+                    "would report n/a for a reason that is a defect rather "
+                    "than a measurement")
     pbo = {}
     run_pbo = pbo_for_signal_hypothesis if h.track == "B" else pbo_for_hypothesis
     # The overfitting check has to run on the cells someone would actually be

@@ -221,6 +221,18 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False,
     except Exception as exc:                                      # noqa: BLE001
         print(f"  robustness gate failed: {type(exc).__name__}: {exc}")
 
+    # A Korean-language briefing, regenerated every cycle and committed, so the
+    # owner can read where the research stands from a phone without running
+    # anything. It reads the reports this cycle just wrote and never the ledger:
+    # hunting a maximum across every trial ever recorded is the selection bias
+    # the whole protocol exists to contain.
+    try:
+        import briefing
+        (config.REPORTS / "BRIEFING.md").write_text(briefing.build(), encoding="utf-8")
+        print("written: reports/BRIEFING.md")
+    except Exception as exc:                                      # noqa: BLE001
+        print(f"  briefing failed: {type(exc).__name__}: {exc}")
+
     news = notify.collect()
     (config.REPORTS / "NEWS.json").write_text(
         json.dumps({"generated_utc": summary["finished_utc"],

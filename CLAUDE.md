@@ -164,6 +164,7 @@ python scripts/kt1_funding_drag.py              # kill tests
 python scripts/kt2_martingale.py
 python scripts/kt3_survivorship.py 120
 python scripts/daily_cycle.py                   # one research cycle
+python scripts/briefing.py                      # 한글 브리핑: 어디까지, 다음은, 최고 셀
 python scripts/health.py                        # is it running, producing, stuck?
 python scripts/status.py                        # where the research stands
 python scripts/robustness.py                    # the gate: cost, walk, regime, execution

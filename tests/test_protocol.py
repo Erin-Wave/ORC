@@ -1380,3 +1380,18 @@ def test_health_reports_every_section_without_touching_anything(monkeypatch, cap
     assert isinstance(worst, int) and 0 <= worst <= 2
     # and it says nothing about a closed family being skipped
     assert "not re-run" not in out
+
+
+def test_the_surface_defines_every_key_the_headline_reads():
+    """A block replacement dropped `mwrr_q05_best` and every Track A return in
+    the committed cycle report read n/a for four hours, while the median beside
+    it printed fine. A headline field that is None because its key was never
+    defined is a defect; one that is None because the metric was unmeasured is a
+    fact. They must not print the same way."""
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+    # every *_best the headline reads has to be assigned somewhere in the module
+    for key in ("mwrr_q05_best", "mwrr_q50_best", "cagr_best",
+                "max_drawdown_best", "primary_metric_best"):
+        assert f'"{key}": ' in src, f"{key} is read but never assigned"
+    assert "would report n/a for a reason that is a defect" in src
