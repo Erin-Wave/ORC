@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-03T01:42:55.639392+00:00",
+  "utc": "2026-09-03T02:14:40.590017+00:00",
   "providers": [
     "claude",
     "codex"
@@ -14,87 +14,30 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ETHUSDT mwrr_q05 = +0.6789141697407873 (include_funding=false, n_contributions=52, stride_days=30)",
-            "SOLUSDT mwrr_q05 = +0.3726884486782851 (include_funding=false, n_contributions=156, stride_days=7)",
-            "BTCUSDT mwrr_q05 = +0.3615816385553472 (include_funding=false, n_contributions=52, stride_days=30)",
-            "BNBUSDT mwrr_q05 = +0.08149180566627995 (include_funding=true, n_contributions=156, stride_days=7)",
-            "BTCUSDT include_funding=true cell = +0.13858938971785362; ETHUSDT +0.03323870901831194; BNBUSDT +0.017230750172939235",
-            "shape = SPIKE on all four positive-peak symbols (plateau_ratio -1.01 ETH, -1.95 BTC, -2.07 SOL, -5.49 BNB)",
-            "search_test p_value = 1.0 on both ETHUSDT and SOLUSDT, verdict INDISTINGUISHABLE_FROM_SEARCH",
-            "independent_paths_best = 1.02 (ETH) to 1.40 (XRP); trials_in_family = 1008"
+            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 (include_funding=false, n_contributions=52, stride_days=30)",
+            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 (include_funding=false, n_contributions=52, stride_days=30)",
+            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 (include_funding=false, n_contributions=156, stride_days=7)",
+            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 (include_funding=true, n_contributions=156, stride_days=7)",
+            "ADAUSDT 0.5958112554492814, AVAXUSDT 0.6183911094027328, DOGEUSDT 0.8601961484914038, LTCUSDT 0.6868948254289569, XRPUSDT 0.9227769940078271 (all tm_q05, all below 1.0)"
           ],
-          "reason": "킬 조건은 단일 절이며, '어떤 (symbol, stride, horizon) 셀도 5퍼센타일 terminal multiple 1.0을 넘지 못할 때'만 발동한다. 원장이 보고하는 지표는 mwrr_q05, 즉 수익률 스케일이며(그리드 최저값이 -1.0 = 원금 전손 = multiple 0), 따라서 terminal multiple 1.0 = 손익분기 = 보고값 0.0에 대응한다. 그 기준을 넘는 셀이 네 심볼에 존재한다: ETHUSDT +0.6789141697407873, SOLUSDT +0.3726884486782851, BTCUSDT +0.3615816385553472, BNBUSDT +0.08149180566627995. 펀딩을 포함한 셀에서도 BTCUSDT +0.13858938971785362, BNBUSDT +0.017230750172939235가 양수이므로, 펀딩 포함 조건으로 읽어도 절은 발동하지 않는다. 'no cell'이라는 문언은 문자 그대로 하나도 없을 것을 요구하므로 이 절은 met이 아니다. 다만 사전 등록된 조건에 없는 사실들을 기록해 둔다: 양의 peak을 가진 네 심볼 전부가 SPIKE이고 plateau_ratio가 모두 음수(-1.01 ~ -5.49)라 이웃 셀 평균은 손실이며, ETHUSDT·SOLUSDT의 search_test는 p_value = 1.0으로 INDISTINGUISHABLE_FROM_SEARCH, PBO는 세 심볼 모두 'fewer than two configurations share a horizon'으로 계산 불가, independent_paths_best는 1.02~1.40으로 사실상 경로 하나다. 즉 1008 trials를 쓰고도 선택 가능한 정보는 없다고 보이지만, 그것은 사전에 적히지 않은 근거이므로 종료 사유가 될 수 없다. 이 결과가 남기는 교훈은 KT-1의 펀딩 세금과 같은 실질을 잡아낼 절이 H0001의 킬 조건에 애초에 들어 있지 않았다는 점이다."
+          "reason": "킬 조건은 단일 절이며, 그 절이 지목하는 지표는 tm_q05(계약 자본의 배수, 손익분기 1.0)이고 이는 scales 블록이 명시한 대로 primary_metric_best에 그대로 실려 있다. 절은 '어떤 셀도 1.0을 넘지 못하면 종료'라는 존재 명제의 부정이므로, 1.0을 넘는 셀이 하나라도 있으면 절은 성립하지 않는다. 9개 심볼 전부에서 primary_metric_best가 존재하며, 그중 ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619, BNBUSDT 1.1261이 모두 1.0을 초과한다. 따라서 절은 충족되지 않았고 UNEVALUABLE도 아니다. 랭킹 지표인 mwrr_q05(손익분기 0.0)는 best_value로 함께 실려 있으나 절이 지목한 지표가 아니므로 판정에 쓰지 않았다. 참고로 절 밖의 근거들 — 1.0~1.4에 불과한 independent_paths_best, PBO가 세 심볼 모두 'fewer than two configurations share a horizon'로 계산 불가, ETHUSDT/SOLUSDT의 search_test가 p=1.0에 INDISTINGUISHABLE_FROM_SEARCH, 양의 피크를 가진 네 심볼의 shape가 전부 SPIKE, stride_days=30 열이 대부분 NaN이라 그리드가 반쪽만 채워진 점 — 은 이 표면에 선택 가능한 정보가 거의 없음을 시사하지만, 사전 등록된 문장에 없는 사유로 가족을 닫는 것은 사후 판단이므로 판정은 CONTINUE다."
         },
         "codex": {
-          "verdict": "CLOSE",
-          "clause": "no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates",
-          "clause_met": true,
+          "verdict": "CONTINUE",
+          "clause": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
+          "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ADAUSDT maximum: -0.31971005364131944",
-            "AVAXUSDT maximum: -0.2985760826081987",
-            "BNBUSDT maximum: 0.08149180566627995",
-            "BTCUSDT maximum: 0.3615816385553472",
-            "DOGEUSDT maximum: -0.0988066126163582",
-            "ETHUSDT maximum: 0.6789141697407873",
-            "LTCUSDT maximum: -0.23739920078441465",
-            "SOLUSDT maximum: 0.3726884486782851",
-            "XRPUSDT maximum: -0.05335045602927216"
+            "BNBUSDT primary_metric_best (tm_q05): 1.1260625166054576",
+            "BTCUSDT primary_metric_best (tm_q05): 2.051039115127731",
+            "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
+            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
           ],
-          "reason": "The highest reported cell across all nine symbols is ETHUSDT at 0.6789141697407873, which is not above 1.0. Every other symbol's maximum is also at or below 0.3726884486782851, so no reported (symbol, stride, horizon) cell reaches the registered threshold and the clause is met."
+          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reached 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Because these terminal multiples exceed 1.0, the clause is not met."
         }
       },
       "unreachable": {},
-      "decision": "SPLIT"
-    },
-    "H0007": {
-      "family": "dislocation_gated_dca",
-      "votes": {
-        "claude": {
-          "verdict": "CLOSE",
-          "clause": "Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual.",
-          "clause_met": true,
-          "unevaluable_clauses": [
-            "\"Closed also if every cell that clears the first clause has shape SPIKE\" — 아홉 심볼 전부 shape_diagnostic이 plateau_ratio NaN, unmeasurable: 'the peak is not positive; the ratio has no meaning'. peak가 모든 심볼에서 음수(최고 -0.36186865645886357, BNBUSDT)라 SPIKE/PLATEAU 판정 자체가 계산되지 않았다. 충족도 생존도 아닌 미평가.",
-            "\"or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed\" — PBO는 BNBUSDT/BTCUSDT/ETHUSDT 세 심볼에서 시도되었으나 모두 status 'fewer than two analytic configurations'로 산출 실패. 'symbols for which it is computed' 집합이 공집합이므로 다수결을 물을 대상이 없다. 미평가."
-          ],
-          "numbers": [
-            "제1절(include_funding true, 최선 게이트 셀 > gate none): ADAUSDT -0.8577151028125873 > -0.8676215492914394, AVAXUSDT -0.8648469792706899 > -0.8682054395236681, BNBUSDT -0.36186865645886357 > -0.41652375048015866, BTCUSDT -0.6870187953131688 > -0.7360872480643031, DOGEUSDT -0.8630919768336045 > -0.8697313335611685, ETHUSDT -0.687297695405586 > -0.7116144569438517, LTCUSDT -0.8293330626937963 > -0.8349028016546746, XRPUSDT -0.8134562320871975 > -0.8314191209080442 — 9개 중 8개(SOLUSDT는 -0.9015125554825547 < -0.9001710625210104로 미개선). 5개 기준선은 통과, 제1절 미충족.",
-            "제2절(Δfalse ≥ Δtrue): ADAUSDT Δtrue=+0.0099064464788521 vs Δfalse=+0.0113448873933727 → 충족",
-            "AVAXUSDT Δtrue=+0.0033584602529782 vs Δfalse=+0.0039715135359539 → 충족",
-            "DOGEUSDT Δtrue=+0.0066393567275640 vs Δfalse=+0.0072932438882065 → 충족",
-            "LTCUSDT Δtrue=+0.0055697389608783 vs Δfalse=+0.0081828861240913 → 충족",
-            "SOLUSDT Δtrue=-0.0013414929615443 vs Δfalse=+0.0029061626467121 → 충족",
-            "BNBUSDT Δtrue=+0.0546550940212951 vs Δfalse=+0.0544602885898221 → 미충족",
-            "BTCUSDT Δtrue=+0.0490684527511343 vs Δfalse=+0.0473371600103765 → 미충족",
-            "ETHUSDT Δtrue=+0.0243167615382657 vs Δfalse=+0.0235515367800472 → 미충족",
-            "XRPUSDT Δtrue=+0.0179628888208467 vs Δfalse=+0.0135906897781552 → 미충족",
-            "제2절 합계: 5 / 9 (ADAUSDT, AVAXUSDT, DOGEUSDT, LTCUSDT, SOLUSDT) — 'five or more symbols' 정확히 충족",
-            "제4절(게이트 미구속, 모든 게이트 셀이 상대 1% 미만): AVAXUSDT(최대 0.462%), DOGEUSDT(최대 0.882%), SOLUSDT(최대 0.509%) 3개만 IRR 쪽 조건을 만족. ADAUSDT 1.14%, BNBUSDT 13.1%, BTCUSDT 6.7%, ETHUSDT 3.4%, LTCUSDT 1.02%(false, dip:0.20:30), XRPUSDT 2.16%로 탈락 → 3 < 5, tm_q05 값이 표면에 없더라도 'both' 요건상 상한이 3이므로 제4절 미충족."
-          ],
-          "reason": "제1절의 기준선은 넘었다 — include_funding true에서 게이트 셀이 gate none 대조군을 이긴 심볼이 9개 중 8개(SOLUSDT만 -0.9015125554825547 < -0.9001710625210104)이므로 다섯 개 문턱을 통과했다. 그러나 제2절이 '설령 그 기준선을 넘더라도'라고 명시한 대로 곧바로 적용되고, 여기서 정확히 다섯 심볼이 걸린다. ADAUSDT는 펀딩을 낼 때 개선폭이 +0.0099064464788521인데 내지 않을 때는 +0.0113448873933727, AVAXUSDT는 +0.0033584602529782 대 +0.0039715135359539, DOGEUSDT는 +0.0066393567275640 대 +0.0072932438882065, LTCUSDT는 +0.0055697389608783 대 +0.0081828861240913, SOLUSDT는 펀딩 포함 시 개선이 아예 음수(-0.0013414929615443)인데 제외하면 +0.0029061626467121이다. 다섯 심볼 모두에서 '펀딩을 내지 않을 때의 개선폭이 낼 때의 개선폭 이상'이라는 조항 문구가 문자 그대로 성립한다. 조항은 이 비교를 제1절을 통과한 심볼로 한정하지 않았으므로 SOLUSDT도 그대로 센다. BNBUSDT(+0.0546550940212951 대 +0.0544602885898221)와 BTCUSDT(+0.0490684527511343 대 +0.0473371600103765)처럼 근소하게 반대 방향인 심볼들이 있어 합계는 6이 아니라 5지만, 조항이 요구한 것은 'five or more'이고 5는 그 문턱이다. 조항이 미리 적어둔 근거 — 이득이 펀딩세를 내지 않음으로써만 살아남는다면 그 형태는 무기한 선물에 자리가 없다 — 가 정확히 관측된 패턴이다. 나머지 두 조항(SPIKE, PBO)은 각각 peak가 양수가 아니어서 plateau_ratio가 NaN이고 PBO가 어느 심볼에서도 산출되지 않아 평가 불가이며, 통과한 것으로 간주하지 않고 미평가로 기록한다. 제4절은 게이트가 실제로 구속한 심볼이 여섯이라 충족되지 않으므로 이 가족은 '측정 불가'가 아니라 제2절에 의해 닫힌다. (킬 조건에 없어 판정 근거로 쓰지 않았지만 기록해 둘 사실: BNBUSDT와 BTCUSDT의 search_test가 모두 p_value 1.0, INDISTINGUISHABLE_FROM_SEARCH이고, 아홉 심볼 전체의 mwrr_q05가 음수이며 independent_paths_best는 3.51~4.58에 불과하다.)"
-        },
-        "codex": {
-          "verdict": "CLOSE",
-          "clause": "Closed also - even if that bar is cleared - if the IRR improvement over the same control with include_funding false is at least as large as the improvement with it true on five or more symbols, since the gain then survives only by not paying the funding tax and the shape has no home on a perpetual.",
-          "clause_met": true,
-          "unevaluable_clauses": [
-            "\"Closed also if every cell that clears the first clause has shape SPIKE\": all nine shape diagnostics are unmeasurable because each peak is negative; no cell is classified SPIKE or otherwise.",
-            "\"or if the reported PBO is at or above 0.5 on a majority of the symbols for which it is computed\": no numeric PBO was computed; BNBUSDT, BTCUSDT, and ETHUSDT each report \"fewer than two analytic configurations\".",
-            "\"Closed as unmeasurable, rather than false, if the gate does not bind: if on five or more symbols both the IRR and the tm_q05 of every gated cell differ from the gate none control by less than one percent in relative terms\": the supplied surface contains the IRR grid but no tm_q05 grid, so the required conjunction cannot be checked."
-          ],
-          "numbers": [
-            "ADAUSDT: improvement without funding 0.0113448874 (-0.8410968555 to -0.8297519681), versus 0.0099064465 with funding (-0.8676215493 to -0.8577151028).",
-            "AVAXUSDT: improvement without funding 0.0039715135 (-0.8601730289 to -0.8562015154), versus 0.0033584603 with funding (-0.8682054395 to -0.8648469793).",
-            "DOGEUSDT: improvement without funding 0.0072932439 (-0.8271185930 to -0.8198253491), versus 0.0066393567 with funding (-0.8697313336 to -0.8630919768).",
-            "LTCUSDT: improvement without funding 0.0081828861 (-0.8020932676 to -0.7939103815), versus 0.0055697390 with funding (-0.8349028017 to -0.8293330627).",
-            "SOLUSDT: improvement without funding 0.0029061626 (-0.9474655325 to -0.9445593698), versus -0.0013414930 with funding (-0.9001710625 to -0.9015125555)."
-          ],
-          "reason": "The no-funding improvement is at least as large as the with-funding improvement on exactly five symbols: ADAUSDT, AVAXUSDT, DOGEUSDT, LTCUSDT, and SOLUSDT. That meets the explicit five-symbol threshold, so the family closes. The first clause is not met because a gated with-funding cell exceeds its control on eight symbols; only SOLUSDT has no such cell."
-        }
-      },
-      "unreachable": {},
-      "decision": "CLOSE"
+      "decision": "CONTINUE"
     }
   }
 }

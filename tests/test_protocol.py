@@ -1214,3 +1214,32 @@ def test_the_proposer_is_no_longer_asked_to_close_a_family():
            ).read_text(encoding="utf-8")
     assert "Do NOT decide whether a family should close" in txt
     assert "write configs/closed/" not in txt
+
+
+def test_a_split_close_vote_is_raised_as_news(tmp_path, monkeypatch):
+    """It closes nothing, so without this it sits in a JSON file nobody opens
+    while the family is re-enumerated every six hours."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import notify
+    from orc import config as cfg
+    from datetime import datetime, timezone
+
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    (reports / "CYCLE_SUMMARY.json").write_text(json.dumps(
+        {"finished_utc": datetime.now(timezone.utc).isoformat(), "results": []}),
+        encoding="utf-8")
+    (reports / "CLOSE_VOTES.json").write_text(json.dumps({"families": {
+        "H9400": {"family": "split_family", "decision": "SPLIT",
+                  "votes": {"claude": {"verdict": "CONTINUE"},
+                            "codex": {"verdict": "CLOSE"}}},
+        "H9401": {"family": "agreed_family", "decision": "CLOSE",
+                  "votes": {"claude": {"verdict": "CLOSE"}}}}}), encoding="utf-8")
+    monkeypatch.setattr(cfg, "REPORTS", reports)
+    monkeypatch.setattr(cfg, "QUEUE", tmp_path / "queue")
+
+    news = notify.collect()
+    split = [n for n in news if "SPLIT" in n]
+    assert len(split) == 1
+    assert "H9400" in split[0] and "claude=CONTINUE" in split[0] and "codex=CLOSE" in split[0]
+    assert not any("H9401" in n for n in news)     # agreement is not news

@@ -22,6 +22,12 @@ green, which is why each needs its own signal rather than a general health check
                 exists on exactly one machine and will never be answered.
   a finding     An open high-severity review finding. A cycle refuses to run on
                 top of one, so it stops the research until it is dispositioned.
+  a split vote  Two providers disagree about whether a family's pre-registered
+                kill condition applies. Nothing closes and nothing fails: the
+                family stays open and is re-enumerated every six hours while a
+                sentence written before the numbers existed turns out to be
+                readable two ways. The first split found a reporting defect --
+                the metric the clause named had fallen out of the surface.
 
 Prints one line per item and exits 0 when there is news, 1 when there is not,
 so a scheduler can branch on the exit code without parsing anything.
@@ -90,6 +96,24 @@ def collect() -> list[str]:
             news.append(
                 f"{rep['hypothesis_id']} {rep['family']}: {sym} clears every check "
                 f"at {rep['metric']} {s['best_value']:+.4f}  {s['best_config']}")
+
+    # Two providers reading one pre-registered sentence differently is a fact
+    # about the sentence, and it closes nothing, so without this it would sit in
+    # a JSON file nobody opens while the family is re-enumerated every six
+    # hours. The first split found a real defect -- the metric the clause named
+    # had fallen out of the report -- which is exactly the class of thing that
+    # must not wait for someone to go looking.
+    votes = _load("CLOSE_VOTES.json") or {}
+    for hid, fam in (votes.get("families") or {}).items():
+        if fam.get("decision") != "SPLIT":
+            continue
+        said = ", ".join(f"{n}={v.get('verdict')}"
+                         for n, v in sorted((fam.get("votes") or {}).items()))
+        news.append(
+            f"ORC close vote SPLIT on {hid} {fam.get('family')}: {said}. The "
+            f"family stays open and nothing was closed. Two models disagreeing "
+            f"about whether a pre-registered clause applies is a fact about the "
+            f"clause -- see reports/CLOSE_VOTES.json")
 
     rejected = sorted((config.QUEUE / "rejected").glob("*.json")) \
         if (config.QUEUE / "rejected").exists() else []
