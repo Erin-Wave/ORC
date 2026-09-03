@@ -609,3 +609,45 @@ def test_every_trade_reconciles_with_the_equity_curve(sig_series):
     assert r["pnl_total"] == pytest.approx(r["final_equity"] - spec.capital)
     for t in r["trades"]:
         assert t["gross"] + t["funding"] == pytest.approx(t["pnl"], abs=1e-7)
+
+
+def test_an_early_exit_is_not_charged_for_deposits_it_never_made():
+    """The adversary killed H0008 on this: the path-dependent branch priced
+    every path with the REGISTERED n_contributions and the NOMINAL horizon, so
+    a programme that take-profits in week 5 was charged for the 151 deposits it
+    never made. Measured on the real panel, an ensemble whose true annualised
+    IRR is +415 % came out at the bracket floor, -0.9999."""
+    # five weekly deposits of 100, worth 700 five weeks in: a real +415 %/yr.
+    h = 7.0 / 365.0
+    realised = mwrr_equal_interval(100.0, np.array([5.0]), h,
+                                   np.array([700.0]),
+                                   horizon_years=np.array([5 * h]))
+    assert realised[0] > 3.0
+
+    # priced as the registered programme -- 156 deposits over three years --
+    # the same 700 dollars is a near-total loss, and lands on the floor.
+    as_registered = mwrr_equal_interval(100.0, 156, h, np.array([700.0]),
+                                        horizon_years=156 * h)
+    assert as_registered[0] < -0.99
+    assert realised[0] > as_registered[0] + 4.0
+
+
+def test_per_path_deposit_counts_agree_with_the_scalar_case():
+    """n and T became arrays. A full programme must price exactly as before, or
+    every Track A number in the ledger has silently moved."""
+    h, V = 7.0 / 365.0, np.array([5_000.0, 15_600.0, 40_000.0])
+    scalar = mwrr_equal_interval(100.0, 156, h, V, horizon_years=156 * h)
+    arrayed = mwrr_equal_interval(100.0, np.full(3, 156.0), h, V,
+                                  horizon_years=np.full(3, 156 * h))
+    assert np.allclose(scalar, arrayed, rtol=0, atol=1e-12)
+
+
+def test_a_wipeout_reports_minus_one_however_few_deposits_landed():
+    """Liquidation is the other early exit and it is why the ledger is clean:
+    it ends at terminal equity zero, where the IRR is -100 % whether five
+    deposits landed or a hundred and fifty-six."""
+    h = 7.0 / 365.0
+    for n, T in ((5.0, 5 * h), (156.0, 156 * h)):
+        r = mwrr_equal_interval(100.0, np.array([n]), h, np.array([0.0]),
+                                horizon_years=np.array([T]))
+        assert r[0] == pytest.approx(-1.0)

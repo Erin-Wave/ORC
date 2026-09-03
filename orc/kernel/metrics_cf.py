@@ -39,11 +39,20 @@ def mwrr_equal_interval(
     NPV is decreasing in r whenever T >= every deposit time, which holds by
     construction, so bisection is exact rather than merely convergent.
     """
+    # n and T may be per-path arrays, and on the path-dependent evaluator they
+    # have to be. A programme that take-profits in week 5 made five deposits,
+    # not the registered 156, and pricing the 151 that never happened against
+    # its realised value is not a small error: an ensemble whose true annualised
+    # IRR is +415 % came out at the bracket floor of -0.9999. Every term below
+    # is elementwise, so the scalar case is unchanged.
     V = np.asarray(terminal_value, dtype=np.float64)
     h = float(years_between)
-    n = int(n_contributions)
-    T = float(horizon_years) if horizon_years is not None else h * (n - 1)
-    T = max(T, h * (n - 1))
+    n = np.asarray(n_contributions, dtype=np.float64)
+    T = h * (n - 1.0) if horizon_years is None else np.asarray(
+        horizon_years, dtype=np.float64)
+    # A deposit cannot fall after the measurement, or NPV stops being monotone
+    # in r and the bisection below is no longer exact.
+    T = np.maximum(T, h * (n - 1.0))
 
     def npv(r: np.ndarray) -> np.ndarray:
         base = 1.0 + r
@@ -51,7 +60,7 @@ def mwrr_equal_interval(
         # (1 - q^n)/(1 - q), continuous at q == 1
         near_one = np.abs(q - 1.0) < 1e-12
         denom = np.where(near_one, 1.0, 1.0 - q)
-        series = np.where(near_one, float(n), (1.0 - q ** n) / denom)
+        series = np.where(near_one, n, (1.0 - q ** n) / denom)
         return V * base ** (-T) - contribution * series
 
     a = np.full(V.shape, lo, dtype=np.float64)

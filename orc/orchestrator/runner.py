@@ -274,11 +274,30 @@ def run_dca_trial(cfg: TrialConfig, p: Panel | None = None) -> TrialOutcome:
                    gate=build_gate(cfg.gate, p),
                    table=tier_table_for(cfg.symbol))
     invested = out["invested"]
+
+    # The deposits that actually landed, and the time the path actually lived.
+    # This branch priced every path with the REGISTERED n_contributions and the
+    # NOMINAL horizon, so a programme that take-profits in week 5 was charged
+    # for 151 deposits it never made: an ensemble whose true annualised IRR is
+    # +415 % was recorded at the bracket floor, -0.9999. No number in the ledger
+    # carries it -- of 1332 Track A rows, none has take_profit or stop_loss set,
+    # and the other early exit is liquidation, which ends at terminal_equity 0
+    # where the IRR is -100 % however many deposits were made. So this is a
+    # latent defect being closed before the first family that would trip it,
+    # which was H0008, killed on this ground before registration.
+    n_real = np.maximum(np.round(invested / max(cfg.contribution, 1e-12)), 1.0)
+    # exit_bar, not bars_lived: `lived` is an inclusive COUNT of bars
+    # (exit_bar + 1, the denominator for frac_time_in_loss), while this
+    # needs ELAPSED time from the first deposit to the measurement, which
+    # is exit_bar. Using the count put an extra bar on every horizon and
+    # moved 186 stored values in the fifth decimal -- small, and still a
+    # silent rewrite of numbers this change was supposed to leave alone.
+    years_real = np.maximum(out["exit_bar"], 0.0) / (p.bars_per_day * 365.0)
     metrics = {
         **_profile("tm", out["terminal_multiple"]),
-        **_profile("mwrr", mwrr_equal_interval(cfg.contribution, cfg.n_contributions,
+        **_profile("mwrr", mwrr_equal_interval(cfg.contribution, n_real,
                                                years_between, out["terminal_equity"],
-                                               horizon_years=horizon / (p.bars_per_day * 365.0))),
+                                               horizon_years=years_real)),
         **_profile("dd", out["max_dd_total"]),
         **_profile("funding_frac", out["funding_paid"] / np.maximum(invested, 1e-9)),
         "invested_usdt": float(np.median(invested)),
