@@ -15,6 +15,16 @@ ledger/trials.sqlite merge=orcledger -text
 reports/*.json merge=ours
 reports/*.md   merge=ours
 
+# The two .jsonl logs are the exception, and they must NOT be resolved by
+# picking a side. They are append-only records of attempts -- one line per
+# worker cycle, one per reasoning pass -- written by two machines, and their
+# whole purpose is to show a SEQUENCE: four cycles in a row that added no
+# trials, or a week of passes that registered nothing. Dropping one side's
+# lines deletes exactly the evidence they exist to preserve. `union` is git's
+# own driver for a line-oriented append-only file; order does not matter
+# because every reader sorts by the timestamp inside the line.
+reports/*.jsonl merge=union
+
 # Text files this project writes on Windows and the runner reads on Linux.
 *.py    text eol=lf
 *.md    text eol=lf

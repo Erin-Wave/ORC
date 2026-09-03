@@ -56,7 +56,7 @@ except (AttributeError, OSError):                                  # pragma: no 
     pass
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from orc import config, llm                                       # noqa: E402
+from orc import config, llm, runstate                             # noqa: E402
 
 PROPOSED = config.CONFIGS / "proposed"
 KILLED = config.CONFIGS / "killed"
@@ -416,6 +416,10 @@ def main() -> int:
         report["steps"]["blocked"] = [f["id"] for f in blocked]
         (config.REPORTS / "REASONING_LOG.json").write_text(
             json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        # A refusal is the most important pass to have a record of: it is the
+        # one that leaves the queue empty, and the one that used to spend the
+        # whole day's registration slot on nothing.
+        runstate.append_reasoning_log(report)
         return 1
 
     # A step that could not reach the model has not decided anything, and the
@@ -547,6 +551,10 @@ def main() -> int:
 
     (config.REPORTS / "REASONING_LOG.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    # REASONING_LOG.json keeps only this pass.  "Has anything been proposed
+    # lately" is the question a stalled loop turns on, and it could not be
+    # answered from the repository at all.
+    runstate.append_reasoning_log(report)
 
     subprocess.run(["git", "add", "-A", "configs", "reports"],
                    cwd=config.ORC_ROOT, check=False)

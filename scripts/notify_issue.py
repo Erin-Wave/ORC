@@ -165,15 +165,31 @@ def watchdog_message() -> tuple[str, str] | None:
                      "enabled -- GitHub disables them on a repository that has "
                      "gone quiet, which turns a stall into a permanent one.")
 
+    # Two clocks, deliberately. The pass writes REASONING_LOG.json only when it
+    # produces something, and since the guard became an evidence fingerprint a
+    # healthy pass often decides there is nothing new to read. So "no output"
+    # is not a fault; "the schedule never fired" is, and only the append-only
+    # wake-up log can tell them apart from outside the machine.
+    from orc import runstate
+    woke = runstate.reasoning_wakeups(1)
+    age = _age(woke[0].get("utc") if woke else None)
+    if age is not None and age.days >= notify.REASONING_STALE_DAYS:
+        quiet.append(f"- **the reasoning layer has not woken up in {age.days} "
+                     "day(s).** It is scheduled four times a day on the "
+                     "workstation, so the machine has been off through all of "
+                     "them, or the task is not firing at all -- the checkout "
+                     "moving is enough to do that, because a scheduled task "
+                     "stores an absolute path. `python scripts/schedule.py` "
+                     "answers it in one line.")
     rlog = config.REPORTS / "REASONING_LOG.json"
     age = _age(json.loads(rlog.read_text(encoding="utf-8")).get("utc")
                if rlog.exists() else None)
     if age is not None and age.days >= notify.REASONING_STALE_DAYS:
-        quiet.append(f"- **the reasoning pass has not run in {age.days} day(s).** "
-                     "It runs on the workstation at 08:25 with a 20:25 retry, so "
-                     "this means the machine has been off or asleep through both, "
-                     "or the task is failing before it writes its log. Nothing new "
-                     "is being asked.")
+        quiet.append(f"- **the reasoning pass has asked nothing in {age.days} "
+                     "day(s).** Either every proposal is being killed, or the "
+                     "evidence has not changed in that time -- which with a "
+                     "worker firing every six hours means it is producing "
+                     "nothing new either.")
 
     try:
         from orc.ledger.trials import Ledger

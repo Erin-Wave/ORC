@@ -143,16 +143,26 @@ gh run watch
 | | |
 |---|---|
 | 작업 이름 | `ORC Reasoning Cycle` |
-| 실행 | 매일 08:25 KST |
+| 실행 | 매일 **02:25 / 08:25 / 14:25 / 20:25 KST** |
 | 실행 방식 | `wscript` 로 창 없이 (`scripts/reasoning_cycle_hidden.vbs`) |
 | 스크립트 | `scripts/reasoning_cycle.ps1` |
 | 프롬프트 | `scripts/reasoning_prompt.txt` |
 | 모델 | `claude-opus-5` |
 | 허용 도구 | `Read`, `Glob`, `Grep`, `Write`, `Edit`, `Bash(git *)` |
 | 로그 | `logs/reasoning_YYYY-MM-DD.log` (커밋 안 됨) |
-| 중복 방지 | `logs/.last_cycle` 에 날짜 기록, 하루 1회 |
+| 중복 방지 | **증거 지문** (`python -m orc.runstate --due`) |
 | 실패 시 | 15분 간격 2회 재시도 |
 | 시간 제한 | 3시간 (판단 호출이 8~10회로 늘어 1시간으로는 부족) |
+
+등록·수리·검사는 손으로 하지 말고 스크립트로 합니다. 작업에 들어 있는 경로는
+**절대 경로**라서, 저장소를 옮기면 작업은 그대로 남아 있고 실행만 되지 않습니다.
+
+```powershell
+python scripts/schedule.py            # 두 작업이 이 저장소를 가리키나? (아니면 exit 2)
+python scripts/schedule.py --repair   # 저장소를 옮긴 뒤 경로만 다시 씀
+python scripts/schedule.py --cadence  # 발화 시각을 위 네 슬롯으로 맞춤
+python scripts/schedule.py --install  # 새 PC에서 처음부터 등록
+```
 
 두 번째 작업도 함께 등록돼 있습니다.
 
@@ -166,8 +176,9 @@ gh run watch
 첫 실행에서 결함 5건을 찾았고 그중 하나는 Track B 결과 전체를 무효화하는
 lookahead였습니다. high 등급 발견은 `notify.py` 를 통해 알림으로 나갑니다.
 
-**대가: 08:25 KST에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
-`StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다.
+**대가: 발화 시각에 PC가 켜져 있어야 합니다.** 꺼져 있었다면
+`StartWhenAvailable` 설정 때문에 다음 부팅 직후 한 번 따라잡습니다. 슬롯이
+네 개인 이유가 이것이기도 합니다 — 하나를 놓쳐도 여섯 시간 안에 다음이 옵니다.
 
 08:25인 이유: Actions 워커의 `0 */6 * * *` 는 UTC 기준이라 09:00 / 15:00 /
 21:00 / 03:00 KST에 발화합니다. 08:25에 큐를 밀어넣으면 **35분 뒤 바로**
@@ -178,9 +189,23 @@ lookahead였습니다. high 등급 발견은 `notify.py` 를 통해 알림으로
 가리고 포커스를 뺏습니다. 창이 아예 생기지 않게 하는 다른 방법(S4U, 세션 0)은
 등록에 관리자 권한이 필요합니다.
 
-따라잡기·재시도·수동 실행이 겹쳐도 **하루에 한 번만** 돕니다. 두 번 돌면 가설이
-두 배로 등록되고, 사전등록은 되돌릴 수 없으며 모든 시행이 `N` 에 들어가 다중검정
-보정을 영구히 왜곡합니다. 일부러 다시 돌리려면 `-Force` 를 주세요.
+하루 네 번 발화하지만, **증거가 바뀌었을 때만** 실제로 묻습니다. 절대 두 번
+일어나서는 안 되는 일은 *같은 증거에 대한 두 번의 등록*입니다 — 사전등록은
+되돌릴 수 없고 모든 시행이 `N` 에 들어가 다중검정 보정을 영구히 왜곡합니다.
+날짜는 그것의 나쁜 대리물이었습니다. 자정만 지나면 바뀌지 않은 리포트에 대해
+두 번째 패스를 허용하고, 반대로 아침 패스가 거부되면 — high 결함, 끊긴 네트워크,
+옮겨진 디렉터리 — 그날은 아무것도 묻지 못했습니다. 2026-09-03이 정확히 그날입니다.
+
+지금 문을 지키는 것은 `python -m orc.runstate --due` 입니다.
+
+- 큐에 답을 기다리는 질문이 있으면 → 묻지 않습니다 (워커가 아직 답하지 않은
+  리포트에 등록 슬롯을 쓰는 것이므로).
+- 심사 대기 제안이 있으면 → 그것을 먼저 판정합니다.
+- 그 외에는 **증거 지문**이 지난 패스와 다를 때만 묻습니다. 지문은
+  `CYCLE_REPORT.md`, `N`, 마지막 신규 시행 시각, 닫힌 가족 목록, 레지스트리로
+  만듭니다.
+
+일부러 게이트를 무시하려면 `-Force` 를 주세요.
 
 상태 확인과 수동 실행:
 
@@ -263,14 +288,15 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 ## 매일 무슨 일이 벌어지는가
 
 ```
-08:25 KST   추론 계층 (로컬 스케줄러)   새 가설 1~3개 → configs/queue/ 커밋
+02:25 / 08:25 / 14:25 / 20:25 KST   추론 계층 (로컬 스케줄러)
+            증거가 바뀌었으면 새 가설 1~3개 → configs/queue/ 커밋
 09:00 KST   GitHub Actions (6시간마다)  큐 수거 → 사전등록 해시 → 전 그리드 평가
             (public 저장소, 무제한 무료)  → 원장 기록 → 반응표면 + PBO
                                         → reports/ 커밋
 다음날      추론 계층이 CYCLE_REPORT.md 읽고 다음 질문 결정
 ```
 
-**08:25 KST에만 PC가 켜져 있으면 됩니다. 평가는 PC와 무관하게 돕니다. 총 비용 ₩0.**
+**네 슬롯 중 하나에만 PC가 켜져 있으면 됩니다. 평가는 PC와 무관하게 돕니다. 총 비용 ₩0.**
 
 당신이 개입해야 할 때는 두 번뿐입니다:
 1. 패널을 갱신할 때 (`deploy_panel.py` + `gh release upload`)
@@ -306,4 +332,6 @@ Oracle 용량 싸움이 싫으면 이쪽이 가장 편합니다. 삽질 대비 �
 | `test_analytic_matches_simulator` 실패 | 두 평가기가 어긋남 | **다른 모든 작업 중단.** 모든 결과가 무효입니다 |
 | `HoldoutViolation` | 봉인 구간이 새어들어옴 | 정상 동작. `panel.load()` 를 쓰지 않은 코드가 있는지 확인 |
 | 큐 파일이 `rejected/` 로 감 | 스키마 오류 | `configs/queue/rejected/` 에서 원인 확인 |
-| 아침에 새 가설이 없음 | 08:25에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
+| 아침에 새 가설이 없음 | 발화 시각에 PC가 꺼져 있었음 | `logs/reasoning_*.log` 확인. 없으면 `Start-ScheduledTask -TaskName "ORC Reasoning Cycle"` |
+| 며칠째 새 가설이 없고 로그도 없음 | **저장소를 옮겨서 작업의 절대 경로가 죽었음** | `python scripts/schedule.py` → exit 2면 `--repair`. `python scripts/briefing.py` 첫 줄이 🔴 로 같은 말을 합니다 |
+| 워커는 도는데 `신규 0건`이 계속됨 | 큐가 비어 있고 코드도 안 바뀜 = 새로 물은 것이 없음 | `python -m orc.runstate` 로 판정 확인. `BRIEFING.md` 의 '가동 기록' 표에서 `+0` 줄이 몇 개 연달아 있는지 보입니다 |

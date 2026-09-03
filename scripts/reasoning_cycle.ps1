@@ -16,8 +16,9 @@ param(
     # Pre-registration is irreversible, so there is no throwaway real run.
     [switch]$SkipPipeline,
 
-    # Run even if today's cycle already happened.  Only for a deliberate manual
-    # re-run; see the once-a-day guard below for why that is not the default.
+    # Run even when the evidence gate says there is nothing new to reason from.
+    # Only for a deliberate manual re-run; see the gate below for why that is
+    # not the default.
     [switch]$Force
 )
 
@@ -32,6 +33,27 @@ $Log = Join-Path $LogDir ("reasoning_" + (Get-Date -Format "yyyy-MM-dd") + ".log
 function Write-Log($msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $msg
     Add-Content -Path $Log -Value $line -Encoding utf8
+}
+
+function Invoke-Native($Tag, [scriptblock]$Cmd) {
+    # Every native call in this script goes through here, and the reason is a
+    # PowerShell 5.1 rule with teeth: merging a native command's stderr into
+    # the success stream with 2>&1 wraps each line in a NativeCommandError, and
+    # under $ErrorActionPreference = "Stop" that error is TERMINATING.
+    #
+    # `git pull` writes "From https://github.com/..." to stderr on every fetch
+    # that actually brings something down.  So this script died, silently and
+    # without a single log line past "cycle start", on exactly the cycles that
+    # had new results to reason about.  The ones that survived were the ones
+    # where git printed "Already up to date." on stdout and wrote nothing to
+    # stderr -- which is every run in the logs up to 2026-09-03, because the
+    # workstation had always been the last one to push.  A latent defect whose
+    # trigger was the worker getting there first.
+    #
+    # $LASTEXITCODE is global, so the caller reads it exactly as before.
+    $out = & { $ErrorActionPreference = "Continue"; & $Cmd 2>&1 }
+    foreach ($line in $out) { Write-Log "${Tag}: $line" }
+    return $out
 }
 
 function Show-Toast($title, $text) {
@@ -58,24 +80,10 @@ function Show-Toast($title, $text) {
 Set-Location $RepoRoot
 Write-Log "=== cycle start ==="
 
-# Once a day, no matter how many times the scheduler fires.  A missed 08:25
-# start is retried after boot, a failed run is retried 15 minutes later, and a
-# human can launch the task by hand - any two of those landing on the same day
-# would register two batches of hypotheses.  Registration is irreversible and
-# every trial counts toward N, so a duplicate run permanently inflates the
-# multiple-testing correction.  Cheaper to refuse.
-$Stamp = Join-Path $LogDir ".last_cycle"
-$today = Get-Date -Format "yyyy-MM-dd"
-if ((-not $Force) -and (Test-Path $Stamp) -and ((Get-Content $Stamp -Raw).Trim() -eq $today)) {
-    Write-Log "already ran today ($today); nothing to do"
-    Write-Log "=== cycle skipped ==="
-    exit 0
-}
-
 # The report this layer reasons from is written by the Actions worker, so the
 # local checkout is stale until we pull.  Reasoning from a stale report would
 # re-propose hypotheses the worker has already answered.
-git pull --rebase --autostash 2>&1 | ForEach-Object { Write-Log "git: $_" }
+Invoke-Native "git" { git pull --rebase --autostash } | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Log "ABORT: git pull failed ($LASTEXITCODE). Refusing to reason from a stale report."
     exit 1
@@ -92,20 +100,46 @@ Write-Log "head $head"
 $pending = (git rev-list --count "@{u}..HEAD" 2>$null)
 if ($LASTEXITCODE -eq 0 -and [int]$pending -gt 0) {
     Write-Log "$pending commit(s) never reached the remote; pushing before reasoning"
-    git push 2>&1 | ForEach-Object { Write-Log "push: $_" }
+    Invoke-Native "push" { git push } | Out-Null
 }
 
 # The worker's results arrived with that pull, so this is the freshest view of
 # them there will be today.  Check before reasoning, not after: the reasoning
 # pass writes hypotheses, not results, and would leave the report unchanged.
-$newsText = & python "$PSScriptRoot\notify.py" 2>&1
+$newsText = Invoke-Native "NEWS" { & python "$PSScriptRoot\notify.py" }
 if ($LASTEXITCODE -eq 0) {
-    foreach ($line in $newsText) { Write-Log "NEWS: $line" }
     Show-Toast "ORC" ($newsText -join "`n")
     Add-Content -Path (Join-Path $LogDir "NEWS.md") -Encoding utf8 `
         -Value ("## {0}`n{1}`n" -f (Get-Date -Format "yyyy-MM-dd HH:mm"), ($newsText -join "`n"))
 } else {
     Write-Log "no news"
+}
+
+# The gate, and it is deliberately not a calendar day.
+#
+# What must never happen twice is two registrations against the SAME evidence:
+# pre-registration is irreversible and every trial counts toward N, so a
+# duplicate batch permanently inflates the multiple-testing correction.  A
+# date was a bad proxy for that in both directions.  It permitted a second
+# pass over an unchanged report the moment midnight passed, and - the failure
+# that actually cost this project a day - it blocked every later attempt after
+# the morning one was refused, whether the refusal was a blocking finding, a
+# dead network or a directory that had moved.
+#
+# runstate.reasoning_due() asks the question directly: is there something new
+# to reason from, and is the previous batch already answered.  That makes it
+# safe to fire four times a day, which is why schedule.py sets four slots.
+if (-not $Force) {
+    Invoke-Native "gate" { & python -m orc.runstate --due } | Out-Null
+    $gateRc = $LASTEXITCODE
+    if ($gateRc -eq 10) {
+        Write-Log "=== cycle skipped (nothing new to reason from) ==="
+        exit 0
+    }
+    if ($gateRc -ne 0) {
+        Write-Log "ABORT: the evidence gate could not be evaluated (exit $gateRc)"
+        exit 1
+    }
 }
 
 # The pipeline orchestrates several model calls -- propose, adversary,
@@ -117,17 +151,22 @@ if ($SkipPipeline) {
     $rc = 0
 } else {
     $pipeline = Join-Path $PSScriptRoot "reasoning.py"
-    & python $pipeline 2>&1 | ForEach-Object { Write-Log "reason: $_" }
+    Invoke-Native "reason" { & python $pipeline } | Out-Null
     $rc = $LASTEXITCODE
 }
 
 if ($rc -ne 0) {
-    # Deliberately no stamp: a failed cycle should be retried, not skipped.
+    # Deliberately no stamp: a failed cycle should be retried, not skipped, and
+    # with the evidence gate the retry happens at the next slot instead of
+    # tomorrow.
     Write-Log "=== cycle FAILED (exit $rc) ==="
     exit $rc
 }
 
-Set-Content -Path $Stamp -Value $today -Encoding utf8
+# Records WHAT this pass was made against, not that a day was spent.  The next
+# fire compares its own fingerprint to this one and skips only if nothing has
+# moved since.
+Invoke-Native "stamp" { & python -m orc.runstate --stamp } | Out-Null
 
 $after = (git rev-parse --short HEAD)
 if ($after -eq $head) {

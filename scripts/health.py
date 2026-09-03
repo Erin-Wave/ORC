@@ -53,7 +53,7 @@ except (AttributeError, OSError):                                  # pragma: no 
     pass
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from orc import config                                             # noqa: E402
+from orc import config, runstate                                   # noqa: E402
 
 KST = timezone(timedelta(hours=9))
 OK, WARN, BAD, DIM = "  ok  ", " WARN ", " BAD  ", "  --  "
@@ -123,50 +123,67 @@ def worker_state() -> list[tuple[str, str, str]]:
     return out
 
 
-def local_tasks() -> list[tuple[str, str, str]]:
+def local_tasks(tasks: list[dict] | None = None,
+                queried: bool = False) -> list[tuple[str, str, str]]:
     """The workstation half.  It needs the machine awake; WakeToRun is set, but
-    a powered-off machine still misses its slot and catches up later."""
-    cmd = ("Get-ScheduledTask | Where-Object {$_.TaskName -like 'ORC*'} | "
-           "ForEach-Object { $i = Get-ScheduledTaskInfo $_; "
-           "[pscustomobject]@{name=$_.TaskName; state=[string]$_.State; "
-           "last=[string]$i.LastRunTime; result=$i.LastTaskResult; "
-           "next=[string]$i.NextRunTime} } | ConvertTo-Json -Compress")
-    try:
-        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive",
-                            "-Command", cmd], capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=60)
-        data = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        data = None
-    if data is None:
-        return [(DIM, "local schedules", "not queryable (not Windows, or no tasks)")]
-    if isinstance(data, dict):
-        data = [data]
+    a powered-off machine still misses its slot and catches up later.
 
+    The paths come first, and they are the row this screen used to be missing.
+    A scheduled task stores an ABSOLUTE path: when the checkout moved on
+    2026-09-03 the reasoning layer stopped launching entirely, Task Scheduler
+    reported 0x8007010B, and this screen showed one yellow "last result
+    2147942667" line among a dozen green ones.  A task that cannot find the
+    repository is not a warning; nothing it is supposed to do can happen.
+    """
+    tasks = tasks if queried else runstate.local_tasks()
+    if tasks is None:
+        return [(DIM, "local schedules", "not queryable (not Windows, or no tasks)")]
+    if not tasks:
+        return [(BAD, "local schedules",
+                 "no ORC* task registered -- the reasoning layer is the only "
+                 "thing that proposes, and nothing will fire it. "
+                 "python scripts/schedule.py --install")]
+
+    problems = runstate.task_path_problems(tasks)
     out = []
-    for t in sorted(data, key=lambda x: x["name"]):
-        rc = t.get("result")
-        # 267011 is SCHED_S_TASK_HAS_NOT_RUN: scheduled, never yet due.
-        if rc == 0:
-            mark, why = OK, "last run succeeded"
-        elif rc == 267011:
-            mark, why = DIM, "never run yet (not due before now)"
-        elif rc == 1:
-            mark, why = WARN, "last run exited 1 -- refused or failed"
-        else:
-            mark, why = WARN, f"last result {rc}"
-        last = t.get("last", "")
-        if last.startswith("11/30/1999"):
-            last = "never"
+    if problems:
+        out.append((BAD, "schedule -> repository",
+                    "; ".join(problems)
+                    + "  -> python scripts/schedule.py --repair"))
+    else:
+        out.append((OK, "schedule -> repository",
+                    f"every ORC task points at {config.ORC_ROOT}"))
+    for t in tasks:
+        sev, note = runstate.task_result_note(t.get("result"))
+        # A launch failure recorded against paths that are now correct is
+        # history: LastTaskResult keeps the old code until the task fires
+        # again.  Calling it BAD would send someone to fix what is fixed.
+        if sev == "bad" and not problems:
+            sev = "warn"
+            note += " (paths are correct now; this clears on the next fire)"
+        mark = {"ok": OK, "warn": WARN, "bad": BAD}[sev]
         out.append((mark, t["name"],
-                    f"{why}; last {last}; next {t.get('next')}"))
+                    f"{note}; last {runstate.task_time(t.get('last'))}; "
+                    f"next {runstate.task_time(t.get('next'))}"))
     return out
 
 
-def research_state() -> list[tuple[str, str, str]]:
+def research_state(tasks: list[dict] | None = None,
+                   queried: bool = False) -> list[tuple[str, str, str]]:
     from orc.orchestrator.spec import closed_families, load_registry
 
     out = []
+    # The durable verdict, from the same facts a briefing read hours from now
+    # will see.  Everything below this line describes what the research HAS
+    # done; this line says whether it is still doing any.
+    try:
+        a = runstate.activity(tasks=tasks if queried else None)
+        mark = {"RUNNING": OK, "QUEUED": OK, "IDLE": WARN,
+                "STALLED": WARN, "STOPPED": BAD}[a["status"]]
+        out.append((mark, "loop", f"{a['status']} -- "
+                    + " / ".join(a["reasons"])[:160]))
+    except Exception as exc:                                       # noqa: BLE001
+        out.append((WARN, "loop", f"{type(exc).__name__}: {exc}"))
     try:
         from orc.ledger.trials import Ledger
         with Ledger() as led:
@@ -265,8 +282,13 @@ def render(run_tests: bool = True) -> int:
     now = datetime.now(KST)
     print(f"\nORC health   {now:%Y-%m-%d %H:%M} KST   ({now.astimezone(timezone.utc):%H:%M}Z)")
     worst = 0
-    for title, rows in (("MACHINE -- is it running", worker_state() + local_tasks()),
-                        ("RESEARCH -- is it producing", research_state()),
+    # Queried once: every ORC* task with its action paths.  Two callers need it
+    # and the PowerShell round trip is the slowest thing on this screen.
+    tasks = runstate.local_tasks()
+    for title, rows in (("MACHINE -- is it running",
+                         worker_state() + local_tasks(tasks, True)),
+                        ("RESEARCH -- is it producing",
+                         research_state(tasks, True)),
                         ("HEALTH -- would I know if it broke", health_state(run_tests))):
         print(f"\n{title}")
         for mark, name, note in rows:

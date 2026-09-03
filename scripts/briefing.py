@@ -31,7 +31,7 @@ try:
 except (AttributeError, OSError):                                  # pragma: no cover
     pass
 
-from orc import config                                             # noqa: E402
+from orc import config, runstate                                   # noqa: E402
 from orc.orchestrator.verdict import disqualifiers                 # noqa: E402
 
 KST = timezone(timedelta(hours=9))
@@ -117,6 +117,168 @@ def describe_b(cfg: dict, fixed: dict) -> str:
     return ", ".join(parts) + f". {mech}."
 
 
+def _span(a: str | None, b: str | None) -> str:
+    """How long a run took, from its own two timestamps."""
+    ta, tb = runstate._utc(a), runstate._utc(b)
+    if ta is None or tb is None:
+        return "?"
+    secs = int((tb - ta).total_seconds())
+    if secs < 0:
+        return "?"
+    return f"{secs // 60}분 {secs % 60}초" if secs >= 60 else f"{secs}초"
+
+
+def running_section() -> list[str]:
+    """돌고 있는가, 그리고 마지막으로 실제 연구가 일어난 시각.
+
+    이 파일은 커밋돼서 몇 시간 뒤에 휴대폰에서 읽힙니다.  그래서 여기 들어가는
+    사실은 전부 **지속되는 것**입니다 — 파일과 시각.  "생성 시점에 실행 중이었다"
+    는 문장이 바로 2026-09-03에 하루 종일 모든 화면을 초록색으로 유지한 것이고,
+    그날 새로 물어진 질문은 하나도 없었습니다.
+
+    두 시계를 나눠 적는 것이 요점입니다.  워커는 큐가 비어 있어도 6시간마다
+    발화해서 리포트를 새로 쓰고 커밋합니다.  시행은 (설정, 심볼, 평가기, 패널,
+    코드)로 중복 제거되므로 그 사이클은 **0행**을 넣고도 성공합니다.  그러니
+    "워커가 돌았다"와 "연구가 됐다"는 다른 사실이고, 둘 다 적습니다.
+    """
+    now = datetime.now(timezone.utc)
+    a = runstate.activity(now)
+    L: list[str] = []
+    L.append("## 지금 돌고 있는가")
+    L.append("")
+    L.append(f"{a['mark']} {a['headline']}")
+    L.append("")
+    for r in a["reasons"]:
+        L.append(f"- {r}")
+    L.append("")
+
+    last_trial = a["last_new_trial"]
+    attempt = a["last_attempt"] or {}
+    passes = runstate.reasoning_passes(1)
+    rt = a["reasoning_task"]
+
+    L.append("| 무엇 | 언제 | 무슨 일이 있었나 |")
+    L.append("|---|---|---|")
+    if last_trial:
+        L.append(f"| **마지막 신규 시행** (백테스트가 아무도 묻지 않았던 것에 "
+                 f"답한 시각) | {runstate.kst(last_trial['last_utc'])} · "
+                 f"{runstate.ago(last_trial['last_utc'], now)} | "
+                 f"시행 {last_trial['trials']:,}건 추가 · "
+                 f"{', '.join(last_trial['hypotheses'])} · "
+                 f"소요 {_span(last_trial['first_utc'], last_trial['last_utc'])} |")
+    else:
+        L.append("| **마지막 신규 시행** | 기록 없음 | 원장에 행이 없습니다 |")
+    if attempt:
+        added = attempt.get("trials_added")
+        L.append(f"| 마지막 워커 사이클 | "
+                 f"{runstate.kst(attempt.get('started_utc'))} · "
+                 f"{runstate.ago(attempt.get('started_utc'), now)} | "
+                 f"소요 {_span(attempt.get('started_utc'), attempt.get('finished_utc'))} · "
+                 f"신규 {'?' if added is None else format(added, ',')}건"
+                 + ("  ← 돌았지만 새로 답한 것이 없음"
+                    if added == 0 else "") + " |")
+    L.append(f"| 다음 워커 발화 (명목) | "
+             f"{runstate.kst(a['next_worker_slot'])} · "
+             f"{runstate.until(a['next_worker_slot'], now)} | "
+             f"6시간마다. 공개 저장소의 예약 실행은 2~4시간 지연이 흔합니다 |")
+    if passes:
+        p = passes[0]
+        what = []
+        if p.get("blocked"):
+            what.append(f"거부됨 (high 결함 {len(p['blocked'])}건)")
+        if p.get("registered"):
+            what.append(f"등록 {len(p['registered'])}건")
+        if p.get("killed"):
+            what.append(f"적대자가 기각 {len(p['killed'])}건")
+        if p.get("held"):
+            what.append(f"심사 보류 {len(p['held'])}건")
+        if p.get("unavailable"):
+            what.append(f"판단 호출 실패 {len(p['unavailable'])}건")
+        L.append(f"| 마지막 추론 패스 (아이디어 발굴) | "
+                 f"{runstate.kst(p.get('utc'))} · "
+                 f"{runstate.ago(p.get('utc'), now)} | "
+                 f"{', '.join(what) or '아무것도 등록되지 않음'} |")
+    elif rt:
+        sev, note = runstate.task_result_note(rt.get("result"))
+        L.append(f"| 마지막 추론 패스 (아이디어 발굴) | "
+                 f"{runstate.task_time(rt.get('last'))} | {note} |")
+    # 두 시계를 나눕니다.  "깨어났다"는 스케줄이 아직 발화한다는 뜻이고,
+    # "물었다"는 질문이 실제로 등록됐다는 뜻입니다.  증거 게이트가 들어온 뒤로
+    # 건너뛰는 것이 정상 동작이 됐으므로, 출력이 없다는 사실만으로는 기계가
+    # 죽었는지 알 수 없습니다.
+    wake = runstate.reasoning_wakeups(1)
+    if wake:
+        w = wake[0]
+        note = (f"게이트: {w.get('why')}" if w.get("gate")
+                else "파이프라인을 실행했습니다")
+        L.append(f"| 추론 계층 마지막 기동 | "
+                 f"{runstate.kst(w.get('utc'))} · "
+                 f"{runstate.ago(w.get('utc'), now)} | {note} |")
+    next_reason = (runstate.task_time(rt.get("next")) if rt and rt.get("next")
+                   else runstate.kst(runstate.next_reasoning_slot(now)))
+    L.append(f"| 다음 추론 발화 | {next_reason} | "
+             f"매일 {', '.join(runstate.REASONING_SLOTS_KST)} KST. "
+             "증거가 그대로면 스스로 건너뜁니다 |")
+    L.append(f"| 대기 중인 질문 (큐) | — | "
+             f"{len(a['queued'])}개"
+             + (f": {', '.join(a['queued'])}" if a['queued'] else
+                " — 다음 추론 패스가 만들 차례") + " |")
+    L.append(f"| 열린 가족 | — | "
+             f"{', '.join(a['open_families']) if a['open_families'] else '없음'} |")
+    L.append("")
+
+    tl = runstate.timeline(8)
+    if tl:
+        L.append("### 가동 기록 — 최근 사이클")
+        L.append("")
+        L.append("`+0`은 고장이 아닙니다. 워커는 큐가 비어 있어도 발화하고, "
+                 "이미 답한 셀은 중복 제거되므로 **아무것도 새로 묻지 않은 "
+                 "사이클**이 그렇게 보입니다. 이 표의 목적은 그 줄이 몇 개나 "
+                 "연달아 있는지 보이게 하는 것입니다.")
+        L.append("")
+        L.append("| 시작 (KST) | 소요 | 신규 시행 | 가설 |")
+        L.append("|---|---|---|---|")
+        for r in tl:
+            added = r.get("trials_added")
+            # 원장에서 온 줄은 첫 행과 마지막 행의 간격, 즉 평가에 걸린 시간만
+            # 압니다.  체크아웃·설치·패널 다운로드는 그 앞에 있고 원장에 흔적을
+            # 남기지 않으므로, 두 숫자를 같은 열에 말없이 섞으면 사이클이
+            # 실제보다 짧아 보입니다.
+            span = _span(r.get("started_utc"), r.get("finished_utc"))
+            if r.get("source") == "ledger":
+                span += " (평가만)"
+            L.append(f"| {runstate.kst(r.get('started_utc'))} | {span} | "
+                     f"{'?' if added is None else format(added, '+,d')} | "
+                     f"{', '.join(r.get('hypotheses_run') or []) or '—'} |")
+        L.append("")
+
+    rp = runstate.reasoning_passes(6)
+    if len(rp) > 1:
+        L.append("### 가동 기록 — 최근 추론 패스")
+        L.append("")
+        L.append("| 시각 (KST) | 등록 | 기각 | 거부/보류 |")
+        L.append("|---|---|---|---|")
+        for p in rp:
+            block = []
+            if p.get("blocked"):
+                block.append(f"high 결함 {len(p['blocked'])}건으로 거부")
+            if p.get("held"):
+                block.append(f"보류 {len(p['held'])}건")
+            if p.get("unavailable"):
+                block.append(f"판단 불가 {len(p['unavailable'])}건")
+            L.append(f"| {runstate.kst(p.get('utc'))} | "
+                     f"{len(p.get('registered') or [])} | "
+                     f"{len(p.get('killed') or [])} | "
+                     f"{', '.join(block) or '—'} |")
+        L.append("")
+
+    due, why = a["reasoning_due"]
+    L.append(f"**다음 패스가 실제로 물을 것인가**: "
+             f"{'예' if due else '아니오'} — {why}")
+    L.append("")
+    return L
+
+
 def _postmortem_gist(name: str | None) -> str:
     """부검의 첫 산문 문단.  부검은 한글로 쓰여 있으므로 번역이 아니라 인용이다."""
     if not name:
@@ -176,6 +338,10 @@ def build() -> str:
     now = datetime.now(KST)
     L.append(f"# ORC 연구 브리핑 — {now:%Y-%m-%d %H:%M} KST")
     L.append("")
+
+    # 기계 상태가 첫 번째입니다.  연구 결과를 먼저 읽게 하면 루프가 멈춰 있어도
+    # 어제와 똑같이 읽히고, 실제로 그렇게 하루가 지나갔습니다.
+    L.extend(running_section())
 
     # ── 한 줄 요약 ────────────────────────────────────────────────────────
     survived = []
@@ -319,7 +485,8 @@ def build() -> str:
                  "다음 워커 실행에서 등록·평가됩니다.")
     else:
         L.append("2. **큐가 비어 있습니다.** 다음 제안은 추론 패스가 만듭니다 "
-                 "(08:25 KST, 실패 시 20:25 재시도).")
+                 f"(매일 {', '.join(runstate.REASONING_SLOTS_KST)} KST, "
+                 "증거가 바뀌었을 때만).")
     L.append("3. **새 메커니즘의 첫 등록은 96셀 탐침으로 제한**됩니다. 살아남으면 "
              "새 id로 넓게 열거할 수 있습니다 — 깊이는 결과로 벌어야 합니다.")
     L.append("4. **펀딩 기반 제안은 재론 금지.** 롱·숏 양쪽 다리가 닫혔습니다. "

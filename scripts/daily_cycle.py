@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from orc import config, holdout
+from orc import config, holdout, runstate
 from orc.facts import panel as panel_mod
 from orc.ledger.trials import Ledger
 from orc.orchestrator.runner import run_hypothesis
@@ -207,6 +207,13 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False,
     }
     (config.REPORTS / "CYCLE_SUMMARY.json").write_text(
         json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    # CYCLE_SUMMARY.json is overwritten, so it can only ever say what the most
+    # recent attempt did.  The state worth seeing is the SEQUENCE: this worker
+    # fires every six hours whether or not anything was proposed, and a cycle
+    # over an unchanged registry dedupes to zero inserts while still writing a
+    # fresh report and a green run.  Four such attempts in a row is a stopped
+    # loop, and it was unrecoverable from a file that keeps only the last one.
+    runstate.append_cycle_log(summary)
     write_cycle_markdown(summary, reports)
 
     # Publish the notifier's answer rather than its thresholds.  Anything that

@@ -216,6 +216,26 @@ class Ledger:
         row = self.conn.execute("SELECT MAX(created_utc) FROM trials").fetchone()
         return row[0] if row and row[0] else None
 
+    def runs(self, limit: int = 10) -> list[dict]:
+        """When research actually happened, newest first.
+
+        A run appears here only if it INSERTED a row, which is the property
+        that makes this the honest record of research time: the worker fires
+        every six hours whether or not anything was proposed, and a cycle over
+        an unchanged registry dedupes to zero inserts and leaves no trace.
+        Wall-clock span is min..max of the rows, so it measures the evaluation
+        and not the checkout, install and panel download around it.
+        """
+        rows = self.conn.execute(
+            "SELECT run_id, MIN(created_utc), MAX(created_utc), COUNT(*),"
+            " GROUP_CONCAT(DISTINCT hypothesis_id)"
+            " FROM trials GROUP BY run_id ORDER BY MIN(created_utc) DESC LIMIT ?",
+            (int(limit),)).fetchall()
+        return [{"run_id": r[0], "first_utc": r[1], "last_utc": r[2],
+                 "trials": int(r[3]),
+                 "hypotheses": sorted((r[4] or "").split(",")) if r[4] else []}
+                for r in rows]
+
     def trials_in_family(self, family: str) -> int:
         return int(self.conn.execute(
             "SELECT COUNT(*) FROM trials WHERE family=?", (family,)).fetchone()[0])

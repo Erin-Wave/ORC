@@ -50,12 +50,18 @@ except (AttributeError, OSError):                                  # pragma: no 
     pass
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from orc import config                                            # noqa: E402
+from orc import config, runstate                                  # noqa: E402
 from orc.orchestrator.verdict import survivors                    # noqa: E402
 
 # The worker fires every six hours; a day of silence is past any schedule
 # slipping and means something stopped.
 STALL_AFTER = timedelta(hours=30)
+
+# The reasoning pass fires four times a day, so a full day without the task
+# even STARTING is not a missed slot -- it is a task that is not firing. Kept
+# separate from the staleness of its OUTPUT below, which a healthy loop is
+# allowed to have: the evidence gate skips a pass that has nothing new to read.
+REASONING_ASLEEP_AFTER = timedelta(hours=26)
 
 # The reasoning pass runs daily. Two missed days is past any single
 # machine-was-off explanation.
@@ -158,20 +164,39 @@ def collect() -> list[str]:
 
     # The worker refreshes CYCLE_SUMMARY every six hours whether or not the
     # reasoning layer ran, so a reasoning pass that dies -- an expired token, a
-    # rate limit, a machine asleep at 08:25 -- leaves the reports looking
-    # perfectly fresh while no new question is ever asked again. Its own stamp
-    # is the only thing that notices.
-    stamp = config.ORC_ROOT / "logs" / ".last_cycle"
-    if stamp.exists():
-        try:
-            last = datetime.strptime(stamp.read_text(encoding="utf-8-sig").strip(),
-                                     "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            days = (datetime.now(timezone.utc) - last).days
+    # rate limit, a machine asleep at a slot, a scheduled task whose absolute
+    # path no longer exists -- leaves the reports looking perfectly fresh while
+    # no new question is ever asked again.
+    #
+    # Two different clocks, and conflating them was a bug waiting to happen.
+    # WOKE UP says the schedule is still firing: since the guard became an
+    # evidence fingerprint a healthy pass often decides there is nothing new to
+    # read and writes no output at all, so silence in the output is not a
+    # fault. ASKED says a question was actually put. Only the first going quiet
+    # means the machinery is broken.
+    try:
+        woke = runstate.reasoning_wakeups(1)
+        if woke:
+            age = datetime.now(timezone.utc) - datetime.fromisoformat(
+                str(woke[0]["utc"]).replace("Z", "+00:00"))
+            if age > REASONING_ASLEEP_AFTER:
+                news.append(
+                    f"ORC reasoning has not woken up in {age.days}d "
+                    f"{age.seconds // 3600}h; it is scheduled four times a day, "
+                    f"so the task itself is not firing "
+                    f"(python scripts/schedule.py)")
+    except Exception:                                              # noqa: BLE001
+        pass
+    try:
+        last = runstate.last_reasoning()
+        if last.get("utc"):
+            days = (datetime.now(timezone.utc) - datetime.fromisoformat(
+                str(last["utc"]).replace("Z", "+00:00"))).days
             if days >= REASONING_STALE_DAYS:
-                news.append(f"ORC reasoning has not run for {days} days; the worker "
-                            f"keeps reporting but nothing new is being asked")
-        except ValueError:
-            news.append("ORC reasoning stamp is unreadable")
+                news.append(f"ORC reasoning has asked nothing for {days} days; "
+                            f"the worker keeps reporting but the queue stays empty")
+    except Exception:                                              # noqa: BLE001
+        pass
 
     # Open findings, not the latest review: a finding reported last week and
     # never dispositioned is exactly the one that needs saying again.
