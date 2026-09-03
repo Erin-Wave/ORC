@@ -140,6 +140,13 @@ COMMIT_PATHS = {
     "survivorship": ("reports/KT3_SURVIVORSHIP.json",),
 }
 
+# Committed with every action, whatever the action was.  ACTIVITY.jsonl is the
+# evidence for the only claim this file makes -- that the machine does not rest
+# -- and a record of the work that stays on one workstation is not a record.
+# It was untracked for the supervisor's first hour: robustness landed its own
+# report and the log of having run it did not.
+ALWAYS_COMMIT = ("reports/ACTIVITY.jsonl",)
+
 
 def _log_path() -> Path:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -321,7 +328,7 @@ def land(action: str) -> str:
     not retried: the next action's commit carries it, and reasoning.py already
     pushes anything outstanding before it reasons.
     """
-    paths = [p for p in COMMIT_PATHS.get(action, ())
+    paths = [p for p in COMMIT_PATHS.get(action, ()) + ALWAYS_COMMIT
              if (config.ORC_ROOT / p).exists()]
     if not paths:
         return "nothing to commit"

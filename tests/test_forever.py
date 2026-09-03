@@ -415,6 +415,19 @@ def test_the_commit_paths_name_files_and_never_a_wildcard():
             assert p.startswith("reports/"), (action, p)
     assert "reason" not in forever.COMMIT_PATHS, \
         "reasoning.py commits and pushes its own registration"
+    # The evidence file lands with EVERY action, or the record of the work
+    # stays on one workstation and is not a record.  It was untracked for the
+    # supervisor's first hour: robustness landed its own report and the log of
+    # having run it did not.
+    assert forever.ALWAYS_COMMIT == ("reports/ACTIVITY.jsonl",)
+    assert str(runstate.ACTIVITY_LOG).endswith("ACTIVITY.jsonl")
+    for action in forever.COMMIT_PATHS:
+        for p in forever.COMMIT_PATHS[action] + forever.ALWAYS_COMMIT:
+            assert "*" not in p and p.startswith("reports/"), (action, p)
+    # .jsonl files are appended by two machines, so they must be union-merged;
+    # `ours` would silently delete one side's attempts.
+    attrs = (config.ORC_ROOT / ".gitattributes").read_text(encoding="utf-8")
+    assert "reports/*.jsonl merge=union" in attrs
 
 
 # --------------------------------------------------------------------------
