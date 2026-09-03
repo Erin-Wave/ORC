@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,6 +48,29 @@ CREATE TABLE IF NOT EXISTS trials (
 CREATE INDEX IF NOT EXISTS ix_trials_family ON trials(family);
 CREATE INDEX IF NOT EXISTS ix_trials_run    ON trials(run_id);
 
+-- Which hypotheses enumerated a given measurement.
+--
+-- A trial row is a MEASUREMENT and is deduped on what determines the number:
+-- (config_hash, symbol, evaluator, panel_hash, code_hash).  A hypothesis is a
+-- QUESTION, and two questions are free to enumerate the same cell.  Because
+-- hypothesis_id sits on the trial row but not in its uniqueness key, the second
+-- question's insert was silently IGNORE'd, the row kept the FIRST question's
+-- id, and surface_from_ledger's `WHERE hypothesis_id=?` then reported those
+-- cells as never run -- a hypothesis with a full grid of real measurements
+-- behind it reading as empty.
+--
+-- Putting hypothesis_id in the trial key instead would have recorded the same
+-- number twice and inflated N, which is the one thing that must stay honest.
+-- So the measurement is stored once and the attribution is a set beside it.
+CREATE TABLE IF NOT EXISTS trial_hypotheses (
+    trial_id       INTEGER NOT NULL REFERENCES trials(trial_id),
+    hypothesis_id  TEXT    NOT NULL,
+    first_seen_utc TEXT    NOT NULL,
+    UNIQUE (trial_id, hypothesis_id)
+);
+
+CREATE INDEX IF NOT EXISTS ix_th_hypothesis ON trial_hypotheses(hypothesis_id);
+
 CREATE TRIGGER IF NOT EXISTS trials_no_update
 BEFORE UPDATE ON trials
 BEGIN
@@ -61,10 +85,55 @@ END;
 """
 
 
+def _canonical(obj: Any) -> Any:
+    """A configuration reduced to VALUES, not to how they happen to be spelled.
+
+    config_hash is the identity of a cell, and it was being decided by JSON
+    representation rather than by content.  `json.dumps` writes 7 as "7" and
+    7.0 as "7.0", and a numpy scalar is not JSON-serialisable at all, so
+    `default=str` turned np.int64(7) into the STRING "7".  One cell could
+    therefore carry three different identities depending on where its value
+    came from -- a literal in the queue file, a float after arithmetic, or a
+    numpy scalar out of a grid axis -- and each identity was a separate row, a
+    separate contribution to N, and a dedupe that had silently stopped working.
+
+    Non-finite floats get a name rather than a spelling because `json.dumps`
+    emits bare NaN/Infinity, which is not JSON and does not round-trip.
+    """
+    if isinstance(obj, dict):
+        return {str(k): _canonical(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_canonical(v) for v in obj]
+    # bool is checked before int because in Python it IS an int, and True must
+    # not collapse into 1.
+    if isinstance(obj, bool):
+        return obj
+    if not isinstance(obj, (str, bytes)) and hasattr(obj, "item"):
+        try:                                   # a numpy scalar -> a Python one
+            obj = obj.item()
+        except (AttributeError, ValueError):   # pragma: no cover
+            pass
+        if isinstance(obj, bool):
+            return obj
+    if isinstance(obj, int):
+        return obj
+    if isinstance(obj, float):
+        if math.isnan(obj):
+            return "__nan__"
+        if math.isinf(obj):
+            return "__inf__" if obj > 0.0 else "__-inf__"
+        # 7.0 is the same setting as 7, so it must be the same cell.
+        return int(obj) if obj.is_integer() else obj
+    if obj is None or isinstance(obj, str):
+        return obj
+    return str(obj)
+
+
 def canonical_hash(obj: Any) -> str:
     """Stable hash of a configuration.  Key order must never change the id."""
     return hashlib.sha256(
-        json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str).encode()
+        json.dumps(_canonical(obj), sort_keys=True, separators=(",", ":"),
+                   default=str).encode()
     ).hexdigest()
 
 
@@ -114,6 +183,14 @@ class Ledger:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self._migrate()
         self.conn.executescript(SCHEMA)
+        # Every row written before trial_hypotheses existed carries exactly one
+        # attribution -- the hypothesis that got there first -- and it is on the
+        # row itself.  Carry it across so a surface built from an old ledger is
+        # not empty.  INSERT OR IGNORE, so this is a no-op on every later open.
+        self.conn.execute(
+            "INSERT OR IGNORE INTO trial_hypotheses (trial_id, hypothesis_id,"
+            " first_seen_utc) SELECT trial_id, hypothesis_id, created_utc"
+            " FROM trials WHERE hypothesis_id IS NOT NULL")
         self.conn.commit()
 
     def _migrate(self) -> None:
@@ -183,14 +260,26 @@ class Ledger:
             " symbol, evaluator, config_hash, config_json, code_hash, panel_hash,"
             " holdout_state, n_starts, metrics_json)"
             " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", row)
-        self.conn.commit()
         if cur.rowcount:
-            return int(cur.lastrowid), True
-        existing = self.conn.execute(
-            "SELECT trial_id FROM trials WHERE config_hash=? AND symbol=?"
-            " AND evaluator=? AND panel_hash=? AND code_hash=?",
-            (chash, symbol, evaluator, panel_hash, chash_code)).fetchone()
-        return int(existing[0]), False
+            trial_id, was_new = int(cur.lastrowid), True
+        else:
+            existing = self.conn.execute(
+                "SELECT trial_id FROM trials WHERE config_hash=? AND symbol=?"
+                " AND evaluator=? AND panel_hash=? AND code_hash=?",
+                (chash, symbol, evaluator, panel_hash, chash_code)).fetchone()
+            trial_id, was_new = int(existing[0]), False
+        # Attribution is recorded whether or not the measurement was new.  This
+        # is the whole point: a second hypothesis that enumerates a cell an
+        # earlier one already measured adds no row to `trials` -- N does not
+        # move, because no new experiment was performed -- but it must still be
+        # able to see its own grid.
+        if hypothesis_id is not None:
+            self.conn.execute(
+                "INSERT OR IGNORE INTO trial_hypotheses (trial_id, hypothesis_id,"
+                " first_seen_utc) VALUES (?,?,?)",
+                (trial_id, hypothesis_id, row[0]))
+        self.conn.commit()
+        return trial_id, was_new
 
     def record_many(self, rows: list[dict]) -> int:
         new = 0

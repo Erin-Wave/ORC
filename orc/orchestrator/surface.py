@@ -114,10 +114,17 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     metric = metric or h.primary_metric
     axes = sorted(h.grid)
     with Ledger() as led:
+        # Through trial_hypotheses, not through trials.hypothesis_id.  A cell
+        # this hypothesis enumerated that an earlier one had already measured
+        # keeps the earlier id on its row -- the measurement was not repeated,
+        # so no row was added -- and reading the column directly reported those
+        # cells as never run.
         rows = led.conn.execute(
-            "SELECT symbol, config_json, metrics_json, n_starts, code_hash, "
-            "panel_hash FROM trials WHERE hypothesis_id=? "
-            "ORDER BY created_utc, trial_id",
+            "SELECT t.symbol, t.config_json, t.metrics_json, t.n_starts, "
+            "t.code_hash, t.panel_hash FROM trials t "
+            "JOIN trial_hypotheses th ON th.trial_id = t.trial_id "
+            "WHERE th.hypothesis_id=? "
+            "ORDER BY t.created_utc, t.trial_id",
             (h.hypothesis_id,)).fetchall()
 
     values: dict[str, dict[tuple, float]] = {}
@@ -499,12 +506,18 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
         # one.  It is now the same shape, which is what makes the p-value mean
         # anything -- and it is why this is slow: 199 synthetic histories times
         # the whole grid, at roughly half a second per path-dependent cell.
-        from orc.orchestrator.runner import tm_q05_on_path
+        # Scored on the SAME statistic the observed value carries.  `write_report`
+        # passes surfaces[sym]["best_value"], which ranking_metric ranks on
+        # mwrr_q05, and this null used to score tm_q05: an annualised return
+        # compared against a distribution of terminal multiples, two different
+        # units, so the p-value was not a p-value.  Track B was already
+        # consistent (calmar on both sides); this is Track A catching up.
+        from orc.orchestrator.runner import mwrr_q05_on_path
 
         def score(close):
             best = -np.inf
             for cfg in configs:
-                v = tm_q05_on_path(cfg, p, close)
+                v = mwrr_q05_on_path(cfg, p, close)
                 if np.isfinite(v):
                     best = max(best, v)
             return best

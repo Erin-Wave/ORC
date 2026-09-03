@@ -79,6 +79,52 @@ def _hash_arrays(*arrays: np.ndarray) -> str:
     return h.hexdigest()[:32]
 
 
+def _assert_bar_index_is_a_clock(df, symbol: str, clock: str) -> None:
+    """Bar index is used as a clock, so verify that it is one.
+
+    A stride of 168 hourly bars must mean one week, and that is only true on a
+    grid that is ordered, unique and on its own step.  A symbol with real
+    outages would otherwise silently rescale every horizon in the project.
+
+    Its own function so that it can be tested on a frame rather than only
+    through a parquet file on disk -- the three ways it can be violated all
+    describe files that must never be written, so there is nothing on disk to
+    point it at.
+    """
+    ts_h = df["ts"].to_numpy().astype("datetime64[m]").astype(np.int64)
+    step = {"1m": 1, "1h": 60}[clock]
+
+    # Order and uniqueness FIRST, because the missing-bar fraction below cannot
+    # see either.  `missing = 1 - height/expected` only goes positive when bars
+    # are SHORT, so a duplicated bar or a non-monotonic timestamp made height
+    # meet or exceed expected, drove `missing` NEGATIVE, and sailed through the
+    # one check standing between a broken file and "bar index is a clock".  A
+    # duplicated bar shifts every later index by one: a 168-bar stride stops
+    # being a week from that point on, and nothing downstream can tell.
+    if ts_h.size >= 2:
+        d = np.diff(ts_h)
+        if np.any(d <= 0):
+            n_bad = int(np.count_nonzero(d <= 0))
+            raise ValueError(
+                f"{symbol}: {n_bad} of {df.height} {clock} bars are duplicated or "
+                "out of order; bar index is not a reliable clock")
+        # Gaps are tolerated up to the fraction below, but a gap that is not a
+        # whole number of bars means the grid itself is off its step, and no
+        # count of missing bars can express that.
+        off = int(np.count_nonzero(d % step != 0))
+        if off:
+            raise ValueError(
+                f"{symbol}: {off} {clock} bar gap(s) are not a whole multiple of "
+                f"{step}m; the bar grid is not aligned to its own clock")
+
+    expected = (ts_h[-1] - ts_h[0]) // step + 1
+    missing = 1.0 - df.height / float(expected)
+    if missing > MAX_MISSING_BAR_FRACTION:
+        raise ValueError(
+            f"{symbol}: {missing:.3%} of {clock} bars are missing "
+            f"(limit {MAX_MISSING_BAR_FRACTION:.1%}); bar index is not a reliable clock")
+
+
 def load(
     symbol: str,
     clock: str = "1h",
@@ -123,17 +169,7 @@ def load(
         raise ValueError(
             f"{symbol}: no bars left in the {state} span")
 
-    # Bar index is used as a clock (a stride of 168 hourly bars must mean one
-    # week).  That is only true on a continuous grid, so verify it rather than
-    # assume it: a symbol with real outages would silently rescale every horizon.
-    ts_h = df["ts"].to_numpy().astype("datetime64[m]").astype(np.int64)
-    step = {"1m": 1, "1h": 60}[clock]
-    expected = (ts_h[-1] - ts_h[0]) // step + 1
-    missing = 1.0 - df.height / float(expected)
-    if missing > MAX_MISSING_BAR_FRACTION:
-        raise ValueError(
-            f"{symbol}: {missing:.3%} of {clock} bars are missing "
-            f"(limit {MAX_MISSING_BAR_FRACTION:.1%}); bar index is not a reliable clock")
+    _assert_bar_index_is_a_clock(df, symbol, clock)
 
     fr = np.zeros(df.height, dtype=np.float64)
     settled = np.zeros(df.height, dtype=bool)

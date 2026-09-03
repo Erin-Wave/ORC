@@ -112,6 +112,71 @@ def tm_q05_on_path(cfg: TrialConfig, p: Panel, close: np.ndarray) -> float:
     return float(np.nanquantile(tm, 0.05)) if tm.size else float("nan")
 
 
+def mwrr_q05_on_path(cfg: TrialConfig, p: Panel, close: np.ndarray) -> float:
+    """One Track A cell's 5th-percentile annualised IRR on a given path.
+
+    The statistic the Track A search test needs, and the one it was not using.
+    `write_report` passes `surfaces[sym]["best_value"]`, which `ranking_metric`
+    ranks on `mwrr_q05` -- an annualised money-weighted RETURN, around 0.14 for
+    a good cell -- and the null scored every synthetic path with
+    `tm_q05_on_path`, a terminal MULTIPLE, around 3.6 for the same cell.  The
+    p-value was therefore the answer to "how often does a bootstrap multiple
+    exceed an observed rate of return", which is a question about units.  It
+    could only come back extreme in one direction, so the test that exists to
+    price the width of the search was not pricing anything.
+
+    Same shape as tm_q05_on_path in every other respect, including handing the
+    simulator `close` as its low: the bootstrap has no wick, and understating
+    liquidation in the null raises the bar the observed cell must clear.
+    """
+    stride, hold = p.bars(cfg.stride_days), p.bars(cfg.hold_days)
+    if stride < 1:
+        return float("nan")
+    horizon = (cfg.n_contributions - 1) * stride + hold
+    if horizon >= close.size:
+        return float("nan")
+    fee, slip = cfg.effective_fee_bps, cfg.effective_slippage_bps
+    years_between = cfg.stride_days / 365.0
+
+    if cfg.uses_analytic:
+        spec = AnalyticSpec(contribution=cfg.contribution, stride_bars=stride,
+                            n_contributions=cfg.n_contributions, hold_bars=hold,
+                            fee_bps=fee, slippage_bps=slip, exit_fee_bps=fee)
+        res = evaluate(close, spec,
+                       funding_flow=p.funding_flow if cfg.include_funding else None)
+        if not res.get("n_starts", 0):
+            return float("nan")
+        irr = mwrr_equal_interval(
+            cfg.contribution, cfg.n_contributions, years_between,
+            res["terminal_value"],
+            horizon_years=horizon / (p.bars_per_day * 365.0))
+        return float(np.nanquantile(irr, 0.05)) if np.size(irr) else float("nan")
+
+    sim = SimSpec(contribution=cfg.contribution, stride_bars=stride,
+                  n_contributions=cfg.n_contributions, hold_bars=hold,
+                  leverage=cfg.leverage, fee_bps=fee, slippage_bps=slip,
+                  exit_fee_bps=fee, take_profit=cfg.take_profit,
+                  stop_loss=cfg.stop_loss)
+    step = max(p.bars(SIM_START_STRIDE_DAYS), 1)
+    starts = np.arange(0, close.size - horizon - 1, step, dtype=np.int64)
+    if starts.size == 0:
+        return float("nan")
+    out = simulate(close, close, starts, sim,
+                   funding_rate=p.funding_rate if cfg.include_funding else None,
+                   gate=build_gate(cfg.gate, p, close),
+                   table=tier_table_for(cfg.symbol))
+    # The deposits that actually landed and the time the path actually lived,
+    # exactly as run_trial prices a real cell.  Anything else would put the
+    # null and the observation on different definitions of the same metric,
+    # which is the defect this function exists to close.
+    invested = out["invested"]
+    n_real = np.maximum(np.round(invested / max(cfg.contribution, 1e-12)), 1.0)
+    years_real = np.maximum(out["exit_bar"], 0.0) / (p.bars_per_day * 365.0)
+    irr = mwrr_equal_interval(cfg.contribution, n_real, years_between,
+                              out["terminal_equity"], horizon_years=years_real)
+    return float(np.nanquantile(irr, 0.05)) if np.size(irr) else float("nan")
+
+
 @dataclass
 class TrialOutcome:
     cfg: TrialConfig
@@ -329,7 +394,13 @@ def run_hypothesis(
     ch = code_hash()
 
     configs = h.expand()
-    panels: dict[str, Panel] = {}
+    # Keyed on (symbol, clock), not on symbol.  A panel IS a symbol at a clock:
+    # `fixed: {"clock": "1h"}` is the common case, but a grid is free to put
+    # clock on an axis, and then every configuration after the first was scored
+    # against whichever clock happened to come first -- minute rules measured on
+    # hourly bars, or the reverse, with panel_hash recording the wrong panel and
+    # nothing downstream able to notice.
+    panels: dict[tuple[str, str], Panel] = {}
     done = new = skipped = 0
     failures: dict[str, int] = {}
 
@@ -337,15 +408,16 @@ def run_hypothesis(
         print(f"{h.hypothesis_id}  {h.family}  {len(configs)} configurations")
 
     for cfg in configs:
-        if cfg.symbol not in panels:
+        key = (cfg.symbol, cfg.clock)
+        if key not in panels:
             try:
-                panels[cfg.symbol] = panel_mod.load(cfg.symbol, cfg.clock,
-                                                    development_only=True)
+                panels[key] = panel_mod.load(cfg.symbol, cfg.clock,
+                                             development_only=True)
             except (FileNotFoundError, ValueError) as exc:
-                panels[cfg.symbol] = None                    # type: ignore[assignment]
+                panels[key] = None                           # type: ignore[assignment]
                 failures[f"panel:{type(exc).__name__}"] = failures.get(
                     f"panel:{type(exc).__name__}", 0) + 1
-        p = panels[cfg.symbol]
+        p = panels[key]
         if p is None:
             skipped += 1
             continue

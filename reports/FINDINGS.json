@@ -1394,16 +1394,17 @@
     },
     "309614dd45f2": {
       "id": "309614dd45f2",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: run_signals refuses a funding series with any non-finite value, the same refusal simulate.py:93 already made. Measured: a NaN at bar 10 now raises ValueError instead of returning a trade log whose liquidation count is fiction. tests/test_kernel.py::test_a_non_finite_funding_rate_is_refused_by_the_signal_evaluator",
       "file": "orc/eval/signal.py",
       "line": 150,
       "severity": "high",
       "what": "run_signals accepts a non-finite funding_rate that simulate.py:34 raises on, and the resulting NaN wallet makes `adverse <= liq` false forever, so liquidation is never detected again — while both RuntimeError guards (the wallet invariant at :281 and the trade-log reconciliation at :310) compare against NaN and are silently False.",
       "trigger": "close = np.linspace(100, 40, 60) (a 60% fall), a 10x long entered at bar 0, symbol='SOMEALTUSDT'. With funding_rate=np.zeros(60) it returns n_liquidations=1, final_equity=0.0. With the same array plus fr[3]=np.nan it returns n_liquidations=0, final_equity=nan, n_trades=1 and raises nothing; runner.py:191 then writes liquidation_rate = 0/1 = 0.0 into the ledger. Reachability today is latent — I scanned all 430 files in FACTS/funding and found 0 non-finite or null rates — so this is one bad vendor row away, not currently firing.",
-      "why_silent": "NaN <= x, NaN >= x and NaN > tol are all False, so every comparison in the module that is supposed to catch a hole answers 'no hole'. The one number that would betray it, n_liquidations, comes back as 0 — an ordinary, publishable integer. simulate.py:30-38 has a comment describing this exact failure mode and refuses the input; signal.py never got the same guard."
+      "why_silent": "NaN <= x, NaN >= x and NaN > tol are all False, so every comparison in the module that is supposed to catch a hole answers 'no hole'. The one number that would betray it, n_liquidations, comes back as 0 — an ordinary, publishable integer. simulate.py:30-38 has a comment describing this exact failure mode and refuses the input; signal.py never got the same guard.",
+      "decided_utc": "2026-09-03T23:55:44.797464+00:00"
     },
     "a715e5c8d1b4": {
       "id": "a715e5c8d1b4",
@@ -1576,42 +1577,45 @@
     },
     "1fda815109fc": {
       "id": "1fda815109fc",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: canonical_hash hashes VALUES via _canonical(), not their JSON spelling. Measured before/after on {'n': 7} vs {'n': 7.0} vs {'n': np.int64(7)} -- before: three different hashes; after: one. bool stays distinct from int and non-finite floats get a name rather than a bare NaN token. tests/test_protocol.py::test_a_cell_has_one_identity_whatever_spelled_it",
       "file": "orc/ledger/trials.py",
       "line": 67,
       "severity": "high",
       "what": "canonical_hash의 identity가 값이 아니라 JSON 표현 타입에 의존한다 — 7과 7.0이 서로 다른 config_hash를 만들고, np.int64(7)은 default=str에 걸려 문자열 \"7\"이 되므로 같은 셀이 세 가지 정체성을 가질 수 있다.",
       "trigger": "실제 ledger에서 이미 발생했다. `SELECT config_json, config_hash FROM trials`를 타입 정규화 후 묶으면, (numerically-identical config, symbol, evaluator, panel_hash, code_hash)가 동일한데 config_hash가 둘인 그룹이 90개 있고 metrics_json은 바이트 단위로 동일하다. 예: trial 6968 vs 8124 (ADAUSDT, analytic) — 유일한 차이가 `stride_days: 7.0` 대 `7`. 재현: `\"grid\": {\"stride_days\": [7]}` (int)로 등록한 뒤 `[7.0]` (float)로 다시 등록하면 된다. spec.expand()는 grid 값을 frozen dataclass에 그대로 넣고 타입 강제를 하지 않는다.",
-      "why_silent": "INSERT OR IGNORE가 UNIQUE에 걸리지 않으므로 새 행으로 들어가고 정상적인 신규 trial처럼 보인다. 두 행의 숫자는 완전히 같아서 어떤 리포트에서도 이상하게 읽히지 않는다. N은 줄일 수 없다고 헌장이 못박았으므로, 중복 90행이 다중검정 분모에 영구히 남는다."
+      "why_silent": "INSERT OR IGNORE가 UNIQUE에 걸리지 않으므로 새 행으로 들어가고 정상적인 신규 trial처럼 보인다. 두 행의 숫자는 완전히 같아서 어떤 리포트에서도 이상하게 읽히지 않는다. N은 줄일 수 없다고 헌장이 못박았으므로, 중복 90행이 다중검정 분모에 영구히 남는다.",
+      "decided_utc": "2026-09-03T23:55:44.846137+00:00"
     },
     "e19968047193": {
       "id": "e19968047193",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: the continuity check is now _assert_bar_index_is_a_clock() and tests order and step alignment BEFORE the missing-bar fraction, which can only see bars that are short. Measured: a single duplicated bar gave missing=-0.0417 and passed; it now raises. Verified against all 253 real panels -- 251 load, and the 2 refusals are the pre-existing missing-bar limit, not the new checks. tests/test_kernel.py::test_a_duplicated_or_unordered_bar_is_refused_as_a_clock",
       "file": "orc/facts/panel.py",
       "line": 132,
       "severity": "high",
       "what": "bar index가 시계라는 것을 보장하는 연속성 검사가 단방향이다 — `missing = 1 - height/expected`는 bar가 모자랄 때만 발동하고, 중복 bar나 비단조 ts로 height가 expected 이상이면 missing이 음수가 되어 그대로 통과한다. 정렬 여부는 아예 검사하지 않는다.",
       "trigger": "실행해서 확인했다. BTCUSDT 1h 패널을 `pl.concat([src, src]).sort(\"ts\")`로 만들어 load()에 넣으면 거부되지 않고 78,486 bars로 로드된다. `p.bars(7)`은 여전히 168을 반환하지만 인덱스 168개가 덮는 실제 시간은 86시간이고 `np.all(np.diff(ts) > 0)`은 False다. 또 `pl.concat([src[20000:], src[:20000]])`처럼 회전된 프레임은 expected가 0이 되어 line 132에서 의도된 거부 메시지 대신 맨 ZeroDivisionError가 난다.",
-      "why_silent": "load()가 예외 없이 Panel을 돌려주므로 모든 stride_days / hold_days / lookback_days / max_hold_days가 절반 길이로 조용히 재척도되고, _span이 기록하는 horizon_days와 effective_independent_paths도 같은 배수만큼 틀린다. 게다가 fetch_vision.funding_rate_per_bar는 bars가 정렬되어 있다고 가정한 searchsorted를 쓰는데, 그 전제를 검증하는 유일한 자리가 바로 이 검사다."
+      "why_silent": "load()가 예외 없이 Panel을 돌려주므로 모든 stride_days / hold_days / lookback_days / max_hold_days가 절반 길이로 조용히 재척도되고, _span이 기록하는 horizon_days와 effective_independent_paths도 같은 배수만큼 틀린다. 게다가 fetch_vision.funding_rate_per_bar는 bars가 정렬되어 있다고 가정한 searchsorted를 쓰는데, 그 전제를 검증하는 유일한 자리가 바로 이 검사다.",
+      "decided_utc": "2026-09-03T23:55:44.894669+00:00"
     },
     "c8250bb33b10": {
       "id": "c8250bb33b10",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: one is_measurable() guard shared by all four ratios, and the isfinite filter that deleted holed bars is gone. Measured on [100,101,nan,103,104,105] -- before: sharpe 4582.7068, finite and entirely fictional; after: nan, and cagr/max_drawdown/calmar agree. tests/test_kernel.py::test_a_nan_equity_curve_is_not_scored_as_a_strategy",
       "file": "orc/kernel/metrics_fc.py",
       "line": 69,
       "severity": "high",
       "what": "파산 계좌를 거부하려고 둔 `np.any(equity <= 0.0)` 가드가 NaN에 무력하다 (`nan <= 0`은 False). NaN이 섞인 equity는 가드를 통과하고, np.log/np.diff가 만든 NaN 수익률을 `r[np.isfinite(r)]`가 삭제한 뒤 남은 수익률을 연속된 bar처럼 취급해 Sharpe를 계산한다.",
       "trigger": "실행해서 확인했다. `equity = [10000, 10100, nan, 9000, 9100, 9200]`에 대해 metrics_fc.summary는 `max_drawdown: nan`, `calmar: nan`을 주면서 `sharpe: 1652.06`을 반환한다. 같은 배열을 읽는 두 경로가 어긋난다.",
-      "why_silent": "같은 curve에 대해 다른 지표는 전부 nan으로 '측정 불가'를 말하는데 Sharpe만 유한한 수를 내놓고, 그 수는 sqrt(bars_per_year) 연율화를 삭제된 bar 수를 무시한 채 적용한 값이라 크기만 클 뿐 형식상 정상으로 읽힌다. section 4가 보고하라고 요구하는 네 지표 중 하나가 바로 이것이다."
+      "why_silent": "같은 curve에 대해 다른 지표는 전부 nan으로 '측정 불가'를 말하는데 Sharpe만 유한한 수를 내놓고, 그 수는 sqrt(bars_per_year) 연율화를 삭제된 bar 수를 무시한 채 적용한 값이라 크기만 클 뿐 형식상 정상으로 읽힌다. section 4가 보고하라고 요구하는 네 지표 중 하나가 바로 이것이다.",
+      "decided_utc": "2026-09-03T23:55:44.940133+00:00"
     },
     "c01d10c20018": {
       "id": "c01d10c20018",
@@ -1680,42 +1684,45 @@
     },
     "1d24187e83e0": {
       "id": "1d24187e83e0",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: added runner.mwrr_q05_on_path and the Track A null now scores it, so the null distribution and the observed best_value are the same statistic. Before, an annualised return (~0.14) was compared against a distribution of terminal multiples (~3.6): a p-value about units. Track B was already consistent on calmar. tests/test_protocol.py::test_the_track_a_null_scores_the_statistic_the_search_selected_on",
       "file": "orc/orchestrator/surface.py",
       "line": 581,
       "severity": "high",
       "what": "The Track A search test compares an observed annualised money-weighted return against a null distribution of terminal multiples: `write_report` passes `surfaces[sym][\"best_value\"]`, which is ranked on `mwrr_q05` (see `ranking_metric`, line 69), while the Track A null closure at line 507 scores each synthetic path with `tm_q05_on_path`, i.e. `tm_q05`.",
       "trigger": "Any Track A hypothesis; it is already in the committed reports. reports/H0001_SURFACE.json ETHUSDT: `best_value` 0.6789 == `mwrr_q05_best` 0.6789 (the cell's `tm_q05` is 3.6056) is passed as `observed_best` against `null_mean` 24.73 / `null_q95` 72.0 — terminal multiples. reports/H0007_SURFACE.json BNBUSDT: `observed_best` -0.3619 (an IRR) against `null_mean` 0.777, `null_q95` 1.206 (multiples).",
-      "why_silent": "Both quantities are plain floats, so `best_of_g_pvalue` computes a p-value, the status is \"ok\" and a verdict prints. On today's symbols the multiples sit above the IRRs so p=1.0 and it errs toward rejection, which is why nobody noticed; the sign flips the moment the null's tm_q05 distribution falls below the observed IRR — on H0007/BTCUSDT `null_q95` is 1.036, so any cell with mwrr_q05 above ~1.04 would be reported SURVIVES_SEARCH at p<0.05 by the one test that consumes N."
+      "why_silent": "Both quantities are plain floats, so `best_of_g_pvalue` computes a p-value, the status is \"ok\" and a verdict prints. On today's symbols the multiples sit above the IRRs so p=1.0 and it errs toward rejection, which is why nobody noticed; the sign flips the moment the null's tm_q05 distribution falls below the observed IRR — on H0007/BTCUSDT `null_q95` is 1.036, so any cell with mwrr_q05 above ~1.04 would be reported SURVIVES_SEARCH at p<0.05 by the one test that consumes N.",
+      "decided_utc": "2026-09-03T23:55:44.986578+00:00"
     },
     "0e76e5167368": {
       "id": "0e76e5167368",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: the panel cache is keyed on (cfg.symbol, cfg.clock). A grid with clock on an axis scored every configuration after the first against whichever clock loaded first, with panel_hash recording the wrong panel. tests/test_protocol.py::test_the_panel_cache_is_keyed_on_the_clock_as_well_as_the_symbol",
       "file": "orc/orchestrator/runner.py",
       "line": 340,
       "severity": "high",
       "what": "The panel cache in `run_hypothesis` is keyed on `cfg.symbol` alone (`panels: dict[str, Panel]`), so when `clock` varies across the grid every configuration after the first is evaluated against the panel loaded for the first clock.",
       "trigger": "A hypothesis with clock as an axis, e.g. track B, universe [\"BTCUSDT\"], grid {\"clock\": [\"1h\",\"1m\"], \"lookback_days\": [7.0,21.0,60.0]} — both panels exist on disk (facts/panel_1h/BTCUSDT.parquet and facts/panel_1m/BTCUSDT.parquet). Executed against a spy on panel_mod.load: 6 configurations produced exactly one load, ('BTCUSDT','1h'). The three \"1m\" cells then run on hourly bars while `run_signal_trial` line 175 annualises with `metrics_fc.BARS_PER_YEAR[cfg.clock]` = 525600 on a curve of 8760 bars/yr, so `years` is 60x too small and CAGR/Sharpe/Calmar explode; that cell then wins `nanargmax` and clears the break-even floor.",
-      "why_silent": "A Panel is a Panel: every downstream call succeeds and returns finite numbers, the row is written with `evaluator`, `n_starts` and `panel_hash` all present — the panel_hash is simply the 1h one under a config that says 1m, and nothing cross-checks the two."
+      "why_silent": "A Panel is a Panel: every downstream call succeeds and returns finite numbers, the row is written with `evaluator`, `n_starts` and `panel_hash` all present — the panel_hash is simply the 1h one under a config that says 1m, and nothing cross-checks the two.",
+      "decided_utc": "2026-09-03T23:55:45.030594+00:00"
     },
     "3f5eecddcf2e": {
       "id": "3f5eecddcf2e",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: new trial_hypotheses table records every hypothesis that enumerated a measurement, written whether or not the insert was new, and surface_from_ledger joins it instead of reading trials.hypothesis_id. N does not move for a measurement that was not repeated -- putting hypothesis_id in the trial key would have recorded the same number twice. Existing rows are backfilled on open. tests/test_protocol.py::test_a_second_hypothesis_sees_a_cell_an_earlier_one_measured",
       "file": "orc/orchestrator/runner.py",
       "line": 360,
       "severity": "high",
       "what": "`hypothesis_id` is passed to `ledger.record` but is not part of the ledger's UNIQUE key (config_hash, symbol, evaluator, panel_hash, code_hash), so a second hypothesis that re-enumerates cells an earlier one already ran gets INSERT OR IGNORE'd — the rows keep the first hypothesis's id, and `surface_from_ledger`'s `WHERE hypothesis_id=?` (surface.py:118) reports those cells as never run.",
       "trigger": "Exactly the follow-up section 6 prescribes: H0006 (family negative_funding_carry_long, an 8-cell probe, fixed {rule, exit_rate 0.0001, leverage 1.0, max_hold_days null, take_profit null, capital 10000.0, clock \"1h\"}) re-registered wide as H0010 with the same fixed block and grid lookback_days [7,14,21,30] x enter_rate [0.0,-0.0001] x stop_loss [0.15,null]. The 8 overlapping cells produce byte-identical config dicts. Reproduced on a temp ledger: second record() returned (1, False), the single row still reads hypothesis_id H0006, and `SELECT count(*) WHERE hypothesis_id='H0010'` returns 0.",
-      "why_silent": "`done` counts the evaluation rather than the insert, so the summary prints \"evaluated 8\" and only `new` is smaller; the surface then has NaN at exactly those lattice points, `plateau_score` skips NaN neighbours without complaint, and the family reads as a grid that was run and produced fewer filled cells."
+      "why_silent": "`done` counts the evaluation rather than the insert, so the summary prints \"evaluated 8\" and only `new` is smaller; the surface then has NaN at exactly those lattice points, `plateau_score` skips NaN neighbours without complaint, and the family reads as a grid that was run and produced fewer filled cells.",
+      "decided_utc": "2026-09-03T23:55:45.077494+00:00"
     },
     "665c8020fbb9": {
       "id": "665c8020fbb9",
@@ -1823,29 +1830,31 @@
     },
     "356ad9d05565": {
       "id": "356ad9d05565",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: openings_used() takes the largest of the log's highest ordinal, the log's line count and a second state file derived from LOG_FILE, so losing the log alone no longer restores openings. A fresh project has neither file and is genuinely at zero; every other disagreement resolves upward, the only direction that cannot manufacture a look at sealed data. tests/test_protocol.py::test_the_opening_counter_only_ever_resolves_upward",
       "file": "orc/holdout.py",
       "line": 133,
       "severity": "high",
       "what": "The irreversible opening counter is reconstructed entirely from ledger/FINAL_TEST_LOG.jsonl, and a missing file is read as \"never opened\" rather than as \"the count is unknown\", so losing or not carrying that one untracked file restores all three openings.",
       "trigger": "Verified by execution: with TOKEN_FILE/LOG_FILE patched to a tmp dir, spend all three openings (the fourth is correctly refused with \"all 3 final-test openings are spent\"), then point LOG_FILE at a path that does not exist. openings_used() returns 0 and open_final_test({\"id\": \"after a clone\"}, \"fresh checkout\") succeeds, logging {\"opening\": 1, \"of\": 3}. In the real project this needs no patching: `git ls-files ledger` lists only trials.sqlite, .gitignore names FINAL_TEST_TOKEN but never the log, and ledger/FINAL_TEST_LOG.jsonl does not exist on this machine. Any fresh clone, any second working directory (LOG_FILE and READS_FILE are pinned to config.ORC_ROOT and, unlike config.LEDGER_DB, honour no env override), or a ledger/ restored from a backup taken before an opening resets the count to zero.",
-      "why_silent": "`_openings()` returns [] for both \"the file was never written\" and \"the file is gone\", and nothing downstream can tell them apart. The record then written is well-formed — {\"opening\": 1, \"of\": 3} — and scripts/status.py, scripts/briefing.py and scripts/daily_cycle.py all print `0/3 openings used`, which is exactly what an untouched project looks like. READS_FILE records the same openings independently and no code path ever compares the two files, so the one surviving witness is never consulted."
+      "why_silent": "`_openings()` returns [] for both \"the file was never written\" and \"the file is gone\", and nothing downstream can tell them apart. The record then written is well-formed — {\"opening\": 1, \"of\": 3} — and scripts/status.py, scripts/briefing.py and scripts/daily_cycle.py all print `0/3 openings used`, which is exactly what an untouched project looks like. READS_FILE records the same openings independently and no code path ever compares the two files, so the one surviving witness is never consulted.",
+      "decided_utc": "2026-09-03T23:55:45.121958+00:00"
     },
     "11971cd77077": {
       "id": "11971cd77077",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-03T23:23:42.157142+00:00",
       "last_seen_utc": "2026-09-03T23:23:42.157142+00:00",
-      "disposition": "",
+      "disposition": "fixed: the line count is a second lower bound, so two records both claiming opening 1 no longer collapse into one (measured: was 1, now 2), and open_final_test refuses to write an ordinal already in the log, leaving the token unspent. The state file is derived from LOG_FILE rather than being a constant -- the first draft was a constant and wrote '3 openings used' into the REAL ledger during a test run within one suite pass. tests/test_protocol.py::test_an_ordinal_already_in_the_log_is_never_written_twice and ::test_the_opening_state_file_follows_the_log_and_never_the_real_ledger",
       "file": "orc/holdout.py",
       "line": 149,
       "severity": "high",
       "what": "openings_used() takes max() of the recorded ordinals, so two records claiming the same opening collapse into one, and open_final_test never checks that the ordinal it is about to write is unused — the count can under-report real openings.",
       "trigger": "Verified by execution: a log holding ordinals [1, 2, 3, 3] — four records — returns openings_used() == 3, leaving the cap apparently intact. Two records share an ordinal whenever two processes enter open_final_test with one FINAL_TEST_TOKEN present: both openings_used() calls return the same N before either writes, both pass the token-text check, and both append `used + 1`. CLAUDE.md §10 already records one unguarded concurrent write in this project that cost 39 minutes and 112 trials, so the interleaving is not hypothetical here. The append is not atomic with the read and there is no lock, no O_EXCL claim, and no post-write re-read.",
-      "why_silent": "Nothing compares the number of records to the ordinals the records themselves state; the two are allowed to disagree in the direction that hands out extra openings. The extra opening returns a normal record dict reading {\"opening\": 3, \"of\": 3} and every display prints `3/3 openings used` — indistinguishable from a project that spent exactly its three. The docstring at lines 140-147 justifies max() over len() as a defence against a lost line, which is true, but the swap traded one failure mode for its exact mirror and neither the code nor a test checks both."
+      "why_silent": "Nothing compares the number of records to the ordinals the records themselves state; the two are allowed to disagree in the direction that hands out extra openings. The extra opening returns a normal record dict reading {\"opening\": 3, \"of\": 3} and every display prints `3/3 openings used` — indistinguishable from a project that spent exactly its three. The docstring at lines 140-147 justifies max() over len() as a defence against a lost line, which is true, but the swap traded one failure mode for its exact mirror and neither the code nor a test checks both.",
+      "decided_utc": "2026-09-03T23:55:45.165644+00:00"
     },
     "47413e16a571": {
       "id": "47413e16a571",

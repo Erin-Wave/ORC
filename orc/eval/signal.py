@@ -147,7 +147,22 @@ def run_signals(
     if funding_rate is None:
         flow_cum = np.zeros(n + 1, dtype=np.float64)
     else:
-        flow = close * np.asarray(funding_rate, dtype=np.float64)
+        fr = np.asarray(funding_rate, dtype=np.float64)
+        # The same refusal simulate.py:93 already makes, and for the same
+        # reason -- it was simply missing on this side.  One non-finite rate
+        # turns the wallet into NaN, `adverse <= liq` is False for NaN, so
+        # liquidation is never detected again on that path: the trade is
+        # reported as a survivor.  Worse, the two RuntimeError invariants meant
+        # to catch exactly this (the wallet check and the trade-log
+        # reconciliation) also compare against NaN and are silently False, so
+        # the run completes and reports CAGR, Sharpe and a liquidation count
+        # that are all fiction.
+        if not np.isfinite(fr).all():
+            raise ValueError(
+                f"funding_rate carries {int((~np.isfinite(fr)).sum())} non-finite "
+                "value(s); a NaN here makes every trade that touches it "
+                "unliquidatable and defeats the invariants meant to catch that")
+        flow = close * fr
         flow_cum = np.concatenate(([0.0], np.cumsum(flow)))
 
     entry_idx = np.flatnonzero(entry != 0)

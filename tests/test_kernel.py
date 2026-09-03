@@ -685,3 +685,100 @@ def test_a_left_tail_metric_says_how_many_paths_it_could_not_score():
     assert clean["n_non_finite"] == 0
     assert "frac_non_finite" not in clean
     assert start_date_profile(np.array([np.nan, np.nan])) == {"n": 0, "n_non_finite": 2}
+
+
+# ---------------------------------------------------------------------------
+# The nine high findings that stopped the loop on 2026-09-04.
+#
+# kernel_review found them, next_action() refused every research action while
+# they were open, and the supervisor sat at "blocked" doing nothing for a whole
+# day.  Each test below fails if its fix is reverted, because the finding is
+# only closed while something would notice it reopening.
+# ---------------------------------------------------------------------------
+def test_a_nan_equity_curve_is_not_scored_as_a_strategy():
+    """c8250bb33b10.  `np.any(equity <= 0.0)` is blind to NaN -- `nan <= 0` is
+    False -- so a curve with holes passed the bankruptcy guard, np.log/np.diff
+    turned the holes into NaN returns, and `r = r[np.isfinite(r)]` DELETED them
+    and treated the survivors as consecutive bars.  The account whose equity was
+    not a number came back with a finite, plausible, entirely fictional Sharpe.
+    """
+    from orc.kernel import metrics_fc
+
+    bpy = metrics_fc.BARS_PER_YEAR["1h"]
+    holed = np.array([100.0, 101.0, np.nan, 103.0, 104.0, 105.0])
+    assert not metrics_fc.is_measurable(holed)
+    for name in ("sharpe", "cagr"):
+        v = getattr(metrics_fc, name)(holed, bpy)
+        assert not np.isfinite(v), f"{name} scored a curve that is not a number"
+    assert not np.isfinite(metrics_fc.max_drawdown(holed))
+    assert not np.isfinite(metrics_fc.calmar(holed, bpy))
+
+    # The same curve without the hole is scored normally, so the guard is not
+    # simply refusing everything.
+    clean = np.array([100.0, 101.0, 102.0, 103.0, 104.0, 105.0])
+    assert metrics_fc.is_measurable(clean)
+    assert np.isfinite(metrics_fc.sharpe(clean, bpy))
+
+
+def test_a_non_finite_funding_rate_is_refused_by_the_signal_evaluator():
+    """309614dd45f2.  simulate.py has refused this since its own review; signal.py
+    did not.  A NaN wallet makes `adverse <= liq` False forever, so liquidation is
+    never detected again -- and both RuntimeError invariants meant to catch that
+    also compare against NaN and are silently False."""
+    n = 64
+    close = np.full(n, 100.0)
+    entry = np.zeros(n, dtype=np.int8)
+    entry[2] = SIG_LONG
+    exit_ = np.zeros(n, dtype=bool)
+    exit_[40] = True
+    spec = SignalSpec(capital=1_000.0, leverage=1.0)
+
+    fr = np.zeros(n)
+    fr[10] = np.nan
+    with pytest.raises(ValueError, match="non-finite"):
+        run_signals(close, close, close, entry, exit_, spec,
+                    funding_rate=fr, symbol="BTCUSDT")
+
+    # And the finite case still runs, so this is a guard rather than a wall.
+    ok = run_signals(close, close, close, entry, exit_, spec,
+                     funding_rate=np.zeros(n), symbol="BTCUSDT")
+    assert ok["n_trades"] == 1
+
+
+def test_a_duplicated_or_unordered_bar_is_refused_as_a_clock():
+    """e19968047193.  `missing = 1 - height/expected` only goes positive when
+    bars are SHORT, so a duplicated bar or a non-monotonic timestamp pushed
+    height to or past expected, drove missing negative, and sailed through the
+    one check standing between a broken file and 'bar index is a clock'.  A
+    duplicate shifts every later index by one: a 168-bar stride stops being a
+    week from that point on."""
+    import polars as pl
+    from datetime import datetime as _dt
+
+    from orc.facts import panel as panel_mod
+
+    def _frame(hours):
+        n = len(hours)
+        return pl.DataFrame({
+            "ts": hours,
+            "open": np.full(n, 100.0), "high": np.full(n, 101.0),
+            "low": np.full(n, 99.0), "close": np.full(n, 100.0),
+            "volume": np.full(n, 1.0),
+        })
+
+    hours = [_dt(2023, 1, 1, h) for h in range(24)]
+
+    # A clean grid is accepted.
+    panel_mod._assert_bar_index_is_a_clock(_frame(hours), "TESTUSDT", "1h")
+
+    dup = hours[:12] + [hours[11]] + hours[12:]
+    with pytest.raises(ValueError, match="duplicated or out of order"):
+        panel_mod._assert_bar_index_is_a_clock(_frame(dup), "TESTUSDT", "1h")
+
+    swapped = hours[:5] + [hours[6], hours[5]] + hours[7:]
+    with pytest.raises(ValueError, match="duplicated or out of order"):
+        panel_mod._assert_bar_index_is_a_clock(_frame(swapped), "TESTUSDT", "1h")
+
+    off = hours[:8] + [hours[8].replace(minute=30)] + hours[9:]
+    with pytest.raises(ValueError, match="whole multiple"):
+        panel_mod._assert_bar_index_is_a_clock(_frame(off), "TESTUSDT", "1h")

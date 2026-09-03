@@ -24,11 +24,35 @@ BARS_PER_YEAR = {"1h": 24 * 365, "1m": 60 * 24 * 365}
 MIN_DD_FOR_CALMAR = 1e-9
 
 
+def is_measurable(equity: np.ndarray) -> bool:
+    """Is this curve something a ratio can honestly be computed from?
+
+    One guard, used by all four ratios, because each of them had grown its own
+    and they did not agree.  `sharpe` was the one that mattered: its bankruptcy
+    guard `np.any(equity <= 0.0)` is blind to NaN -- `nan <= 0` is False -- so a
+    curve with NaN in it passed, `np.log`/`np.diff` turned that into NaN
+    returns, and `r = r[np.isfinite(r)]` then DELETED them and treated the
+    survivors as if they were consecutive bars.  The result was a finite,
+    plausible, entirely fictional Sharpe for an account whose equity was not a
+    number.
+
+    A curve that is not finite everywhere, or that reaches zero, is not a
+    measurement.  Saying so once is the fix; deleting the offending bars is what
+    produced the fiction.
+    """
+    equity = np.asarray(equity, dtype=np.float64)
+    if equity.size == 0:
+        return False
+    return bool(np.all(np.isfinite(equity)))
+
+
 def max_drawdown(equity: np.ndarray) -> float:
     """Deepest peak-to-trough fall, as a fraction of the peak."""
     equity = np.asarray(equity, dtype=np.float64)
     if equity.size == 0:
         return 0.0
+    if not is_measurable(equity):
+        return float("nan")
     peak = np.maximum.accumulate(equity)
     return float(np.max(1.0 - equity / np.maximum(peak, 1e-12)))
 
@@ -40,7 +64,7 @@ def cagr(equity: np.ndarray, bars_per_year: float) -> float:
     opening equity and it never changes.
     """
     equity = np.asarray(equity, dtype=np.float64)
-    if equity.size < 2 or equity[0] <= 0:
+    if equity.size < 2 or not is_measurable(equity) or equity[0] <= 0:
         return float("nan")
     years = (equity.size - 1) / float(bars_per_year)
     if years <= 0:
@@ -66,11 +90,13 @@ def sharpe(equity: np.ndarray, bars_per_year: float, rf: float = 0.0) -> float:
     # account came out at -sqrt(bars_per_year/n) regardless of how much was
     # lost or when. The same figure for a 10,000 account and a 10,000,000 one
     # is not a measurement.
-    if np.any(equity <= 0.0):
+    if not is_measurable(equity) or np.any(equity <= 0.0):
         return float("nan")
     with np.errstate(divide="ignore", invalid="ignore"):
         r = np.diff(np.log(np.maximum(equity, 1e-12)))
-    r = r[np.isfinite(r)]
+    # No isfinite filter here on purpose.  Every value is finite by the guard
+    # above, and dropping bars is what let a curve with holes in it be scored as
+    # though the surviving bars were consecutive.
     sd = float(np.std(r, ddof=1))
     if r.size < 2 or sd <= 0:
         return float("nan")

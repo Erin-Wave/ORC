@@ -1326,7 +1326,11 @@ def test_the_surface_takes_the_newest_row_by_time_not_by_rowid():
     surrogate key the moment the ledger acquired a merge driver."""
     src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
            / "surface.py").read_text(encoding="utf-8")
-    assert "ORDER BY created_utc, trial_id" in src
+    # Table alias tolerated: the query joins trial_hypotheses, so the columns
+    # are qualified.  What must not change is ordering by TIME rather than by
+    # the surrogate key.
+    import re as _re
+    assert _re.search(r"ORDER BY\s+(?:\w+\.)?created_utc,\s*(?:\w+\.)?trial_id", src)
     assert "ORDER BY trial_id" not in src
 
 
@@ -1395,3 +1399,174 @@ def test_the_surface_defines_every_key_the_headline_reads():
                 "max_drawdown_best", "primary_metric_best"):
         assert f'"{key}": ' in src, f"{key} is read but never assigned"
     assert "would report n/a for a reason that is a defect" in src
+
+
+# ---------------------------------------------------------------------------
+# The nine high findings that stopped the loop on 2026-09-04 (part two).
+# The three in tests/test_kernel.py are the arithmetic; these are the identity,
+# the attribution, the routing and the counter.
+# ---------------------------------------------------------------------------
+def test_a_cell_has_one_identity_whatever_spelled_it():
+    """1fda815109fc.  config_hash was decided by JSON representation rather than
+    by value: json.dumps writes 7 as "7" and 7.0 as "7.0", and a numpy scalar is
+    not JSON-serialisable at all so `default=str` turned np.int64(7) into the
+    STRING "7".  One cell could hold three identities -- three rows, three
+    contributions to N, and a dedupe that had silently stopped working."""
+    import numpy as np
+
+    from orc.ledger.trials import canonical_hash
+
+    base = canonical_hash({"n": 7, "contribution": 100.0})
+    assert canonical_hash({"n": 7.0, "contribution": 100.0}) == base
+    assert canonical_hash({"n": np.int64(7), "contribution": 100.0}) == base
+    assert canonical_hash({"n": np.float64(7.0), "contribution": 100}) == base
+
+    # Distinctions that are real must survive: a different value, and True
+    # rather than 1.  bool IS an int in Python, which is why it is checked first.
+    assert canonical_hash({"n": 8}) != canonical_hash({"n": 7})
+    assert canonical_hash({"n": True}) != canonical_hash({"n": 1})
+    # NaN is not JSON and must not round-trip as a bare NaN token.
+    h = canonical_hash({"n": float("nan")})
+    assert h == canonical_hash({"n": float("nan")})
+    assert h != canonical_hash({"n": 0.0})
+
+
+def test_a_second_hypothesis_sees_a_cell_an_earlier_one_measured(tmp_path,
+                                                                 monkeypatch):
+    """3f5eecddcf2e.  hypothesis_id rides on the trial row but is not in its
+    UNIQUE key, so a second hypothesis enumerating a cell the first already ran
+    was INSERT OR IGNORE'd, the row kept the first id, and surface_from_ledger's
+    `WHERE hypothesis_id=?` reported those cells as never run -- a full grid of
+    real measurements reading as empty.
+
+    N must not move: the measurement was not repeated, so no row is added.  The
+    attribution is what has to be recorded."""
+    from orc import config as _config
+    from orc.ledger.trials import Ledger
+
+    monkeypatch.setattr(_config, "LEDGER_DB", tmp_path / "trials.sqlite")
+    args = dict(run_id="r1", family="fam", symbol="BTCUSDT", evaluator="analytic",
+                cfg={"stride_days": 7, "n_contributions": 52},
+                metrics={"tm_q05": 1.2}, n_starts=10, panel_hash="p1", code="c1")
+    with Ledger() as led:
+        id_a, new_a = led.record(hypothesis_id="H0001", **args)
+        id_b, new_b = led.record(hypothesis_id="H0002", **args)
+        assert new_a is True and new_b is False, "the measurement was repeated"
+        assert id_a == id_b
+        assert led.total_trials() == 1, "N moved for a measurement never repeated"
+        seen = {r[0] for r in led.conn.execute(
+            "SELECT hypothesis_id FROM trial_hypotheses WHERE trial_id=?",
+            (id_a,)).fetchall()}
+        assert seen == {"H0001", "H0002"}
+
+
+def test_the_panel_cache_is_keyed_on_the_clock_as_well_as_the_symbol():
+    """0e76e5167368.  `panels: dict[str, Panel]` keyed on cfg.symbol alone, so a
+    grid with clock on an axis scored every configuration after the first
+    against whichever clock came first -- minute rules measured on hourly bars,
+    with panel_hash recording the wrong panel."""
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "runner.py").read_text(encoding="utf-8")
+    assert "panels: dict[tuple[str, str], Panel]" in src
+    assert "key = (cfg.symbol, cfg.clock)" in src
+    assert "if cfg.symbol not in panels" not in src
+
+
+def test_the_track_a_null_scores_the_statistic_the_search_selected_on():
+    """1d24187e83e0.  write_report passes surfaces[sym]["best_value"], ranked by
+    ranking_metric on mwrr_q05 -- an annualised RETURN, ~0.14 -- and the Track A
+    null scored every synthetic path with tm_q05_on_path, a terminal MULTIPLE,
+    ~3.6 for the same cell.  The p-value was the answer to a question about
+    units.  Track B was already consistent on calmar; this is Track A catching
+    up."""
+    from orc.orchestrator import runner
+    from orc.orchestrator.surface import ranking_metric
+
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+    assert "mwrr_q05_on_path" in src
+    assert "tm_q05_on_path" not in src, \
+        "the Track A null is scoring terminal multiples again"
+    assert hasattr(runner, "mwrr_q05_on_path")
+
+    class _H:
+        track = "A"
+
+    assert ranking_metric(_H()) == "mwrr_q05"
+
+
+def test_the_opening_counter_only_ever_resolves_upward(tmp_path, monkeypatch):
+    """356ad9d05565 and 11971cd77077.  The irreversible counter was rebuilt from
+    one file: a missing log read as "never opened" rather than as "unknown", so
+    an `rm` restored all three openings; and max() over ordinals collapsed two
+    records both claiming opening 2 into a single opening.
+
+    Every way this number can be wrong makes it too SMALL, and each of those is
+    a restored look at the sealed data, so every disagreement resolves upward."""
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setattr(holdout, "LOG_FILE", log)
+
+    assert holdout.openings_used() == 0, "a fresh project is genuinely at zero"
+
+    # Two records that both claim opening 1: max() said one, but two openings
+    # really happened.
+    log.write_text('{"opening": 1}\n{"opening": 1}\n', encoding="utf-8")
+    assert holdout.openings_used() == 2
+
+    # A log that lost its lines cannot restore an opening: the ordinal stands.
+    log.write_text('{"opening": 3}\n', encoding="utf-8")
+    assert holdout.openings_used() == 3
+
+    # And losing the log entirely does not reset the count, because the state
+    # file is a second record of it.
+    log.unlink()
+    holdout.state_file().write_text('{"openings_used": 2}', encoding="utf-8")
+    assert holdout.openings_used() == 2
+
+
+def test_the_opening_state_file_follows_the_log_and_never_the_real_ledger(
+        tmp_path, monkeypatch):
+    """The defect introduced while fixing the two above, caught by the suite
+    within one run: the state file started life as a module constant beside
+    LOG_FILE, and the holdout tests redirect TOKEN_FILE and LOG_FILE to tmp_path
+    but had never heard of a third path.  One test run wrote "3 openings used"
+    into the REAL ledger directory.  A test that spends the project's
+    irreversible openings is worse than the defect being fixed.
+
+    Deriving the path from LOG_FILE means anything that redirects the log
+    redirects this too."""
+    real = holdout.state_file()
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setattr(holdout, "LOG_FILE", log)
+    assert holdout.state_file().parent == tmp_path
+    assert holdout.state_file() != real
+
+    tok = tmp_path / "TOKEN"
+    monkeypatch.setattr(holdout, "TOKEN_FILE", tok)
+    tok.write_text(holdout.TOKEN_TEXT, encoding="utf-8")
+    holdout.open_final_test({"cfg": "a"}, "because")
+
+    assert holdout.state_file().exists()
+    assert json.loads(holdout.state_file().read_text(encoding="utf-8"))[
+        "openings_used"] == 1
+    assert not real.exists(), \
+        "a test wrote to the real irreversible holdout counter"
+
+
+def test_an_ordinal_already_in_the_log_is_never_written_twice(tmp_path,
+                                                              monkeypatch):
+    """11971cd77077, the second half: open_final_test never checked that the
+    ordinal it was about to write was unused, so a count that came back too
+    small spent an opening that had already been spent."""
+    log = tmp_path / "log.jsonl"
+    tok = tmp_path / "TOKEN"
+    monkeypatch.setattr(holdout, "LOG_FILE", log)
+    monkeypatch.setattr(holdout, "TOKEN_FILE", tok)
+    # A log whose highest ordinal disagrees with what openings_used reports:
+    # the next ordinal is 2, which is already present.
+    log.write_text('{"opening": 2}\n', encoding="utf-8")
+    monkeypatch.setattr(holdout, "openings_used", lambda: 1)
+    tok.write_text(holdout.TOKEN_TEXT, encoding="utf-8")
+    with pytest.raises(holdout.HoldoutViolation, match="already recorded"):
+        holdout.open_final_test({"cfg": "a"}, "because")
+    assert tok.exists(), "the token was spent on a refused opening"

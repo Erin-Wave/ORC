@@ -136,17 +136,62 @@ def _openings() -> list[dict]:
             LOG_FILE.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+# A second, independent record of the same count.
+#
+# The counter that is supposed to be irreversible was reconstructed from ONE
+# file, and a file that is absent read as "never opened" rather than as "this
+# is not known".  Deleting it therefore restored all three openings -- the
+# strongest guarantee in the project undone by an `rm`.  One file is still one
+# file, but two that must be removed together, in a directory the cycle commits
+# on every run, is a materially harder accident.
+STATE_NAME = "FINAL_TEST_STATE.json"
+
+
+def state_file() -> Path:
+    """Derived from LOG_FILE, never a constant of its own.
+
+    The first draft made this a module constant beside LOG_FILE, and within one
+    test run it had written "3 openings used" into the REAL ledger directory:
+    the holdout tests redirect TOKEN_FILE and LOG_FILE to tmp_path, as they
+    must, and a third path they had never heard of went straight past them to
+    the live counter.  A test spending the project's irreversible openings is a
+    worse defect than the one being fixed.  Deriving it means anything that
+    redirects the log redirects this too, and no caller has to know it exists.
+    """
+    return LOG_FILE.with_name(STATE_NAME)
+
+
+def _state_count() -> int:
+    try:
+        return int(json.loads(
+            state_file().read_text(encoding="utf-8"))["openings_used"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return 0
+
+
 def openings_used() -> int:
     """How many of the three are spent.
 
-    The highest ordinal any record carries, not the number of lines: a log that
-    has lost a line -- a bad merge, a hand edit, a truncated write -- would
-    otherwise restore an opening and hand out an ordinal already spent, and the
-    count that is supposed to be irreversible is the one thing in the project
-    reconstructed from a file rather than defended by one.
+    The largest count any surviving record supports, because every way this
+    number can be wrong makes it too SMALL and each of those ways is a restored
+    opening:
+
+      - the highest ordinal, so a log that has lost a line -- a bad merge, a
+        hand edit, a truncated write -- cannot hand out an ordinal already
+        spent;
+      - the number of records, because max() over ordinals collapses two
+        records that both claim opening 2 into a single opening, and every
+        record is one opening that really happened;
+      - the standalone state file, so losing the log alone does not reset the
+        count to zero.
+
+    A fresh project has neither file and is genuinely at zero.  Every other
+    disagreement resolves upward, which is the only direction that cannot
+    manufacture a look at the sealed data.
     """
     recs = _openings()
-    return max((int(r.get("opening", 0)) for r in recs), default=0) if recs else 0
+    by_ordinal = max((int(r.get("opening", 0)) for r in recs), default=0)
+    return max(by_ordinal, len(recs), _state_count())
 
 
 def open_final_test(candidate: dict, reason: str) -> dict:
@@ -169,9 +214,20 @@ def open_final_test(candidate: dict, reason: str) -> dict:
     if TOKEN_FILE.read_text(encoding="utf-8").strip() != TOKEN_TEXT.strip():
         raise HoldoutViolation("FINAL_TEST_TOKEN text does not match; refusing to open.")
 
+    # Defence in depth against the failure openings_used() now resolves upward.
+    # If an ordinal about to be written is already in the log, the count that
+    # produced it was too small and this call would spend an opening that has
+    # already been spent.  Refuse rather than append.
+    ordinal = used + 1
+    if any(int(r.get("opening", 0)) == ordinal for r in _openings()):
+        raise HoldoutViolation(
+            f"opening {ordinal} is already recorded in {LOG_FILE.name}. The "
+            "counter and the log disagree; refusing to open the seal until a "
+            "human reconciles them.")
+
     payload = json.dumps(candidate, sort_keys=True, default=str)
     record = {
-        "opening": used + 1,
+        "opening": ordinal,
         "of": MAX_FINAL_TESTS,
         "opened_at_utc": datetime.now(timezone.utc).isoformat(),
         "holdout_start": str(config.HOLDOUT_START),
@@ -182,5 +238,14 @@ def open_final_test(candidate: dict, reason: str) -> dict:
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with LOG_FILE.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, default=str) + "\n")
+    # The second record, written after the log so that a crash between the two
+    # leaves the count too HIGH rather than too low.
+    state_file().write_text(json.dumps(
+        {"openings_used": ordinal, "of": MAX_FINAL_TESTS,
+         "updated_utc": record["opened_at_utc"],
+         "note": "A second copy of the opening count. openings_used() takes the "
+                 "largest of this, the log's highest ordinal and the log's line "
+                 "count. Do not edit by hand."}, indent=2) + "\n",
+        encoding="utf-8")
     TOKEN_FILE.unlink()
     return record
