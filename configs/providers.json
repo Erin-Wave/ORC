@@ -1,0 +1,14 @@
+{
+  "codex": {
+    "binary": "codex",
+    "argv": [
+      "exec",
+      "--sandbox",
+      "read-only",
+      "-"
+    ],
+    "stdin": true,
+    "verified": true,
+    "verified_note": "probed end to end by scripts/provider_setup.py: this argv answered a prose prompt and returned a parseable JSON object"
+  }
+}
