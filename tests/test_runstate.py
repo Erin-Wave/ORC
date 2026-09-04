@@ -916,3 +916,29 @@ def test_a_filler_with_a_backlog_is_due_whatever_its_clock_says(monkeypatch):
     # and an unknown backlog must not be read as work waiting
     monkeypatch.setattr(runstate, "filler_pending", lambda a: None)
     assert runstate.next_action()[0] == "rest"
+
+
+def test_the_supervisor_task_queues_a_handover_instead_of_dropping_it():
+    """forever.py stands down when its source changes and asks the scheduler
+    to start the new one. Under MultipleInstances IgnoreNew that request is
+    SILENTLY DROPPED -- the process making it is itself the running instance of
+    that task. On 2026-09-04 the handover logged "triggered ORC Forever", the
+    task reported LastTaskResult 0, and nothing started: the loop was down
+    until the next hourly trigger, which is the gap the handover exists to
+    close.
+
+    Queue cannot produce two live supervisors: forever.py's lock refuses a
+    second one, and the queued copy only begins after the first has exited.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import schedule
+
+    src = (Path(__file__).resolve().parent.parent / "scripts" / "schedule.py"
+           ).read_text(encoding="utf-8")
+    assert '"Queue" if name == FOREVER_TASK else "IgnoreNew"' in src, (
+        "the supervisor queues; the other tasks must not")
+    assert schedule.FOREVER_TASK == "ORC Forever"
+    # and the reason has to travel with it, or the next session sets it back
+    assert "SILENTLY DROPPED" in src

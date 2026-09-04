@@ -86,11 +86,25 @@ TASKS = {
 # but three ways of making sure one copy is always alive:
 #
 #   at logon and at startup   a reboot brings it back with no human
-#   hourly                    a watchdog re-fire.  MultipleInstances IgnoreNew
-#                             leaves a live copy alone, and forever.py also
-#                             holds a heartbeat lock -- so the hourly trigger is
-#                             a no-op on a healthy supervisor and the restart on
-#                             a dead one.
+#   hourly                    a watchdog re-fire.  forever.py holds a heartbeat
+#                             lock, so the hourly trigger is a no-op on a
+#                             healthy supervisor and the restart on a dead one.
+#
+# MultipleInstances is QUEUE for the supervisor, and it was IgnoreNew.
+#
+# forever.py stands down when its own source changes -- otherwise a resident
+# supervisor runs yesterday's code until someone notices -- and on the way out
+# it asks the scheduler to start the new one. Under IgnoreNew that request is
+# SILENTLY DROPPED, because the process making it is itself the running
+# instance of that task: on 2026-09-04 the handover logged "triggered ORC
+# Forever", the task reported LastTaskResult 0, and nothing started. The loop
+# was down until the next hourly trigger, which is the gap the handover exists
+# to close.
+#
+# Queue starts the queued instance the moment the current one exits, which is
+# exactly the handover. It cannot produce two live supervisors: forever.py's
+# lock refuses a second one, and the queued copy only begins after the first
+# has gone.
 #
 # The reasoning task's four daily slots stay registered on purpose: they are the
 # fallback for a supervisor that cannot start at all, which is the state this
@@ -270,7 +284,8 @@ def install() -> int:
             f'-Argument \'"{target}"\' -WorkingDirectory "{ROOT}"; '
             f'$ts = @({trigs}); '
             f'$s = New-ScheduledTaskSettingsSet -StartWhenAvailable '
-            f'-WakeToRun -MultipleInstances IgnoreNew '
+            f'-WakeToRun -MultipleInstances '
+            f'{"Queue" if name == FOREVER_TASK else "IgnoreNew"} '
             f'-ExecutionTimeLimit (New-TimeSpan -Hours {hours}) '
             f'-RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 15); '
             f'$p = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" '
