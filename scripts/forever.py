@@ -127,7 +127,11 @@ DONE_EXIT_CODES = {
     "scout": (0,),
     "kernel_review": (0, 1),
     "robustness": (0,),
-    "execution_realism": (0, 1),
+    # 0 recorded (a pass, or a pair that cannot be measured here), 3 a drift
+    # FAIL, which is a verdict and not an error. 1 is deliberately NOT here any
+    # more: it is what an unhandled crash exits with, and counting a crash as
+    # done is what let one unmeasurable pair be retried once a minute.
+    "execution_realism": (0, 3),
     "survivorship": (0,),
     # 1 means mutations SURVIVED, which is a verdict about the test suite and
     # not a failure of the run: the work happened and its answer was bad news.

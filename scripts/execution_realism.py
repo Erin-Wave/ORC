@@ -116,6 +116,27 @@ def compare(cfg) -> dict:
     }
 
 
+def _record(hid: str, symbol: str, payload: dict) -> None:
+    """One entry per (hypothesis, symbol), newest wins.
+
+    code_hash travels with it, so the backlog re-opens itself when the
+    evaluator changes: the minute-bar answer for a cell is a measurement of
+    THIS kernel, exactly as a ledger row is. Without it the supervisor would
+    consider every pair permanently done and go back to resting.
+    """
+    from orc.ledger.trials import code_hash
+
+    out = config.REPORTS / "EXECUTION_REALISM.json"
+    prev = json.loads(out.read_text(encoding="utf-8")) if out.exists() \
+        else {"results": []}
+    prev["results"] = [x for x in prev["results"]
+                       if not (x.get("symbol") == symbol
+                               and x.get("hypothesis_id") == hid)]
+    prev["results"].append({"hypothesis_id": hid, "symbol": symbol,
+                            "code_hash": code_hash(), **payload})
+    out.write_text(json.dumps(prev, indent=2, default=str), encoding="utf-8")
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(__doc__.strip().splitlines()[-1])
@@ -143,7 +164,27 @@ def main(argv: list[str]) -> int:
     cfg = SignalTrialConfig(symbol=symbol, **{**h.fixed, **best})
 
     print(f"{hid} {symbol}  {best}")
-    r = compare(cfg)
+
+    # Three outcomes, three exit codes, and they used to be two.
+    #
+    # A drift FAIL and a crash both exited 1, and forever.py counts 1 as "the
+    # work happened" because a FAIL is a verdict here. So a pair that CANNOT be
+    # measured looked like a pair that had been: no record was written, it
+    # stayed in the backlog, and the supervisor re-ran it once a minute. That
+    # is what H0002/DOGEUSDT did on 2026-09-04 -- 0.736 % of its 1-minute bars
+    # are missing against a 0.5 % limit, so `panel.load` refuses it, correctly.
+    #
+    # An unmeasurable pair is recorded AS unmeasurable: the backlog moves on,
+    # the reason is in the report, and orc.target reads a missing `passed` as
+    # UNMEASURED rather than as a failure -- because "we could not measure it"
+    # and "it did not survive" are different sentences.
+    try:
+        r = compare(cfg)
+    except (ValueError, FileNotFoundError, KeyError) as exc:
+        why = f"{type(exc).__name__}: {exc}"
+        print(f"  unmeasurable on minute bars -- {why}")
+        _record(hid, symbol, {"unmeasurable": why})
+        return 0
     for side in ("hourly", "minute"):
         d = r[side]
         print(f"  {side:7s} bars {d['bars']:>9,}  return {d['total_return']:+8.2%}  "
@@ -153,20 +194,11 @@ def main(argv: list[str]) -> int:
     print(f"  drift {r['relative_drift']:.1%}  sign agrees {r['sign_agrees']}  "
           f"-> {'PASS' if r['passed'] else 'FAIL'}")
 
-    # code_hash travels with the result, so the backlog re-opens itself when
-    # the evaluator changes: the minute-bar answer for a cell is a measurement
-    # of THIS kernel, exactly as a ledger row is. Without it the supervisor
-    # would consider every pair permanently done and go back to resting.
-    from orc.ledger.trials import code_hash
-    r["code_hash"] = code_hash()
-
-    out = config.REPORTS / "EXECUTION_REALISM.json"
-    prev = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {"results": []}
-    prev["results"] = [x for x in prev["results"]
-                       if not (x["symbol"] == symbol and x.get("hypothesis_id") == hid)]
-    prev["results"].append({"hypothesis_id": hid, **r})
-    out.write_text(json.dumps(prev, indent=2, default=str), encoding="utf-8")
-    return 0 if r["passed"] else 1
+    _record(hid, symbol, r)
+    # 3, not 1: a drift FAIL is a VERDICT and the work happened, while 1 stays
+    # what an unhandled crash exits with, so the supervisor's cooldown can tell
+    # them apart.
+    return 0 if r["passed"] else 3
 
 
 if __name__ == "__main__":

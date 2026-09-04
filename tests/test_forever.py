@@ -429,7 +429,15 @@ def test_a_research_verdict_is_not_read_as_a_failure():
     failure puts it in the 12-minute cooldown and retries it forever, so the
     one action whose answer is already known becomes all the supervisor does."""
     import forever
-    assert 1 in forever.DONE_EXIT_CODES["execution_realism"]
+    # execution_realism's verdict is 3, and it used to be 1. Both a drift FAIL
+    # and an unhandled crash exited 1, so a pair that CANNOT be measured --
+    # H0002/DOGEUSDT, whose 1-minute panel is 0.736% incomplete against a 0.5%
+    # limit, correctly refused by panel.load -- looked like a pair that had
+    # been. No record was written, it stayed in the backlog, and the supervisor
+    # re-ran it once a minute. Three outcomes now have three codes.
+    assert 3 in forever.DONE_EXIT_CODES["execution_realism"]
+    assert 1 not in forever.DONE_EXIT_CODES["execution_realism"], (
+        "1 is what a crash exits with; counting it as done is the hot loop")
     assert 1 in forever.DONE_EXIT_CODES["kernel_review"]
     # And where non-zero really does mean nothing was collected, it must not be
     # mistaken for work.

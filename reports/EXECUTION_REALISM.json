@@ -279,6 +279,12 @@
       "sign_agrees": true,
       "passed": false,
       "code_hash": "4b54f00e8edf2c901552ad0bc63dd949d1f381b7540906752b6f0b2c7243f1fc"
+    },
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "DOGEUSDT",
+      "code_hash": "4b54f00e8edf2c901552ad0bc63dd949d1f381b7540906752b6f0b2c7243f1fc",
+      "unmeasurable": "ValueError: DOGEUSDT: 0.736% of 1m bars are missing (limit 0.5%); bar index is not a reliable clock"
     }
   ]
 }

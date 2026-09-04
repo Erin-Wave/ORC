@@ -169,8 +169,14 @@ def _passed_in(report_name: str, hid: str, symbols: set[str]) -> str | None:
     check.
     """
     results = _report(report_name).get("results") or []
+    # An entry with no `passed` key is a pair that could not be measured -- a
+    # minute panel with too many gaps, say -- and that is UNMEASURED, not
+    # failed. Reading it as failed would report a candidate as beaten by a
+    # check that never ran on it, which is the mirror of the mistake
+    # `verdict.disqualifiers` refuses to make in the other direction.
     seen = {r.get("symbol"): bool(r.get("passed"))
-            for r in results if r.get("hypothesis_id") == hid}
+            for r in results
+            if r.get("hypothesis_id") == hid and "passed" in r}
     missing = symbols - set(seen)
     if missing:
         return None
