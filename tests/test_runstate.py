@@ -770,3 +770,106 @@ def test_a_failed_cycle_does_not_become_a_hot_loop(tmp_path, monkeypatch):
         "action": "cycle", "detail": "exit 0", "ok": True}) + chr(10),
         encoding="utf-8")
     assert runstate.next_action(skip=skip)[0] == "cycle"
+
+
+# --------------------------------------------------------------------------
+# 지금 무엇이 돌고 있는가 -- scripts/watch.py
+# --------------------------------------------------------------------------
+def _watch():
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import watch
+    return watch
+
+
+def test_the_duty_cycle_unions_overlapping_work_instead_of_adding_it(
+        tmp_path, monkeypatch):
+    """두 감독자가 ACTIVITY.jsonl에 union으로 쓴다. 구간을 더하면 겹치는 만큼
+    부풀고, 이 숫자는 '쉬지 않는다'는 주장을 검사하는 데 쓰이는 숫자다."""
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    from orc import runstate
+
+    watch = _watch()
+    now = datetime.now(timezone.utc)
+    log = tmp_path / "activity.jsonl"
+
+    def rec(minutes_ago, seconds, action="robustness"):
+        return json.dumps({"utc": (now - timedelta(minutes=minutes_ago)).isoformat(),
+                           "action": action, "seconds": seconds, "ok": True})
+
+    # 두 기계가 같은 10분을 각각 기록한다: 합계 20분, 합집합 10분.
+    log.write_text(chr(10).join([rec(50, 600), rec(50, 600, "scout")]) + chr(10),
+                   encoding="utf-8")
+    monkeypatch.setattr(runstate, "ACTIVITY_LOG", log)
+
+    d = watch.duty_cycle(hours=2)
+    assert d["n"] == 2
+    assert 9.5 <= d["busy_min"] <= 10.5, d["busy_min"]
+    assert d["since_last_min"] == pytest.approx(50, abs=1)
+    assert d["largest_gap_min"] is None, "구간이 하나로 병합되면 공백도 없다"
+
+    # 떨어진 두 구간이면 그 사이가 공백이다. 기록된 시각은 작업이 END난
+    # 시각이므로 rec(90, 300)은 [95분 전, 90분 전] 구간이고 rec(20, 300)은
+    # [25분 전, 20분 전]이다. 공백은 90분 전부터 25분 전까지 = 65분.
+    log.write_text(chr(10).join([rec(90, 300), rec(20, 300)]) + chr(10),
+                   encoding="utf-8")
+    d = watch.duty_cycle(hours=3)
+    assert d["busy_min"] == pytest.approx(10, abs=0.5)
+    assert d["largest_gap_min"] == pytest.approx(65, abs=1)
+    assert d["since_last_min"] == pytest.approx(20, abs=1)
+
+
+def test_a_supervisor_that_stopped_without_dying_is_named(tmp_path, monkeypatch):
+    """모든 화면이 잠금 파일만 읽는다. pid 30784는 2026-09-04에 19시간 동안
+    프로세스로 살아 있으면서 아무 일도 하지 않았고, 잠금은 인수한 27212를
+    가리켰으므로 어디에도 나타나지 않았다."""
+    watch = _watch()
+
+    procs = [{"pid": "27212", "script": "forever.py", "args": ""},
+             {"pid": "30784", "script": "forever.py", "args": ""},
+             {"pid": "31000", "script": "mutation.py", "args": ""}]
+    sup = {"alive": True, "pid": 27212, "heartbeat_utc": "2026-09-04T09:47:49+00:00"}
+
+    stray = watch.strays(procs, sup)
+    assert [s["pid"] for s in stray] == ["30784"], (
+        "잠금 보유자는 좀비가 아니고, 다른 스크립트는 감독자가 아니다")
+    assert watch.strays(None, sup) == [], "알 수 없음은 좀비가 아니다"
+    assert watch.strays([], sup) == []
+
+    # 화면에 실제로 찍히는지 -- 지목만 하고 죽이지는 않는다
+    snap = {"utc": "2026-09-04T09:51:07+00:00", "supervisor": sup,
+            "processes": procs, "strays": stray,
+            "next": {"action": "rest", "why": "everything is fresh"},
+            "duty": {"hours": 12, "busy_min": 268.0, "span_min": 715.0,
+                     "fraction": 0.375, "largest_gap_min": 122.0,
+                     "since_last_min": 103.0, "n": 23},
+            "recent": [], "live_runs": []}
+    text = chr(10).join(watch.render(snap))
+    assert "좀비" in text and "30784" in text
+    assert "Stop-Process -Id 30784" in text, "사람이 판단할 명령을 준다"
+    assert "37.5%" in text and "122분" in text
+
+
+def test_unknown_is_not_the_same_as_nothing(monkeypatch):
+    """PowerShell에 물어볼 수 없었던 것을 '아무것도 안 돌고 있다'로 보고하는
+    화면은 거짓말을 한다."""
+    watch = _watch()
+
+    def _boom(*a, **k):
+        raise OSError("no powershell here")
+
+    monkeypatch.setattr(watch.subprocess, "run", _boom)
+    assert watch.running_scripts() is None
+    assert watch.live_runs() is None
+
+    snap = {"utc": "2026-09-04T09:51:07+00:00",
+            "supervisor": {"alive": False, "pid": None, "heartbeat_utc": None},
+            "processes": None, "strays": [],
+            "next": {"action": "rest", "why": "x"},
+            "duty": watch.duty_cycle(hours=1), "recent": [], "live_runs": None}
+    text = chr(10).join(watch.render(snap))
+    assert "알 수 없음" in text
+    assert "떠 있지 않음" in text

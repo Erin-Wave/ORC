@@ -192,6 +192,22 @@ def local_tasks(tasks: list[dict] | None = None,
                     f"not running and no heartbeat; {did}. "
                     f"Start-ScheduledTask -TaskName 'ORC Forever'"))
 
+    # A supervisor that stopped without dying is invisible to every other row
+    # on this screen: supervisor() reads the lock, and the lock names whoever
+    # took over. pid 30784 sat in that state for 19 hours on 2026-09-04.
+    try:
+        sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
+        import watch
+        procs = watch.running_scripts()
+        stray = watch.strays(procs, runstate.supervisor())
+    except Exception:                                              # noqa: BLE001
+        stray = []
+    for st in stray:
+        out.append((BAD, "좀비 감독자",
+                    f"forever.py pid {st['pid']} 이 잠금을 들고 있지 않습니다. "
+                    "깨어나면 감독자가 둘이 되어 등록 예산과 원장 쓰기가 갈립니다 "
+                    f"-> Stop-Process -Id {st['pid']}"))
+
     if problems:
         out.append((BAD, "schedule -> repository",
                     "; ".join(problems)
