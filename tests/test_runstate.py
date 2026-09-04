@@ -822,25 +822,34 @@ def test_the_duty_cycle_unions_overlapping_work_instead_of_adding_it(
     assert d["since_last_min"] == pytest.approx(20, abs=1)
 
 
-def test_a_supervisor_that_stopped_without_dying_is_named(tmp_path, monkeypatch):
-    """모든 화면이 잠금 파일만 읽는다. pid 30784는 2026-09-04에 19시간 동안
-    프로세스로 살아 있으면서 아무 일도 하지 않았고, 잠금은 인수한 27212를
-    가리켰으므로 어디에도 나타나지 않았다."""
+def test_a_launcher_stub_is_not_a_second_supervisor(tmp_path, monkeypatch):
+    """정정 2026-09-04. 첫 버전은 "잠금을 들고 있지 않은 forever.py"를 좀비로
+    지목했고, 이 워크스테이션에서 그것은 언제나 참이다: 예약 작업이 띄우는
+    WindowsApps `python.exe`는 실제 인터프리터를 자식으로 낳고 기다리는 런처
+    껍데기이고, 둘 다 명령줄에 forever.py를 갖는다. 정상 감독자를 중복으로
+    지목하는 화면은 아무도 읽지 않게 되고, 그것은 검사가 없는 것보다 나쁘다."""
     watch = _watch()
 
-    procs = [{"pid": "27212", "script": "forever.py", "args": ""},
-             {"pid": "30784", "script": "forever.py", "args": ""},
-             {"pid": "31000", "script": "mutation.py", "args": ""}]
-    sup = {"alive": True, "pid": 27212, "heartbeat_utc": "2026-09-04T09:47:49+00:00"}
+    # 실제로 관측된 모양: 15948(wscript) -> 54120(런처) -> 20372(잠금 보유)
+    procs = [{"pid": "54120", "ppid": "15948", "script": "forever.py", "args": ""},
+             {"pid": "20372", "ppid": "54120", "script": "forever.py", "args": ""},
+             {"pid": "31000", "ppid": "20372", "script": "mutation.py", "args": ""}]
+    sup = {"alive": True, "pid": 20372, "heartbeat_utc": "2026-09-04T10:14:21+00:00"}
+    assert watch.strays(procs, sup) == [], "런처와 그 자식은 한 감독자다"
 
-    stray = watch.strays(procs, sup)
-    assert [s["pid"] for s in stray] == ["30784"], (
-        "잠금 보유자는 좀비가 아니고, 다른 스크립트는 감독자가 아니다")
+    # 사슬 밖의 두 번째 감독자는 여전히 진짜 위험이고 지목돼야 한다
+    outside = procs + [{"pid": "99999", "ppid": "1", "script": "forever.py",
+                        "args": ""}]
+    assert [x["pid"] for x in watch.strays(outside, sup)] == ["99999"]
+
     assert watch.strays(None, sup) == [], "알 수 없음은 좀비가 아니다"
     assert watch.strays([], sup) == []
 
     # 화면에 실제로 찍히는지 -- 지목만 하고 죽이지는 않는다
-    snap = {"utc": "2026-09-04T09:51:07+00:00", "supervisor": sup,
+    stray = [{"pid": "99999", "ppid": "1", "script": "forever.py", "args": ""}]
+    snap = {"utc": "2026-09-04T09:51:07+00:00",
+            "supervisor": {"alive": True, "pid": 20372,
+                           "heartbeat_utc": "2026-09-04T10:14:21+00:00"},
             "processes": procs, "strays": stray,
             "next": {"action": "rest", "why": "everything is fresh"},
             "duty": {"hours": 12, "busy_min": 268.0, "span_min": 715.0,
@@ -848,8 +857,8 @@ def test_a_supervisor_that_stopped_without_dying_is_named(tmp_path, monkeypatch)
                      "since_last_min": 103.0, "n": 23},
             "recent": [], "live_runs": []}
     text = chr(10).join(watch.render(snap))
-    assert "좀비" in text and "30784" in text
-    assert "Stop-Process -Id 30784" in text, "사람이 판단할 명령을 준다"
+    assert "좀비" in text and "99999" in text
+    assert "Stop-Process -Id 99999" in text, "사람이 판단할 명령을 준다"
     assert "37.5%" in text and "122분" in text
 
 

@@ -47,9 +47,15 @@ DEFAULT_HOURS = 12
 # 기다리며 멈추면 "지금 무엇이 도는가"에 답하지 못하는 것과 같다.
 PS_TIMEOUT_S = 20
 
+# The PARENT id is not a nicety. On this machine the scheduled task launches
+# `python.exe` from the WindowsApps execution alias, which is a STUB that
+# spawns the real interpreter and waits for it -- so one supervisor is always
+# two processes with `forever.py` on both command lines. Without the parent,
+# every healthy supervisor looks like two of them.
 _PS = (
     "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
-    "ForEach-Object { '{0}|{1}' -f $_.ProcessId, $_.CommandLine }"
+    "ForEach-Object { '{0}|{1}|{2}' -f $_.ProcessId, $_.ParentProcessId, "
+    "$_.CommandLine }"
 )
 
 
@@ -73,7 +79,10 @@ def running_scripts(root: Path | None = None) -> list[dict] | None:
     out = []
     marker = str(root).replace("/", "\\").lower()
     for line in (r.stdout or "").splitlines():
-        pid, _, cmd = line.partition("|")
+        parts = line.split("|", 2)
+        if len(parts) != 3:
+            continue
+        pid, ppid, cmd = (x.strip() for x in parts)
         if not cmd or marker not in cmd.lower():
             continue
         # 스크립트 이름만 남긴다: 전체 명령줄은 인터프리터 경로가 대부분이다.
@@ -81,7 +90,8 @@ def running_scripts(root: Path | None = None) -> list[dict] | None:
                        for tok in cmd.split()
                        if tok.strip('"').lower().endswith(".py")), "?")
         args = cmd.split(script, 1)[1].strip().strip('"') if script in cmd else ""
-        out.append({"pid": pid.strip(), "script": script, "args": args[:60]})
+        out.append({"pid": pid, "ppid": ppid, "script": script,
+                    "args": args[:60]})
     return out
 
 
@@ -152,24 +162,62 @@ def live_runs() -> list[dict] | None:
     return [x for x in runs if x["status"] != "completed"]
 
 
+def _lock_holder_chain(procs: list[dict], holder: str) -> set[str]:
+    """잠금 보유자와 그 조상·자손 pid 집합.
+
+    조상이 필요한 이유가 이 함수의 존재 이유다: 예약 작업은 WindowsApps 실행
+    별칭의 `python.exe`를 띄우고, 그것은 실제 인터프리터를 자식으로 낳고
+    기다리는 **런처 껍데기**다. 둘 다 명령줄에 `forever.py`를 갖는다. 그래서
+    정상 감독자는 언제나 프로세스 두 개이고, 부모를 보지 않으면 전부 중복으로
+    읽힌다.
+    """
+    by_pid = {p["pid"]: p for p in procs}
+    chain: set[str] = set()
+    if holder not in by_pid:
+        return chain
+    chain.add(holder)
+    cur = by_pid[holder].get("ppid")
+    while cur in by_pid and cur not in chain:
+        chain.add(cur)
+        cur = by_pid[cur].get("ppid")
+    grew = True
+    while grew:
+        grew = False
+        for p in procs:
+            if p.get("ppid") in chain and p["pid"] not in chain:
+                chain.add(p["pid"])
+                grew = True
+    return chain
+
+
 def strays(procs: list[dict] | None, sup: dict) -> list[dict]:
-    """forever.py 프로세스 중 잠금을 들고 있지 않은 것.
+    """잠금 보유자의 프로세스 사슬 밖에서 돌고 있는 forever.py.
 
-    이것이 보이지 않는다는 사실이 오늘 발견된 결함이다. `runstate.supervisor()`
-    는 잠금 파일만 읽으므로, 멈춘 감독자가 프로세스로 살아 있어도 모든 화면이
-    "정상"이라고 답한다. 2026-09-04에 pid 30784는 19시간 동안 그 상태였고,
-    27212이 stale lock을 깨고 인수한 뒤에도 계속 떠 있었다.
+    **정정 (2026-09-04).** 이 함수의 첫 버전은 "잠금을 들고 있지 않은
+    forever.py"를 좀비로 지목했고, 그 근거로 pid 30784가 19시간 동안 멈춰
+    있었다고 적었다. **둘 다 틀렸다.**
 
-    멈춘 것 자체보다 위험한 것은 깨어나는 것이다: 감독자가 둘이면 등록 예산을
-    독립적으로 읽고, `cycle` 액션이 있는 지금은 두 기계가 동시에
-    daily_cycle.py를 돌릴 수 있다 -- run #19이 112 trial을 잃은 동시 원장
-    쓰기가 그것이다.
+    부모-자식을 확인하니 30784는 27212의 **런처 껍데기**였다(위 참조). 그리고
+    로그가 09-03 23:49에 끊긴 이유는 감독자가 멈춘 것이 아니라 Windows 이벤트
+    로그 Id 42가 말하는 그대로 **기계가 00:24에 잠든 것**이고, 06:55의 wake
+    source와 함께 예약 작업이 깨어나 7시간 된 stale lock을 깼다 -- 즉 설계가
+    의도대로 동작한 기록이었다. 나는 그 위에서 건강한 감독자와 그 런처를
+    죽였다. 결과는 무해했지만(어차피 새 코드를 실어야 했다) 진단은 사실이
+    아니었다.
+
+    그래서 이 함수는 사슬을 계산한다. 남은 진짜 위험은 여전히 실재한다:
+    사슬 밖의 두 번째 감독자는 등록 예산을 독립적으로 읽고, `cycle` 액션이
+    있는 지금은 두 기계가 daily_cycle.py를 동시에 돌릴 수 있다 -- run #19이
+    112 trial을 잃은 동시 원장 쓰기가 그것이다. 다만 런처를 그것으로 오인하는
+    화면은 아무도 읽지 않게 되고, 그것은 검사가 없는 것보다 나쁘다.
     """
     if not procs:
         return []
     holder = str(sup.get("pid") or "")
+    chain = _lock_holder_chain(procs, holder)
     return [p for p in procs
-            if p["script"] == "forever.py" and p["pid"] != holder]
+            if p["script"] == "forever.py" and p["pid"] not in chain
+            and p["pid"] != holder]
 
 
 def snapshot(hours: int = DEFAULT_HOURS) -> dict:
