@@ -16,6 +16,7 @@
           ".github/workflows/orc-cycle.yml"
         ]
       }
-    ]
+    ],
+    "commit": "refused: the commit was refused:\n\n  - the test suite is not green:\nE       AssertionError: assert 'CONTINUE' == 'CLOSE'\nE         \nE         - CLOSE\nE         + CONTINUE\n\ntests\\test_protocol.py:1339: AssertionError\n---------------------------- Captured stdout call -----------------------------\n  H9300 continue  \n=========================== short test summary info ===========================\nFAILED tests/te"
   }
 }
