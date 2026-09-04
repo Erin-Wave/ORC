@@ -1,42 +1,24 @@
 {
-  "utc": "2026-09-04T21:58:30.355906+00:00",
+  "utc": "2026-09-04T22:11:16.909898+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
         "decision": "CONTINUE",
         "family": "unconditional_dca_spot_style"
-      },
-      "H0019": {
-        "decision": "CLOSE",
-        "family": "cci_mtf_regime_pullback"
       }
     },
     "propose": [
-      "H0020.json",
-      "H0021.json"
+      "H0020.json"
     ],
     "adversary": [
       {
         "file": "H0020.json",
         "verdict": "KILL",
-        "reason": "[claude] I ran all 90 proposed cells through run_signal_trial at zero ledger rows (development panels, harness verified against the ledger: ADAUSDT/BTCUSDT at timeframe_hours=4.0, max_hold_days=5.0 reproduce H0017's recorded calmar 0.07928 and -0.12706 to five decimals), and the kill condition is already fully resolved: clause 3 fires at exactly 5/9 (h*_breakout >= h*_reversion on ADA, AVAX, BNB, SOL, XRP) and clause 4 fires at 6/9 SPIKE, so 90 rows (1.3 % of N=7010) buy a CLOSED verdict a zero-row script already produced, on the same SPIKE clause that closed H0017 and H0019. Worse, clause 3 — the only clause this registration uniquely adds and the one the claim calls \"the whole question\" — cannot measure the ordering it asserts: cci_reversion records calmar > 0 on 0 of 9 symbols at every h (-0.288 is its best cell anywhere), exactly as H0017's recorded surface already showed at every timeframe, so h*(s, cci_reversion) is where the fade arm loses least and the clause compares a payment peak against a loss-minimising corner with ties counted toward closure. | [codex] This is a finer grid over H0017’s existing cci_breakout/cci_reversion rule form: varying the already-existing numeric max_hold_days parameter changes an execution cap, not the signal’s state variable, entry, side, or exit arrays. Section 6 explicitly reserves new registrations for different rule shapes, so the proposed 90 rows are not justified.",
-        "payer_is_structural": true,
-        "kill_condition_is_falsifiable": true,
-        "configurations": 90,
-        "killed_by": "adversary:claude,codex",
-        "reviewed_by": [
-          "claude",
-          "codex"
-        ]
-      },
-      {
-        "file": "H0021.json",
-        "verdict": "KILL",
-        "reason": "[claude] I ran all 72 proposed cells through run_signal_trial at zero ledger rows (harness validated against the ledger: ADAUSDT/BTCUSDT at take_profit=None, stop_loss=0.25 reproduce H0017's recorded calmar -0.65708 and -0.44033 exactly), and clause 1 already fires at 0/9 on every one of the eight cells, with the maximum calmar anywhere on the surface being -0.2209 (LTCUSDT) and every symbol's best cell showing mdd > 0.84 and a 3-4x inflated trade count (449 -> 1834 on ADAUSDT), so 72 permanent rows buy a CLOSED verdict a zero-row script has already produced and clause 5 -- the only clause the claim calls unique to it -- degenerates to comparing loss-minimising corners, the same defect that killed H0020's clause 3. Independently, take_profit is an existing numeric field of SignalTrialConfig read as an exit cap in orc/eval/signal.py, not the signal's state variable, entry, side or exit arrays (the claim concedes those are identical to H0017's), which is verbatim the section-6 ground both adversaries killed the companion H0020 on hours earlier -- and the proposal itself nominates this one to be killed first.",
+        "reason": "[claude] 제안된 72셀 전부를 원장 0행으로 run_signal_trial에 그대로 돌려보니(하네스는 H0017의 원장 값 ADAUSDT 0.07928141, BTCUSDT -0.12706462, SOLUSDT 1.16961771을 비트 단위로 재현) 72셀의 calmar이 전부 음수이고 각 심볼 최적셀의 mdd는 0.826~0.976, 거래수는 973~2,289로 H0017의 357~461에서 2~5배 부풀어 있어, clause 1은 어떤 셀도 C>0을 단 한 심볼도 못 얻는 0/9로, clause 6은 6/9로 이미 발동하고 clause 5의 duel은 W(reversion)=W(breakout)=0이라 애초에 판정 자체가 불가능하다 — 즉 이 등록은 0행짜리 스크립트가 이미 산출한 CLOSED 판정을 사려고 N을 7,010에서 7,082로 영구히 올릴 뿐이다. 더구나 exit_level 50→0, max_hold_days 5→1, take_profit은 모두 SignalTrialConfig의 기존 수치 필드를 evaluator가 exit cap으로 읽는 것이고 entry/side/state 배열은 H0017과 동일하므로, 몇 시간 전 H0020(cci_exhaustion_clock)과 H0021(cci_bounded_concession)을 죽인 section 6 근거가 그대로 적용된다. | [codex] This is a finer parameter grid over the already-closed CCI rule form: disabling the indicator exit via exit_level=0 and varying take_profit/max_hold_days changes existing exit parameters, not the rule shape or payer. The bracket interpretation therefore re-arranges the same forced-liquidation family after 162 registered rows, contrary to sections 6 and 7b.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
         "configurations": 72,
-        "killed_by": "adversary:claude",
+        "killed_by": "adversary:claude,codex",
         "reviewed_by": [
           "claude",
           "codex"
@@ -44,37 +26,26 @@
       }
     ],
     "surfaces": "written",
-    "postmortem": [
-      "H0019"
-    ],
     "tree_violations": [
       {
         "provider": "claude",
         "files": [
-          "configs/proposed/",
-          "reports/ACTIVITY.jsonl",
-          "reports/CLOSE_VOTES.json",
-          "reports/SCOUT.jsonl"
+          "configs/killed/H0020.json",
+          "configs/killed/H0021.json",
+          "configs/proposed/"
         ]
       },
       {
         "provider": "claude+codex",
         "files": [
-          "ledger/trials.sqlite-shm",
-          "ledger/trials.sqlite-wal"
+          "reports/SURFACE_READING.md"
         ],
         "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
       },
       {
         "provider": "claude",
         "files": [
-          "configs/proposed/"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "configs/killed/H0020.json"
+          "(a tracked file changed)"
         ]
       }
     ]
