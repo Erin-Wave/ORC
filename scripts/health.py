@@ -86,13 +86,24 @@ def _load(name: str):
         return None
 
 
+# How many recent runs to ask GitHub for.
+#
+# Six was enough while orc-cycle fired every six hours and the watchdog daily.
+# orc-guard runs on every PUSH, and the supervisor pushes after every action --
+# so within an hour the six newest runs were all orc-guard, and the row that
+# answers "did the research cycle work" said "no completed run in the last 6"
+# while a failed cycle sat 1h42m back. A screen that reports absence when it
+# means "outside my window" is worse than one that says nothing.
+RUNS_QUERIED = 40
+
+
 def worker_state() -> list[tuple[str, str, str]]:
     """The cloud half, from the GitHub CLI.  Its cron is nominal: scheduled runs
     on a public repository are routinely delayed two to four hours, so 'next' is
     an estimate and lateness alone is not a fault."""
     try:
         r = subprocess.run(
-            ["gh", "run", "list", "--limit", "6", "--json",
+            ["gh", "run", "list", "--limit", str(RUNS_QUERIED), "--json",
              "databaseId,status,conclusion,createdAt,workflowName,event"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=45, cwd=config.ORC_ROOT)
@@ -118,7 +129,8 @@ def worker_state() -> list[tuple[str, str, str]]:
     for wf in ("orc-cycle", "orc-guard", "orc-watchdog"):
         done = [x for x in runs if x["workflowName"] == wf and x["status"] == "completed"]
         if not done:
-            out.append((DIM, wf, "no completed run in the last 6"))
+            out.append((DIM, wf,
+                        f"no completed run among the last {RUNS_QUERIED}"))
             continue
         last = done[0]
         mark = OK if last["conclusion"] == "success" else BAD
@@ -202,8 +214,16 @@ def local_tasks(tasks: list[dict] | None = None,
         out.append((OK, "git 훅",
                     "pre-commit(테스트·원장·새 파일) + commit-msg(테스트 약화·"
                     "동결 임계값·변경 예산) 설치됨"))
+    resident = runstate.supervisor()["alive"]
     for t in tasks:
-        sev, note = runstate.task_result_note(t.get("result"))
+        # "ORC Forever" fires hourly and the supervisor it starts is meant to
+        # stay resident, so Task Scheduler refuses the new instance every time.
+        # That refusal is what a HEALTHY resident loop reports, and reading it
+        # as a fault kept a permanent WARN on the row -- which is how a row
+        # stops being read.
+        sev, note = runstate.task_result_note(
+            t.get("result"),
+            resident=resident if "Forever" in str(t.get("name", "")) else None)
         # A launch failure recorded against paths that are now correct is
         # history: LastTaskResult keeps the old code until the task fires
         # again.  Calling it BAD would send someone to fix what is fixed.

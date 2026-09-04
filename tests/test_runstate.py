@@ -569,3 +569,91 @@ def test_the_timeline_prefers_the_log_over_the_ledger_for_one_run(sandbox):
     assert len(tl) == 1
     assert tl[0]["source"] == "log"
     assert tl[0]["finished_utc"] == "2026-09-03T00:34:00+00:00"
+
+
+# --------------------------------------------------------------------------
+# the owner screen has to be readable, and every row on it has to be true
+#
+# All four of these were wrong on one render of scripts/health.py on
+# 2026-09-04, and none of them broke anything: a screen that is subtly wrong
+# just stops being read, which costs more than a screen that is missing.
+# --------------------------------------------------------------------------
+def test_a_refused_second_instance_is_not_a_fault_while_one_is_running():
+    """"ORC Forever" fires hourly and the supervisor it starts stays resident,
+    so Task Scheduler refuses the new instance every time. That refusal is what
+    a HEALTHY resident loop reports, and it had a permanent WARN on it.
+
+    Not unconditionally benign, which is the point of the parameter: the same
+    code comes back when a person or a policy refuses the task outright.
+    """
+    from orc import runstate
+
+    assert runstate.INSTANCE_REFUSED == 2147946720          # 0x800710E0
+    sev, note = runstate.task_result_note(runstate.INSTANCE_REFUSED, resident=True)
+    assert sev == "ok" and "상주 감독자" in note
+    sev, note = runstate.task_result_note(runstate.INSTANCE_REFUSED, resident=False)
+    assert sev == "bad", "refused AND nothing running is the real fault"
+    sev, note = runstate.task_result_note(runstate.INSTANCE_REFUSED)
+    assert sev == "warn", "a caller that cannot tell must not guess"
+    # and the codes that were already understood are untouched
+    assert runstate.task_result_note(0)[0] == "ok"
+    assert runstate.task_result_note(2147942667)[0] == "bad"
+
+
+def test_a_frequent_workflow_cannot_hide_the_cycles_verdict():
+    """orc-guard runs on every push and the supervisor pushes after every
+    action, so within an hour the six newest runs were all orc-guard and the
+    row answering "did the research cycle work" said "no completed run in the
+    last 6" -- while a failed cycle sat 1h42m back."""
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import health
+
+    assert health.RUNS_QUERIED >= 30, (
+        "the window has to cover several pushes' worth of guard runs plus a "
+        "six-hourly cycle, or absence and 'outside my window' read alike")
+    src = (Path(__file__).resolve().parent.parent / "scripts" / "health.py"
+           ).read_text(encoding="utf-8")
+    assert '"--limit", "6"' not in src
+
+
+def test_the_queue_line_names_both_ways_it_gets_collected(tmp_path, monkeypatch):
+    """Quoting only the cron read as a four-hour wait on a machine that was
+    already evaluating it: a worker job that is up now takes the queue on its
+    next tick, because next_action returns `cycle` there."""
+    from orc import config, runstate
+
+    q = tmp_path / "queue"
+    q.mkdir()
+    (q / "H9999.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(config, "QUEUE", q)
+
+    a = runstate.activity(tasks=[])
+    assert a["status"] == runstate.QUEUED
+    reason = " ".join(a["reasons"])
+    assert "떠 있는 워커 잡" in reason, "the resident-window path is not mentioned"
+    assert "다음 발화" in reason, "the cron path is not mentioned either"
+
+
+def test_the_supervisor_marks_the_actions_it_starts():
+    """An action that records its own activity when run by hand must not do it
+    twice when the supervisor runs it -- there, the exit code and the commit
+    are recorded with it. Run by hand and recording NOTHING is what made one
+    render say "18/18 killed 31m ago" and "never run" on two rows."""
+    import subprocess
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import forever
+
+    rc, out = forever.run(
+        [sys.executable, "-c",
+         "import os; print(os.environ.get('ORC_SUPERVISED', 'unset'))"], 60)
+    assert rc == 0
+    assert "1" in out and "unset" not in out
+
+    mut = (Path(__file__).resolve().parent.parent / "scripts" / "mutation.py"
+           ).read_text(encoding="utf-8")
+    assert 'os.environ.get("ORC_SUPERVISED")' in mut
+    assert "record_activity" in mut

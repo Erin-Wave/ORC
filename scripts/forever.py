@@ -375,6 +375,10 @@ def run(cmd: list[str], timeout_s: int) -> tuple[int, str]:
     # print that raises would take an action down over a dash, which is how the
     # first full panel build died at symbol 807 of 810.
     env["PYTHONIOENCODING"] = "utf-8"
+    # "the supervisor is the caller". An action that records its own activity
+    # when run by hand must not do it twice when run from here, where the exit
+    # code and the commit are recorded with it.
+    env["ORC_SUPERVISED"] = "1"
     try:
         r = subprocess.run(cmd, cwd=config.ORC_ROOT, capture_output=True,
                            text=True, encoding="utf-8", errors="replace",

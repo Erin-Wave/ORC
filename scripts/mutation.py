@@ -47,6 +47,7 @@ says so rather than reporting kills.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -404,6 +405,24 @@ def main(argv: list[str]) -> int:
     (config.REPORTS / "MUTATION.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     shutil.rmtree(work, ignore_errors=True)
+
+    # The staleness clock tracks the WORK, not who started it. Run by hand, this
+    # left no ACTIVITY line, so the owner screen said "18/18 killed 28m ago" on
+    # one row and "이 저장소에서 한 번도 실행되지 않았습니다" on another. A screen
+    # that contradicts itself is a screen that stops being trusted, and the loop
+    # would also have re-run work that had just been done.
+    #
+    # Skipped when the supervisor is the caller: forever.py records the run
+    # itself, with the exit code and the commit it landed.
+    if not os.environ.get("ORC_SUPERVISED"):
+        try:
+            from orc import runstate
+            runstate.record_activity(
+                "mutation",
+                f"by hand: {report['killed']}/{len(results)} killed",
+                report["seconds"], ok=not survivors)
+        except Exception:                                          # noqa: BLE001
+            pass
 
     print(f"\n{report['killed']}/{len(results)} mutations killed in "
           f"{report['seconds']:.0f}s -> reports/MUTATION.json")

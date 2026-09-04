@@ -114,6 +114,18 @@ NEVER_RAN = 267011                 # SCHED_S_TASK_HAS_NOT_RUN
 TASK_RUNNING = 267009              # SCHED_S_TASK_RUNNING
 NO_MORE_RUNS = 267012              # SCHED_S_TASK_NO_MORE_RUNS
 TASK_TERMINATED = 267014           # SCHED_S_TASK_TERMINATED
+
+# 0x800710E0, "the operator or administrator has refused the request".  Task
+# Scheduler returns it when a trigger fires while an instance is already
+# running and the task's policy is not to start a second one -- which is what
+# "ORC Forever" reports on every hourly trigger for as long as the resident
+# supervisor it started is alive, i.e. always, by design.
+#
+# It is not unconditionally benign: the same code comes back when a person or a
+# policy refuses the task outright. So it is read as OK only when the caller
+# can say an instance really is running, and left as a WARN with both readings
+# spelled out when it cannot.
+INSTANCE_REFUSED = 2147946720
 BENIGN_RESULTS = {
     0: "마지막 실행 성공",
     NEVER_RAN: "등록됐고 아직 발화 시각이 오지 않았음",
@@ -461,14 +473,29 @@ def task_path_problems(tasks: list[dict] | None = None,
     return bad
 
 
-def task_result_note(result) -> tuple[str, str]:
-    """(severity, prose) for a LastTaskResult.  Severity is 'ok'|'warn'|'bad'."""
+def task_result_note(result, resident: bool | None = None) -> tuple[str, str]:
+    """(severity, prose) for a LastTaskResult.  Severity is 'ok'|'warn'|'bad'.
+
+    `resident` answers "is the work this task starts already running?" for the
+    one code where that decides between healthy and broken. None means the
+    caller does not know, and then the row says so rather than guessing.
+    """
     try:
         rc = int(result)
     except (TypeError, ValueError):
         return "warn", f"결과 코드 불명 ({result})"
     if rc in BENIGN_RESULTS:
         return "ok", BENIGN_RESULTS[rc]
+    if rc == INSTANCE_REFUSED:
+        if resident:
+            return "ok", ("이미 돌고 있는 인스턴스가 있어 새 발화가 거부됐음 "
+                          "(0x800710E0) — 상주 감독자가 살아 있다는 뜻입니다")
+        if resident is None:
+            return "warn", ("새 인스턴스 시작이 거부됐음 (0x800710E0). 상주 "
+                            "감독자가 돌고 있으면 정상이고, 아니면 작업이 "
+                            "사람이나 정책에 의해 거부된 것입니다")
+        return "bad", ("새 인스턴스 시작이 거부됐는데 (0x800710E0) 상주 감독자도 "
+                       "없습니다 — 작업이 거부되고 아무것도 돌지 않습니다")
     if rc == TASK_TERMINATED:
         return "warn", ("마지막 실행이 강제 종료됐음 — 시간 제한에 걸렸거나 "
                         "사람이 멈췄습니다")
@@ -753,8 +780,14 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
             reasons.append(f"워커 실행 중 — {ago(started, now)} 시작")
         elif facts["queued"]:
             status = QUEUED
-            reasons.append(f"질문 {len(facts['queued'])}개가 등록돼 있고 "
-                           f"다음 워커 발화({kst(facts['next_worker_slot'])}, "
+            # Two ways it gets collected now, and quoting only the cron read as
+            # a four-hour wait on a machine that was already evaluating it: a
+            # worker job that is up takes the queue on its next tick, because
+            # next_action returns `cycle` there rather than falling through to
+            # zero-N work.
+            reasons.append(f"질문 {len(facts['queued'])}개가 등록돼 있습니다 — "
+                           "떠 있는 워커 잡이 있으면 그 창에서 바로, 없으면 "
+                           f"다음 발화({kst(facts['next_worker_slot'])}, "
                            f"{until(facts['next_worker_slot'], now)})에 "
                            "평가됩니다")
         elif facts["supervisor"]["alive"]:
