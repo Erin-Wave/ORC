@@ -2019,3 +2019,39 @@ def test_the_constitution_agrees_with_the_kill_test_it_quotes():
     for key in ("symbols_ever", "usable_survivors", "usable_delisted",
                 "min_usable_per_group"):
         assert str(kt3[key]) in row, f"{key} in the table disagrees with the run"
+
+
+def test_the_ledger_merge_leaves_nothing_behind(tmp_path):
+    """Every merge of the ledger left two files in the repository root.
+
+    WAL is a property of the FILE, so copying the ledger's bytes carries it and
+    SQLite creates `<out>-wal` and `<out>-shm` beside git's temp file. Git
+    removes the temp file it made and knows nothing about the two siblings, so
+    `.merge_file_XXXXXX-shm` and `-wal` accumulated -- untracked junk that
+    precommit.py is right to stop a commit over, sitting in the way of the next
+    person to run `git status`.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import merge_ledger
+
+    from orc.ledger.trials import Ledger
+
+    ours, theirs = tmp_path / "ours.sqlite", tmp_path / "theirs.sqlite"
+    for path, hid in ((ours, "H0001"), (theirs, "H0002")):
+        with Ledger(path) as led:
+            led.record(run_id="r", family="f", symbol="BTCUSDT",
+                       evaluator="analytic", cfg={"n": 1}, metrics={"tm_q05": 1.0},
+                       n_starts=1, panel_hash="p", hypothesis_id=hid, code="c")
+
+    out = tmp_path / ".merge_file_ABC123"
+    out.write_bytes(ours.read_bytes())
+    a, b, total = merge_ledger.union(ours, theirs, out)
+    assert total >= max(a, b)
+
+    leftovers = sorted(p.name for p in tmp_path.iterdir()
+                       if p.name.startswith(".merge_file") and p.name != out.name)
+    assert leftovers == [], f"the merge driver littered: {leftovers}"
+
+    # And what it wrote is still a ledger, not a checkpointed corpse.
+    with Ledger(out) as led:
+        assert led.total_trials() == total

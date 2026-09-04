@@ -90,8 +90,26 @@ def union(ours: Path, theirs: Path, out: Path) -> tuple[int, int, int]:
             f"INSERT OR IGNORE INTO trials ({cols}) VALUES ({marks})", incoming)
         conn.commit()
         after = conn.execute("SELECT COUNT(*) FROM trials").fetchone()[0]
+        # Fold the write-ahead log back into the file before closing.
+        #
+        # WAL mode is a property of the FILE, so copying the ledger's bytes
+        # above carries it, and SQLite then creates `<out>-wal` and `<out>-shm`
+        # beside git's temp file. Git removes the temp file it made and knows
+        # nothing about the two siblings, so every merge of the ledger left a
+        # pair of `.merge_file_XXXXXX-shm` / `-wal` in the repository root --
+        # untracked junk that accumulates, and that precommit.py is right to
+        # stop a commit over.
+        conn.execute("PRAGMA journal_mode=DELETE")
     finally:
         conn.close()
+    # Belt and braces: if the checkpoint above could not run, remove them by
+    # name rather than leave them behind.
+    for suffix in ("-wal", "-shm"):
+        sidecar = out.with_name(out.name + suffix)
+        try:
+            sidecar.unlink(missing_ok=True)
+        except OSError:                                            # pragma: no cover
+            pass
     # N can only grow, and a union cannot shrink it. If it did, the driver has
     # a bug and a silent one would be a deleted experiment.
     if after < max(len(a), len(b)):
