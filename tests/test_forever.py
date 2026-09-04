@@ -983,3 +983,61 @@ def test_the_stage_screen_renders_without_touching_the_research():
                                        "next": {"action": "cycle", "why": ""}})
         assert any("알 수 없음" in ln for ln in lines)
     assert watch.render_progress({"next": {"action": "cycle", "why": ""}})
+
+
+def test_a_long_action_is_visible_while_it_is_still_running(monkeypatch):
+    """2026-09-05. The owner looked at the screen and said 지금 멈춰있다.
+
+    Nothing was stopped: kernel_review had been inside a model call for 23
+    minutes. ACTIVITY.jsonl only records an action when it FINISHES, so a long
+    one is completely silent until it lands -- and the screen showed the
+    supervisor (always up) and the next action (not the current one), so its
+    two liveliest rows were both true and neither answered the question.
+
+    So running_scripts carries elapsed time, and follows the model CLI, which
+    is what the supervisor is actually waiting on for most of a pass."""
+    import subprocess as sp
+
+    import watch
+
+    root = str(config.ORC_ROOT).replace("/", "\\")
+    now = datetime.now(UTC)
+    began = (now - timedelta(minutes=23)).isoformat()
+    model_began = (now - timedelta(minutes=9)).isoformat()
+    rows = [
+        rf'2444|36996|{began}|python.exe -X utf8 "{root}\scripts\forever.py"',
+        rf'50068|2444|{began}|python.exe {root}\scripts\kernel_review.py',
+        rf'53224|50068|{model_began}|C:\Users\x\.local\bin\claude.EXE --model opus',
+        # Someone else's editor session. It is not evidence that the lab is
+        # working, and counting it as such is the screen lying the other way.
+        rf'99999|1|{model_began}|C:\Users\x\.local\bin\claude.EXE --model opus',
+    ]
+    monkeypatch.setattr(
+        sp, "run",
+        lambda *a, **k: sp.CompletedProcess(a[0], 0, "\n".join(rows), ""))
+
+    procs = watch.running_scripts()
+    by_pid = {p["pid"]: p for p in procs}
+    assert set(by_pid) == {"2444", "50068", "53224"}, \
+        "an unrelated claude.exe was counted as the lab working"
+
+    assert by_pid["50068"]["script"] == "kernel_review.py"
+    assert 22.5 < by_pid["50068"]["elapsed_min"] < 23.5
+    assert by_pid["53224"]["is_model"] is True
+    assert 8.5 < by_pid["53224"]["elapsed_min"] < 9.5
+    assert by_pid["2444"]["is_model"] is False
+
+    # And the screen has to SAY it, not merely hold it.
+    lines = watch.render({
+        "utc": now.isoformat(), "supervisor": {"alive": True, "pid": "2444",
+                                               "heartbeat_utc": now.isoformat()},
+        "processes": procs, "strays": [], "progress": None,
+        "next": {"action": "reason", "why": "x"},
+        "duty": watch.duty_cycle(1), "recent": [], "live_runs": [],
+    })
+    screen = "\n".join(lines)
+    assert "kernel_review.py" in screen
+    assert "23분째" in screen, "the elapsed time is the whole point"
+    assert "모델 응답 대기" in screen
+    # forever.py is always up, so it is not evidence and does not get the row.
+    assert "▶ 지금     forever.py" not in screen

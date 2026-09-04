@@ -61,10 +61,15 @@ PS_TIMEOUT_S = 20
 # spawns the real interpreter and waits for it -- so one supervisor is always
 # two processes with `forever.py` on both command lines. Without the parent,
 # every healthy supervisor looks like two of them.
+# CreationDate rides along because "무엇이 도는가"와 "몇 분째 도는가"는 다른
+# 질문이고, 두 번째 것이 없어서 소유자가 23분째 돌고 있는 kernel_review를
+# 보고 "지금 멈춰있다"고 읽었다.  ACTIVITY.jsonl은 끝난 작업만 적으므로 긴
+# 작업 하나는 끝날 때까지 화면에서 완전히 침묵한다.
 _PS = (
-    "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
-    "ForEach-Object { '{0}|{1}|{2}' -f $_.ProcessId, $_.ParentProcessId, "
-    "$_.CommandLine }"
+    "Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR "
+    "Name='claude.exe' OR Name='codex.exe'\" | "
+    "ForEach-Object { '{0}|{1}|{2}|{3}' -f $_.ProcessId, $_.ParentProcessId, "
+    "$_.CreationDate.ToUniversalTime().ToString('o'), $_.CommandLine }"
 )
 
 
@@ -87,21 +92,44 @@ def running_scripts(root: Path | None = None) -> list[dict] | None:
 
     out = []
     marker = str(root).replace("/", "\\").lower()
+    now = datetime.now(timezone.utc)
     for line in (r.stdout or "").splitlines():
-        parts = line.split("|", 2)
-        if len(parts) != 3:
+        parts = line.split("|", 3)
+        if len(parts) != 4:
             continue
-        pid, ppid, cmd = (x.strip() for x in parts)
-        if not cmd or marker not in cmd.lower():
+        pid, ppid, started, cmd = (x.strip() for x in parts)
+        # 모델 CLI는 트리 밖의 실행 파일이라 marker로 걸러지지 않는다.  그것이
+        # 바로 감독자가 대부분의 시간을 기다리는 대상이므로, 부모가 ORC
+        # 프로세스이면 남긴다 -- 사슬은 아래에서 붙인다.
+        is_model = Path(cmd.split()[0].strip('"')).stem.lower() in ("claude", "codex")
+        if not cmd or (marker not in cmd.lower() and not is_model):
             continue
         # 스크립트 이름만 남긴다: 전체 명령줄은 인터프리터 경로가 대부분이다.
         script = next((tok.strip('"').split("\\")[-1]
                        for tok in cmd.split()
-                       if tok.strip('"').lower().endswith(".py")), "?")
-        args = cmd.split(script, 1)[1].strip().strip('"') if script in cmd else ""
+                       if tok.strip('"').lower().endswith(".py")), None)
+        if script is None:
+            script = Path(cmd.split()[0].strip('"')).stem.lower() if is_model else "?"
+            args = ""
+        else:
+            args = cmd.split(script, 1)[1].strip().strip('"') if script in cmd else ""
+        began = runstate._utc(started)
         out.append({"pid": pid, "ppid": ppid, "script": script,
-                    "args": args[:60]})
-    return out
+                    "args": args[:60], "started_utc": started,
+                    "elapsed_min": ((now - began).total_seconds() / 60.0)
+                    if began else None,
+                    "is_model": is_model})
+    # 모델 CLI는 ORC 프로세스의 자손일 때만 우리 것이다.  소유자가 따로 띄운
+    # claude를 연구소가 일하는 증거로 세면 화면이 거짓말을 한다.
+    ours = {p["pid"] for p in out if not p["is_model"]}
+    grew = True
+    while grew:
+        grew = False
+        for p in out:
+            if p["ppid"] in ours and p["pid"] not in ours:
+                ours.add(p["pid"])
+                grew = True
+    return [p for p in out if p["pid"] in ours]
 
 
 def _intervals(hours: int) -> list[tuple[datetime, datetime, str]]:
@@ -470,9 +498,20 @@ def render(snap: dict) -> list[str]:
     elif not procs:
         L.append("  실행 중     없음 — 감독자는 낮잠 중이거나 다음 액션을 기다립니다")
     else:
-        for p in procs:
-            tag = "  실행 중    " if p is procs[0] else "             "
-            L.append(f"{tag} {p['script']} {p['args']}  (pid {p['pid']})")
+        # 감독자 자신은 언제나 떠 있으므로 "돌고 있다"의 증거가 아니다. 지금
+        # 실제로 무언가를 하고 있다는 증거는 그 자식이고, 그것이 없는 화면을
+        # 보고 소유자는 23분째 돌던 kernel_review를 "멈춰있다"고 읽었다.
+        work = [p for p in procs if p["script"] != "forever.py"]
+        for p in work:
+            tag = "  ▶ 지금    " if p is work[0] else "             "
+            mins = p.get("elapsed_min")
+            since = f"{mins:.0f}분째" if mins is not None else "?"
+            what = "모델 응답 대기" if p.get("is_model") else p.get("args", "")
+            L.append(f"{tag} {p['script']:18s} {since:>7s}  {what}".rstrip())
+        if not work:
+            L.append("  ▶ 지금     아무 작업도 실행 중이 아닙니다 — "
+                     "감독자는 다음 액션까지 쉽니다")
+        L.append(f"  감독자 프로세스  {len(procs) - len(work)}개")
 
     for st in snap.get("strays", []):
         L.append(f"  ! 좀비      {st['script']} pid {st['pid']} 이 잠금을 들고 "
