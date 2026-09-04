@@ -2269,3 +2269,129 @@ def test_the_proposer_prompt_speaks_the_vocabulary_the_code_has():
         assert f.name in text, (
             f"{f.name} is a field of SignalTrialConfig that the proposer has "
             "never been told about")
+
+
+# --------------------------------------------------------------------------
+# the oracle may not be edited by whoever it is checking
+#
+# The agent that writes the code also writes the test, runs it, reads the
+# result and says "done".  Every check in this project is worth exactly as much
+# as its resistance to being loosened by the thing it checks, and this
+# repository has already seen a provider running read-only append four tests to
+# tests/test_protocol.py during a reasoning pass.
+# --------------------------------------------------------------------------
+def test_a_deleted_test_needs_a_sentence_in_the_message():
+    from orc import guard
+
+    before = "def test_a():\n    assert 1\n\n\ndef test_b():\n    assert 2\n"
+    after = "def test_a():\n    assert 1\n"
+    why = guard.test_weakening("tests/test_x.py", before, after)
+    assert why and "test_b" in why[0]
+    assert not guard.has_marker("ordinary message", "tests")
+    assert guard.has_marker("fix\n\nWEAKENS-TESTS: test_b measured nothing\n", "tests")
+
+
+def test_a_test_that_no_longer_runs_is_a_weakening():
+    """A skip is not a pass.  It is the cheapest way to make a suite green and
+    it leaves the count of tests unchanged, so counting alone cannot see it."""
+    from orc import guard
+
+    before = "def test_a():\n    assert 1\n"
+    after = "@pytest.mark.skip\ndef test_a():\n    assert 1\n"
+    why = guard.test_weakening("tests/test_x.py", before, after)
+    assert why and "skip" in why[0]
+
+
+def test_writing_new_tests_is_always_free():
+    from orc import guard
+
+    before = "def test_a():\n    assert 1\n"
+    after = before + "\n\ndef test_b():\n    assert 2\n"
+    assert guard.test_weakening("tests/test_x.py", before, after) == []
+    assert guard.test_weakening("tests/test_new.py", None, after) == []
+    assert guard.test_weakening("orc/eval/signal.py", before, "") == []
+
+
+def test_deleting_a_test_file_whole_is_caught():
+    from orc import guard
+
+    before = "def test_a():\n    assert 1\n"
+    why = guard.test_weakening("tests/test_x.py", before, None)
+    assert why and "deleted" in why[0]
+
+
+def test_moving_a_frozen_threshold_needs_a_sentence():
+    """Section 11's promise -- 'frozen before results were seen' -- is a
+    comment.  This is the check.  Moving one of these after seeing a number is
+    how a search manufactures a finding, and it takes one character."""
+    from orc import guard
+
+    diff = ("--- a/orc/orchestrator/verdict.py\n"
+            "+++ b/orc/orchestrator/verdict.py\n"
+            "-PBO_USELESS = 0.5\n"
+            "+PBO_USELESS = 0.9\n")
+    hits = guard.frozen_touched(diff)
+    assert hits and hits[0].startswith("PBO_USELESS")
+    assert guard.has_marker("x\n\nMOVES-A-FROZEN-THRESHOLD: PBO_USELESS ...\n",
+                            "threshold")
+
+    # a line that merely MENTIONS the name is not a redefinition
+    assert guard.frozen_touched("-    if pbo >= PBO_USELESS:\n") == []
+    # and adding a constant is not loosening one
+    assert guard.frozen_touched("+PBO_USELESS = 0.4\n") == []
+
+
+def test_every_frozen_constant_still_exists():
+    """The guard is a list of names, and a name that has been renamed away
+    protects nothing while still reading like protection.  This fails the day
+    one of them moves, which is the only way a list like this stays honest."""
+    import re
+
+    from orc import config, guard
+
+    text = ""
+    for sub in ("orc", "scripts"):
+        for p in sorted((config.ORC_ROOT / sub).rglob("*.py")):
+            text += p.read_text(encoding="utf-8", errors="replace")
+    for name in guard.FROZEN_CONSTANTS:
+        assert re.search(rf"^{re.escape(name)}\s*(:[^=]+)?=", text, re.M), (
+            f"{name} is guarded but no longer defined anywhere; the guard is "
+            "protecting a name that does not exist")
+
+
+def test_the_holdout_ceiling_may_not_be_raised():
+    from orc import guard
+
+    before = "MAX_FINAL_TESTS = 3\n"
+    assert guard.holdout_regression(before, "MAX_FINAL_TESTS = 4\n")
+    assert guard.holdout_regression(before, "MAX_FINAL_TESTS = 3\n") == []
+    assert guard.holdout_regression(before, "MAX_FINAL_TESTS = 2\n") == []
+
+
+def test_the_change_budget_does_not_count_generated_files():
+    """reports/ and ledger/ are written by the cycle.  Counting them would make
+    every ordinary run look like a sprawling change and the budget would be
+    ignored within a week."""
+    from orc import guard
+
+    rows = [(2_000, 1_500, "reports/CYCLE_REPORT.md"), (10, 2, "orc/target.py")]
+    files, loc, paths = guard.budget(rows)
+    assert (files, loc, paths) == (1, 12, ["orc/target.py"])
+    assert guard.over_budget(rows) is None
+
+    big = [(60, 10, f"orc/m{i}.py") for i in range(guard.MAX_FILES + 1)]
+    assert "over the budget" in guard.over_budget(big)
+
+
+def test_the_commit_message_gate_is_installed_as_a_hook():
+    """A gate that is not wired to anything is a document.
+
+    The marker checks CANNOT live in pre-commit: at that point
+    .git/COMMIT_EDITMSG still holds the previous commit's text, so a marker
+    read there answers about the wrong commit.
+    """
+    from orc import config
+
+    hook = config.ORC_ROOT / ".git" / "hooks" / "commit-msg"
+    assert hook.exists(), "run: python scripts/precommit.py --install"
+    assert "--message" in hook.read_text(encoding="utf-8")
