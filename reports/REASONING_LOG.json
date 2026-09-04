@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T01:51:25.694386+00:00",
+  "utc": "2026-09-04T02:39:11.393309+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -8,16 +8,16 @@
       }
     },
     "propose": [
-      "H0013.json"
+      "H0014.json"
     ],
     "adversary": [
       {
-        "file": "H0013.json",
+        "file": "H0014.json",
         "verdict": "KILL",
-        "reason": "[claude] 제안이 스스로 건 조건 — \"If it carries the other sign it is a long-lookback cousin of closed H0007 and should be killed on those grounds; one grep settles it\" — 이 그대로 성립한다: `orc/eval/simulate.py:271` `gate_below_sma`는 \"Deploy only when price is under the simple average of the PRIOR window\"이고 `out[ok] = close[ok] <= sma[ok]`이므로, `sma:<days>`는 추세 게이트가 아니라 참조점만 trailing peak에서 이동평균으로 바꾼 `dip:`과 동일 부호의 약세 매수 게이트 — 즉 닫힌 H0007의 형태이며, H0009를 죽인 바로 그 re-skin이다. 실제 부호에서는 현금이 상승 구간에 놀고 하락 구간에 배치되므로 \"notional-time을 줄여 비싼 구간을 피한다\"는 메커니즘 주장과 첫 번째 kill clause(게이트가 ruin에 작용하는지)는 코드에 없는 동작을 대상으로 쓰여 있다. | [codex] The implemented `sma:<days>` gate deploys when price is below its prior-window SMA, not above it; by the proposal’s own stated contingency, this makes H0013 a long-lookback re-skin of the closed H0007 weakness-buying family rather than the claimed trend-state withholding rule.",
+        "reason": "[claude] 제안된 90셀을 원장 0행으로 그대로 돌려보니 판정 통계 mwrr_q05가 메커니즘이 아니라 청산 속도를 재고 있다: stop_loss가 걸린 모든 셀은 tm_q05가 0.44~0.78인데도(ETHUSDT (None,0.20): tm_q05 0.669) 브래킷 하한 -0.9999에 고정되어 통제군의 완전손실 -1.0과 구분되지 않고, take_profit 셀은 수 주 만에 종료된 구간을 연환산해 SOLUSDT (1.5,None) +76.89, DOGEUSDT (1.5,None) +43.62를 기록하므로 G(s)는 '의무를 일찍 끝낸 값어치'가 아니라 '목표에 얼마나 빨리 닿았나'다. 그 결과 1·2·3절은 모두 발동 불가(G=+2.87/+6.60/+77.89/+7.43/+44.62/+6.71로 6/6 양수, L(c*)=0.000으로 2절 5/5 통과, Hi=+44.62 > Lo=+6.60)이고 4절만 SPIKE 5/6으로 발동하므로, 등록은 이미 확정된 CLOSED를 90행 값으로 사는 것이며 그 CLOSED조차 연환산 인공물이지 청구서 종료 메커니즘의 측정이 아니다. | [codex] The named payer is the strategy itself, and the proposed rule explicitly makes that payer stop paying by closing early; avoided self-incurred funding cost is not a structural counterparty that continues transferring value when the rule scales. The four clauses do provide concrete numerical closure conditions, but falsifiability cannot repair the missing structural payer.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
-        "configurations": 48,
+        "configurations": 90,
         "killed_by": "adversary:claude,codex",
         "reviewed_by": [
           "claude",
