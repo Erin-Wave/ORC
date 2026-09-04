@@ -2849,3 +2849,35 @@ def test_the_cycle_lands_its_results_before_the_five_hour_window(tmp_path):
     # one that drifts is the one that runs.
     assert "git add -A reports ledger" not in wf
     assert "merge.orcledger.driver" not in wf
+
+
+def test_the_committed_briefing_is_short_enough_to_be_read():
+    """읽히지 않는 브리핑은 없는 브리핑과 같다.
+
+    reports/BRIEFING.md 는 휴대폰의 GitHub 앱에서 읽히는 파일이고, 185줄
+    13,233자였다. 짧은 판은 셋만 답한다 -- 돌고 있나, 어디까지 왔나, 다음은.
+    자세한 것은 --full 과 status.py 에 그대로 남아 있다.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import briefing
+
+    short = briefing.build_short()
+    assert len(short.splitlines()) <= 40, "폰에서 읽는 길이여야 한다"
+    assert len(short) <= 3000
+
+    # 그리고 셋을 답해야 한다
+    assert "**루프**" in short, "돌고 있나"
+    assert "**원장** N =" in short, "어디까지 왔나"
+    assert "종료 조건" in short
+    assert "## 다음" in short
+    assert "--full" in short, "자세한 판으로 가는 길이 없으면 잘라낸 것이다"
+
+    # 전체 판은 지운 것이 아니라 옮긴 것이다
+    assert len(briefing.build().splitlines()) > 100
+
+    # 그리고 사이클이 커밋하는 것은 짧은 판이다
+    cycle = (Path(__file__).resolve().parent.parent / "scripts" / "daily_cycle.py"
+             ).read_text(encoding="utf-8")
+    assert "briefing.build_short()" in cycle

@@ -10,7 +10,8 @@ health.py는 "기계가 살아 있나"에 답한다. status.py는 표와 숫자�
 한글로 옮기고, 실격 사유를 빠짐없이 붙이는 것뿐이다.
 가족 간 순위표는 만들지 않는다 — 그것이 곧 "골라잡기"이기 때문이다.
 
-  python scripts/briefing.py              화면에 출력
+  python scripts/briefing.py              짧은 판 (기본, 30줄 내외)
+  python scripts/briefing.py --full       전체 판
   python scripts/briefing.py --write      reports/BRIEFING.md 에도 기록
 
 `--write` 는 사이클이 매번 갱신할 수 있게 하려는 것이다.  저장소에 커밋되면
@@ -372,6 +373,150 @@ def _load(name: str):
         return None
 
 
+# 짧은 판의 실격 사유. WHY_KO 는 한 줄에 60자를 쓰는 설명문이고, 그것을 네
+# 가족에 붙이면 브리핑이 다시 길어진다. 여기서는 라벨만 쓴다 -- 설명은
+# `--full` 과 status.py 에 그대로 남아 있다.
+WHY_SHORT = {
+    "spike": "SPIKE",
+    "shape unmeasured": "shape 미측정",
+    "PBO unmeasured": "PBO 미측정",
+    "path count unmeasured": "paths 미측정",
+    "search test unmeasured": "서치 미측정",
+    "at or below 0": "0 이하",
+    "at or below 1": "1 이하",
+}
+
+
+def _why_short(reasons: list[str]) -> str:
+    out = []
+    for w in reasons:
+        if w in WHY_SHORT:
+            out.append(WHY_SHORT[w])
+        else:
+            # "p=0.725 vs a random search" -> "p=0.725", "PBO 0.52" 는 그대로
+            out.append(w.split(" vs ")[0])
+    return ", ".join(out)
+
+
+def build_short() -> str:
+    """폰에서 읽는 길이. 답해야 하는 질문은 셋뿐이다 -- 돌고 있나, 어디까지
+    왔나, 다음은 무엇인가.
+
+    긴 판은 지웠기 때문에 짧아진 것이 아니다. 180줄에 13,433자를 읽는 사람은
+    아무도 없고, 읽히지 않는 브리핑은 없는 브리핑과 같다. 자세한 것은 남아
+    있다: `--full`, `python scripts/status.py`, `reports/CYCLE_REPORT.md`.
+    """
+    import contextlib
+    import io
+
+    from orc import holdout
+    from orc.orchestrator.spec import closed_families, load_registry
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        open_h = load_registry()
+    closed = closed_families()
+    open_ids = [h.hypothesis_id for h in open_h]
+
+    try:
+        from orc.ledger.trials import Ledger
+        with Ledger() as led:
+            n_trials, newest = led.total_trials(), led.newest_trial_utc()
+    except Exception:                                              # noqa: BLE001
+        n_trials, newest = 0, None
+
+    L: list[str] = [f"# ORC 브리핑 — {datetime.now(KST):%Y-%m-%d %H:%M} KST", ""]
+
+    # 기계가 먼저다. 결과를 먼저 읽게 하면 루프가 멈춰 있어도 어제와 똑같이
+    # 읽히고, 실제로 그렇게 하루가 지나갔다.
+    try:
+        a = runstate.activity()
+        mark = {runstate.RUNNING: "🟢", runstate.QUEUED: "🟢",
+                runstate.WORKING: "🟢", runstate.IDLE: "🟡",
+                runstate.STALLED: "🟠", runstate.STOPPED: "🔴"}.get(a["status"], "🟡")
+        L.append(f"**루프** {mark} {a['status']} — "
+                 + (a["reasons"][0] if a["reasons"] else "").split(" — ")[0][:80])
+    except Exception as exc:                                       # noqa: BLE001
+        L.append(f"**루프** 🟡 상태를 읽을 수 없음 ({type(exc).__name__})")
+
+    L.append(f"**원장** N = {n_trials:,} · 새 질문이 마지막으로 답된 것 "
+             f"{runstate.ago(newest)} · 열린 가족 "
+             f"{', '.join(open_ids) or '없음'} · 닫힌 가족 {len(closed)}개")
+
+    tgt = _load("TARGET.json") or {}
+    if tgt:
+        t = tgt.get("target", {})
+        best = tgt.get("best_cagr") or {}
+        L.append(f"**종료 조건** CAGR {t.get('cagr', 0):.0%} / MDD "
+                 f"{t.get('max_drawdown', 0):.0%} → **{tgt.get('state')}**"
+                 + (f" · 최고 {best['cagr']:+.1%} (MDD {best['max_drawdown']:.0%},"
+                    f" {best['hypothesis_id']} {best['symbol']})" if best else ""))
+
+    survived = []
+    for hid in open_ids:
+        rep = _load(f"{hid}_SURFACE.json")
+        if rep is None:
+            continue
+        pbo_ok = {sy: r.get("pbo") for sy, r in (rep.get("pbo") or {}).items()
+                  if r.get("status") == "ok" and r.get("covers_reported_best")}
+        search = rep.get("search_test") or {}
+        for sym, srf in (rep.get("surfaces") or {}).items():
+            if not disqualifiers(srf, rep["metric"], pbo_ok.get(sym), search.get(sym)):
+                survived.append(f"{hid}/{sym}")
+    if survived:
+        L.append(f"**전략** 모든 검사를 통과한 셀 {len(survived)}개: "
+                 f"{', '.join(survived)} — `python scripts/robustness.py` 확인 필수")
+    else:
+        L.append("**전략** 없음. 모든 검사를 통과한 셀 0개 — "
+                 "`FAIL`이 이 프로젝트의 산출물입니다")
+
+    L.append(f"**홀드아웃** {holdout.openings_used()}/{holdout.MAX_FINAL_TESTS} 개봉, "
+             f"{config.HOLDOUT_START}부터 봉인")
+
+    mut = _load("MUTATION.json") or {}
+    if mut.get("survived"):
+        L.append(f"**뮤테이션** ⚠ 결함 {len(mut['survived'])}개를 테스트가 못 잡음 "
+                 f"({', '.join(mut['survived'][:2])}) — 코드가 아니라 테스트의 구멍")
+
+    # 가족별 최고 셀 -- 자기 사전등록 리포트가 지목한 것만. 가족 간 순위는
+    # 만들지 않는다. 그것이 골라잡기다.
+    L.append("")
+    L.append("## 가장 좋은 셀과 실격 사유")
+    L.append("")
+    for hid in open_ids + sorted(closed):
+        rep = _load(f"{hid}_SURFACE.json")
+        if rep is None:
+            continue
+        metric = rep.get("metric", "tm_q05")
+        pbo_ok = {sy: r.get("pbo") for sy, r in (rep.get("pbo") or {}).items()
+                  if r.get("status") == "ok" and r.get("covers_reported_best")}
+        search = rep.get("search_test") or {}
+        surfaces = rep.get("surfaces") or {}
+        if not surfaces:
+            continue
+        sym, srf = max(surfaces.items(), key=lambda kv: kv[1].get("best_value") or -9e9)
+        why = disqualifiers(srf, metric, pbo_ok.get(sym), search.get(sym))
+        state = "닫힘" if hid in closed else "진행"
+        L.append(f"- **{hid}** `{rep.get('family')}` ({state}) {sym} "
+                 f"{metric} {srf['best_value']:+.4f} — "
+                 + (_why_short(why) if why else "이 검사들은 통과"))
+
+    L.append("")
+    L.append("## 다음")
+    L.append("")
+    queued = sorted(p.stem for p in config.QUEUE.glob("*.json")) \
+        if config.QUEUE.exists() else []
+    if queued:
+        L.append(f"- 큐: {', '.join(queued)} — 워커가 평가할 차례")
+    try:
+        action, why = runstate.next_action()
+        L.append(f"- 감독자: **{action}** — {why.split('. ')[0][:90]}")
+    except Exception:                                              # noqa: BLE001
+        pass
+    L.append("- 자세히: `python scripts/briefing.py --full` · "
+             "`python scripts/watch.py` · `python scripts/status.py`")
+    return "\n".join(L) + "\n"
+
+
 def build() -> str:
     import contextlib
     import io
@@ -622,7 +767,9 @@ def build() -> str:
 
 
 def main(argv: list[str]) -> int:
-    text = build()
+    # 짧은 것이 기본이다. 180줄 13,433자짜리 판은 폰에서 읽히지 않았고,
+    # 읽히지 않는 브리핑은 없는 브리핑과 같다.
+    text = build() if "--full" in argv else build_short()
     print(text)
     if "--write" in argv:
         out = config.REPORTS / "BRIEFING.md"

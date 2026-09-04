@@ -235,7 +235,11 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False,
     # the whole protocol exists to contain.
     try:
         import briefing
-        (config.REPORTS / "BRIEFING.md").write_text(briefing.build(), encoding="utf-8")
+        # 짧은 판을 커밋한다. 이 파일은 휴대폰의 GitHub 앱에서 읽히는 것이고,
+        # 185줄 13,233자는 읽히지 않았다 -- 읽히지 않는 브리핑은 없는 브리핑과
+        # 같다. 전체 판은 `python scripts/briefing.py --full`.
+        (config.REPORTS / "BRIEFING.md").write_text(briefing.build_short(),
+                                                    encoding="utf-8")
         print("written: reports/BRIEFING.md")
     except Exception as exc:                                      # noqa: BLE001
         print(f"  briefing failed: {type(exc).__name__}: {exc}")
