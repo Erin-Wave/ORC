@@ -984,6 +984,29 @@ def supervisor(now: datetime | None = None) -> dict:
     return out
 
 
+def filler_pending(action: str) -> int | None:
+    """How many items of unfinished work a filler has, or None if unknown.
+
+    A floor exists to stop the SAME work repeating. The next item in a backlog
+    is not the same work -- a different symbol, a different family, an answer
+    nobody has measured -- so a filler with a backlog is due whatever its
+    clock says. Without this the loop did one 23-second job and rested 19
+    minutes, seventeen times over (docs/PIPELINE.md section 5e).
+
+    Imported lazily from scripts/, the way `findings` already is: the backlog
+    lives beside the action that walks it, and a new module for one function
+    would be the larger change.
+    """
+    if action != "execution_realism":
+        return None
+    try:
+        sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
+        import forever
+        return len(forever.track_b_backlog())
+    except Exception:                                              # noqa: BLE001
+        return None
+
+
 def next_action(now: datetime | None = None,
                 skip: set[str] | None = None) -> tuple[str, str]:
     """The single most useful thing to do at this instant, and why.
@@ -1108,6 +1131,16 @@ def next_action(now: datetime | None = None,
             done = last_activity_at(action)
             if done is None or done < tried:
                 continue
+        # A filler with unfinished work is due now. The failure cooldown above
+        # still applies, and it has to: a filler that keeps failing leaves its
+        # item in the backlog, so "always due" without a cooldown is the hot
+        # loop I9 is about.
+        if action in FILLER_WORK:
+            pending = filler_pending(action)
+            if pending:
+                return action, (f"{action}: 아직 재보지 않은 {pending}개가 남아 "
+                                "있습니다 — 시계가 아니라 백로그가 속도를 정합니다")
+
         at = last_activity_at(action)
         if at is None:
             return action, (f"{action}: 성공한 실행이 없습니다"

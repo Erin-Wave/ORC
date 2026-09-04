@@ -873,3 +873,37 @@ def test_unknown_is_not_the_same_as_nothing(monkeypatch):
     text = chr(10).join(watch.render(snap))
     assert "알 수 없음" in text
     assert "떠 있지 않음" in text
+
+
+def test_a_filler_with_a_backlog_is_due_whatever_its_clock_says(monkeypatch):
+    """A floor stops the SAME work repeating. The next backlog item is not the
+    same work, and treating it as such made the loop do one 23-second job and
+    rest 19 minutes -- seventeen times over."""
+    import findings
+
+    from orc import runstate, target
+
+    monkeypatch.setattr(findings, "blocking", lambda: [])
+    monkeypatch.setattr(target, "state",
+                        lambda *a, **k: {"state": target.NO_CANDIDATE,
+                                         "headline": "none", "candidates": []})
+    monkeypatch.setattr(runstate, "reasoning_due", lambda *a, **k: (False, "no"))
+
+    # everything fresh, so only a filler can be the answer
+    monkeypatch.setattr(runstate, "last_activity_at",
+                        lambda action, **k: runstate.datetime.now(
+                            runstate.timezone.utc))
+
+    monkeypatch.setattr(runstate, "filler_pending", lambda a: 17)
+    action, why = runstate.next_action()
+    assert action == "execution_realism"
+    assert "17" in why and "백로그" in why
+
+    # an empty backlog goes back to being paced by the clock, and with
+    # everything fresh that is `rest` -- never a busy loop
+    monkeypatch.setattr(runstate, "filler_pending", lambda a: 0)
+    assert runstate.next_action()[0] == "rest"
+
+    # and an unknown backlog must not be read as work waiting
+    monkeypatch.setattr(runstate, "filler_pending", lambda a: None)
+    assert runstate.next_action()[0] == "rest"

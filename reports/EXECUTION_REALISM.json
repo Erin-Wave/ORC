@@ -62,6 +62,76 @@
       "relative_drift": 0.5388904387533286,
       "sign_agrees": true,
       "passed": false
+    },
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "ADAUSDT",
+      "config": {
+        "symbol": "ADAUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 21.0,
+        "enter_rate": 0.0002,
+        "exit_rate": 5e-05,
+        "timeframe_hours": 1.0,
+        "enter_level": 100.0,
+        "exit_level": 0.0,
+        "filter_timeframe_hours": null,
+        "filter_lookback_days": null,
+        "filter_level": 100.0,
+        "capital": 10000.0,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
+        "take_profit": null,
+        "max_hold_days": 30.0,
+        "clock": "1h",
+        "fee_bps": 4.5,
+        "slippage_bps": 1.0,
+        "cost_multiplier": 1.0
+      },
+      "hourly": {
+        "clock": "1h",
+        "bars": 35776,
+        "cagr": -0.10302266058346865,
+        "max_drawdown": 0.614441139641855,
+        "calmar": -0.1676688846770879,
+        "sharpe": -0.5778972266309015,
+        "total_return": -0.3585481569048875,
+        "years": 4.083904109589041,
+        "n_trades": 23,
+        "n_liquidations": 0,
+        "funding_collected": 1005.9381650599322,
+        "final_equity": 6414.518430951125,
+        "exit_reasons": {
+          "signal": 13,
+          "stop": 10,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "minute": {
+        "clock": "1m",
+        "bars": 2139824,
+        "cagr": -0.08731159013600676,
+        "max_drawdown": 0.5926924606206474,
+        "calmar": -0.1473134820115259,
+        "sharpe": -0.4274011838958602,
+        "total_return": -0.3106098317653875,
+        "years": 4.0712005327245055,
+        "n_trades": 22,
+        "n_liquidations": 0,
+        "funding_collected": 1090.9584077616234,
+        "final_equity": 6893.901682346125,
+        "exit_reasons": {
+          "signal": 13,
+          "stop": 9,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "relative_drift": 0.13370121758070194,
+      "sign_agrees": true,
+      "passed": false,
+      "code_hash": "4b54f00e8edf2c901552ad0bc63dd949d1f381b7540906752b6f0b2c7243f1fc"
     }
   ]
 }
