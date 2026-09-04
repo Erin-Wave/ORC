@@ -159,6 +159,86 @@ MUTATIONS = [
                "else in this project matters if this one is not caught.",
     },
     {
+        "id": "the_two_evaluators_stop_agreeing",
+        "file": "orc/eval/analytic.py",
+        "old": "    win = cs[n:] - cs[:-n]                       # win[m, r] -> start s = m*k + r",
+        "new": "    win = cs[n:] - cs[:-n] * 1.000001            # win[m, r] -> start s = m*k + r",
+        "why": "the closed form and the simulator are two independent "
+               "implementations and their agreement is the load-bearing test of "
+               "the project: section 5 says every result is void if it fails. A "
+               "drift in the fifth decimal must be caught, because a drift is "
+               "what a real defect looks like.",
+    },
+    {
+        "id": "liquidation_is_not_recorded",
+        "file": "orc/eval/simulate.py",
+        "old": "            liquidated |= liq_now",
+        "new": "            liquidated |= liq_now & False",
+        "why": "liquidation_rate is the only number KT-2 turns on -- it closed "
+               "leverage above 1x for averaging down at 100 % liquidation. A "
+               "wiped-out path reported as a survivor reopens a closed result.",
+    },
+    {
+        "id": "a_registered_grid_can_be_edited",
+        "file": "orc/orchestrator/spec.py",
+        "old": "        if self.compute_hash() != self.prereg_hash:",
+        "new": "        if self.compute_hash() != self.prereg_hash and False:",
+        "why": "pre-registration is section 3, and the hash is the whole of it: "
+               "without this line the claim and the grid can be edited after "
+               "the numbers are in, which is the definition of the search bias "
+               "this project is built to contain.",
+    },
+    {
+        "id": "the_holdout_counter_resolves_downward",
+        "file": "orc/holdout.py",
+        "old": "    return max(by_ordinal, len(recs), _state_count())",
+        "new": "    return min(by_ordinal, len(recs), _state_count())",
+        "why": "every way the opening count can be wrong makes it too SMALL, "
+               "and each of those ways is a restored opening. Resolving "
+               "downward hands back a look at the sealed data that was already "
+               "spent.",
+    },
+    {
+        "id": "the_left_tail_is_dropped_silently",
+        "file": "orc/kernel/metrics_cf.py",
+        "old": '    out["n_non_finite"] = dropped',
+        "new": '    out["n_non_finite"] = 0',
+        "why": "a left-tail metric computed after deleting the paths that could "
+               "not be scored describes the survivors while reading as though "
+               "it described the ensemble. tm_q05 is the primary metric of "
+               "track A and this is the one error it cannot afford.",
+    },
+    {
+        "id": "the_stop_condition_needs_only_one_half",
+        "file": "orc/target.py",
+        "old": "    return cagr >= config.TARGET_CAGR and dd <= config.TARGET_MAX_DRAWDOWN",
+        "new": "    return cagr >= config.TARGET_CAGR or dd <= config.TARGET_MAX_DRAWDOWN",
+        "why": "with `or`, the 65 rows already in the ledger that merely hold "
+               "drawdown under 25 % become candidates and the research declares "
+               "itself finished on a cell returning 27 % a year.",
+    },
+    {
+        "id": "the_guard_stops_guarding",
+        "file": "orc/guard.py",
+        "old": '    if not path.startswith("tests/") or not path.endswith(".py"):',
+        "new": '    if True:',
+        "why": "the gate that refuses a silently weakened test suite is itself "
+               "code an agent can edit, and a guard that returns 'nothing "
+               "wrong' for every input is indistinguishable from a working one "
+               "in every commit that passes.",
+    },
+    {
+        "id": "a_kernel_change_reuses_old_rows",
+        "file": "orc/ledger/trials.py",
+        "old": '    "orc/eval",',
+        "new": "",
+        "why": "code_hash is part of the ledger's uniqueness key so that a "
+               "silent kernel change starts a new trial. Drop the evaluators "
+               "from it and a corrected metric re-runs, matches the old key, is "
+               "discarded by INSERT OR IGNORE, and prints 'new 0' -- which reads "
+               "as correct deduplication rather than as a correction thrown away.",
+    },
+    {
         "id": "unmeasured_counts_as_passed",
         "file": "orc/orchestrator/verdict.py",
         "old": '    if pbo is None:',
@@ -167,6 +247,19 @@ MUTATIONS = [
                "the easiest possible way for a cell to clear every bar.",
     },
 ]
+
+# Deselected for every MUTANT run, never for the baseline.
+#
+# This test asserts that each mutation's target string still appears in the
+# tree -- and inside a mutant that is false BY CONSTRUCTION for the mutation
+# being applied, most obviously when the mutation deletes its target line. On
+# the first 18-mutation run it "killed" a_kernel_change_reuses_old_rows all by
+# itself: the harness caught its own edit and reported it as the suite noticing
+# a defect. A kill that any mutation would earn is not evidence about the
+# oracle, it is the harness marking its own exam.
+SELF_REFERENTIAL = (
+    "tests/test_protocol.py::test_every_mutation_still_applies_to_the_code_it_names",
+)
 
 FAILED_LINE = re.compile(r"^FAILED (\S+)", re.M)
 SUMMARY = re.compile(r"(\d+) failed", re.M)
@@ -239,6 +332,10 @@ def main(argv: list[str]) -> int:
             print(f"  {'':34s} {' '.join(m['why'].split())[:110]}")
         return 0
 
+    only = None
+    if "--only" in argv:
+        only = argv[argv.index("--only") + 1]
+
     broken = verify_targets()
     if broken:
         print("the mutation list no longer matches the code:")
@@ -268,13 +365,15 @@ def main(argv: list[str]) -> int:
 
     results = []
     for m in MUTATIONS:
+        if only and m["id"] != only:
+            continue
         target = copy / m["file"]
         original = target.read_text(encoding="utf-8")
         assert original.count(m["old"]) == 1
         target.write_text(original.replace(m["old"], m["new"], 1), encoding="utf-8")
         try:
             t0 = time.time()
-            rc, failed = run_suite(copy, baseline_failures)
+            rc, failed = run_suite(copy, baseline_failures + list(SELF_REFERENTIAL))
         finally:
             target.write_text(original, encoding="utf-8")
         killed = bool(failed) or rc != 0
@@ -292,6 +391,8 @@ def main(argv: list[str]) -> int:
         "killed": len(results) - len(survivors),
         "survived": [r["id"] for r in survivors],
         "baseline_deselected": baseline_failures,
+        "never_allowed_to_kill": list(SELF_REFERENTIAL),
+        "only": only,
         "seconds": round(time.time() - started, 1),
         "results": results,
     }

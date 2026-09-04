@@ -2485,3 +2485,37 @@ def test_a_surviving_mutation_is_news():
             (reports / "MUTATION.json").write_text(saved, encoding="utf-8")
         else:                                                  # pragma: no cover
             (reports / "MUTATION.json").unlink(missing_ok=True)
+
+
+def test_the_code_hash_covers_every_file_that_can_change_a_number(tmp_path):
+    """The ledger's uniqueness key carries code_hash so that a silent kernel
+    change starts a NEW trial instead of being deduplicated against the old
+    one. Which files it covers was a literal list inside the function and
+    nothing checked it: scripts/mutation.py deleted "orc/eval" from it and the
+    whole suite stayed green, which is the exact defect trials.py warns about --
+    a corrected evaluator re-runs, matches the old key, is dropped by INSERT OR
+    IGNORE, and prints "new 0".
+    """
+    from orc.ledger.trials import CODE_HASH_ROOTS, code_hash
+
+    covered = set(CODE_HASH_ROOTS)
+    assert {"orc/kernel", "orc/eval", "orc/orchestrator/runner.py",
+            "orc/orchestrator/spec.py", "orc/facts/panel.py"} <= covered, (
+        "a file that decides a recorded number is outside the code hash")
+
+    # and the mechanism itself: a byte under a root moves the hash
+    (tmp_path / "m.py").write_text("VALUE = 1", encoding="utf-8")
+    first = code_hash([tmp_path])
+    (tmp_path / "m.py").write_text("VALUE = 2", encoding="utf-8")
+    assert code_hash([tmp_path]) != first
+    # line endings must NOT: git checks this tree out with CRLF on Windows and
+    # LF on the runner, and the hash has to identify the code rather than the
+    # bytes a particular checkout left on disk.
+    body = b"VALUE = 2"
+    (tmp_path / "m.py").write_bytes(body + bytes([13, 10]))
+    crlf = code_hash([tmp_path])
+    (tmp_path / "m.py").write_bytes(body + bytes([10]))
+    assert code_hash([tmp_path]) == crlf, (
+        "the same code with different line endings hashed differently, so "
+        "trials run on this workstation could never dedupe against the "
+        "runner's, and every crossing added a fresh copy of one measurement")

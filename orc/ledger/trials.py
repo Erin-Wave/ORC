@@ -137,6 +137,31 @@ def canonical_hash(obj: Any) -> str:
     ).hexdigest()
 
 
+# Everything whose content can change a number written to a row.
+#
+# A module constant rather than a literal inside the function because the list
+# is the whole of the guarantee and nothing could check it: scripts/mutation.py
+# deleted "orc/eval" from it on 2026-09-04 and the entire 254-test suite stayed
+# green. That is the defect the comment below describes, made silent -- a
+# corrected evaluator re-runs, matches the old UNIQUE key, is discarded by
+# INSERT OR IGNORE and prints "new 0", which reads as correct deduplication
+# rather than as a correction thrown away.
+CODE_HASH_ROOTS = (
+    "orc/kernel",
+    "orc/eval",
+    # The metrics are assembled in the orchestrator and the data in the panel
+    # loader, so hashing only the evaluators meant a corrected metric was
+    # silently dropped.
+    "orc/orchestrator/runner.py",
+    # spec.py defines the fee actually applied (effective_fee_bps), the
+    # evaluator a configuration is routed to (uses_analytic) and how a grid
+    # expands. Change any of them and every metric moves while config_hash,
+    # panel_hash and evaluator all stay put.
+    "orc/orchestrator/spec.py",
+    "orc/facts/panel.py",
+)
+
+
 def code_hash(paths: list[Path] | None = None) -> str:
     """Hash of the evaluation code, so a silent kernel change starts a new trial."""
     # Everything that can change a number written to a row.  The metrics are
@@ -144,20 +169,7 @@ def code_hash(paths: list[Path] | None = None) -> str:
     # only the evaluators meant a corrected metric re-ran, matched the UNIQUE
     # key, was discarded by INSERT OR IGNORE, and printed "new 0" -- which reads
     # as correct deduplication rather than as a correction thrown away.
-    roots = paths or [
-        config.ORC_ROOT / "orc" / "kernel",
-        config.ORC_ROOT / "orc" / "eval",
-        config.ORC_ROOT / "orc" / "orchestrator" / "runner.py",
-        # spec.py too, and for exactly the reason the comment above gives for
-        # runner.py. It defines the fee and slippage actually applied
-        # (effective_fee_bps), the evaluator a configuration is routed to
-        # (uses_analytic) and how a grid expands -- change any of them and every
-        # metric moves while config_hash, panel_hash and evaluator all stay put,
-        # so INSERT OR IGNORE drops the corrected row and prints "new 0". The
-        # uses_analytic fix in this same commit range is the worked example.
-        config.ORC_ROOT / "orc" / "orchestrator" / "spec.py",
-        config.ORC_ROOT / "orc" / "facts" / "panel.py",
-    ]
+    roots = paths or [config.ORC_ROOT / p for p in CODE_HASH_ROOTS]
     h = hashlib.sha256()
     for root in sorted(roots, key=str):
         root = Path(root)
