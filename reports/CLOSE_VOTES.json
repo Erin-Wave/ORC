@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T04:13:39.677803+00:00",
+  "utc": "2026-09-04T05:03:36.165791+00:00",
   "providers": [
     "claude",
     "codex"
@@ -14,17 +14,13 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 at include_funding=false, n_contributions=52, stride_days=30",
-            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 at include_funding=false, n_contributions=52, stride_days=30",
-            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 at include_funding=false, n_contributions=156, stride_days=7",
-            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 at include_funding=true, n_contributions=156, stride_days=7",
-            "XRPUSDT primary_metric_best (tm_q05) = 0.9227769940078271",
-            "DOGEUSDT primary_metric_best (tm_q05) = 0.8601961484914038",
-            "LTCUSDT primary_metric_best (tm_q05) = 0.6868948254289569",
-            "AVAXUSDT primary_metric_best (tm_q05) = 0.6183911094027328",
-            "ADAUSDT primary_metric_best (tm_q05) = 0.5958112554492814"
+            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 (include_funding=false, n_contributions=52, stride_days=30)",
+            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 (include_funding=false, n_contributions=52, stride_days=30)",
+            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 (include_funding=false, n_contributions=156, stride_days=7)",
+            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 (include_funding=true, n_contributions=156, stride_days=7)",
+            "XRPUSDT 0.9227769940078271, DOGEUSDT 0.8601961484914038, LTCUSDT 0.6868948254289569, AVAXUSDT 0.6183911094027328, ADAUSDT 0.5958112554492814 — all tm_q05, all below 1.0"
           ],
-          "reason": "The clause names the 5th-percentile terminal multiple, which the scales block identifies as `primary_metric_best` (tm_q05, break-even 1.0), and it is present for all nine symbols. It is an existential clause: it closes the family only if NO cell reaches above 1.0. At least four reported cells do — ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619 and BNBUSDT 1.1261, each of which is a concrete (symbol, stride, horizon) cell above 1.0. One such cell is enough to defeat the clause, so it is not met. Note that these are the tm_q05 values at the cells selected by the mwrr_q05 ranking, not the tm_q05 maxima, but that only understates the count — it cannot create a cell above 1.0 that does not exist. I am deliberately not reading the ranking metric (`best_value` / `mwrr_q05_best`, e.g. ETHUSDT 0.6789, ADAUSDT -0.3197) against the 1.0 threshold; those are annualised returns breaking even at 0.0 and the clause does not name them. Separately, and NOT grounds for closing since the kill condition does not contain it: the search test returns INDISTINGUISHABLE_FROM_SEARCH on both symbols where it ran (ETHUSDT p=0.725, SOLUSDT p=0.79), PBO is uncomputable on all three symbols attempted, independent_paths_best is between 1.02 and 1.40 everywhere, every measurable shape diagnostic reports SPIKE, and the family already holds 1232 trials of N. The clause as written is survived, but nothing here is selectable evidence."
+          "reason": "조항이 지명한 지표는 tm_q05이며, scales 블록이 그것을 primary_metric_best로 명시한다. 조항은 '어떤 (symbol, stride, horizon) 셀도 1.0을 넘지 못하면 닫는다'는 전칭 부정이므로, 1.0을 넘는 셀이 하나라도 존재하면 충족되지 않는다. ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619, BNBUSDT 1.1261 — 네 심볼에서 보고된 셀의 tm_q05가 1.0을 초과한다. 따라서 조항은 충족되지 않았다. 순위 지표인 mwrr_q05는 ETHUSDT 0.6789, BTCUSDT 0.3616처럼 수익률 스케일(손익분기 0.0)이며 조항이 지명한 지표가 아니므로 판정에 쓰지 않았다. 조항 외의 사실로 기록해 두자면, 이 surface는 결코 강하지 않다: 계산 가능한 네 심볼 모두 shape가 SPIKE이고, ADAUSDT·AVAXUSDT·DOGEUSDT·LTCUSDT·XRPUSDT 다섯 심볼은 peak가 양수가 아니어서 plateau_ratio가 unmeasurable이며, search_test는 ETHUSDT p=0.725, SOLUSDT p=0.79로 둘 다 INDISTINGUISHABLE_FROM_SEARCH이고, PBO는 세 심볼 모두 'fewer than two configurations share a horizon'로 계산되지 않았으며, independent_paths_best는 1.02~1.40에 불과하다. 그러나 이 중 어느 것도 사전 등록된 kill condition의 문장에 들어 있지 않으므로 닫는 근거가 될 수 없다."
         },
         "codex": {
           "verdict": "CONTINUE",
@@ -32,17 +28,12 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ADAUSDT primary_metric_best (tm_q05): 0.5958112554492814",
-            "AVAXUSDT primary_metric_best (tm_q05): 0.6183911094027328",
             "BNBUSDT primary_metric_best (tm_q05): 1.1260625166054576",
             "BTCUSDT primary_metric_best (tm_q05): 2.051039115127731",
-            "DOGEUSDT primary_metric_best (tm_q05): 0.8601961484914038",
             "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
-            "LTCUSDT primary_metric_best (tm_q05): 0.6868948254289569",
-            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884",
-            "XRPUSDT primary_metric_best (tm_q05): 0.9227769940078271"
+            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
           ],
-          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT reaches 2.051039115127731, ETHUSDT reaches 3.6056116382051298, and SOLUSDT reaches 1.6619021758095884. Therefore the pre-registered kill condition does not apply."
+          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Because multiple cells exceed 1.0 on the named terminal-multiple metric, the kill condition is not met."
         }
       },
       "unreachable": {},

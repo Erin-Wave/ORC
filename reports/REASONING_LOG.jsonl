@@ -15,3 +15,4 @@
 {"utc": "2026-09-04T02:39:11.393309+00:00", "blocked": [], "registered": [], "killed": ["H0014.json"], "held": [], "proposed": ["H0014.json"], "unavailable": []}
 {"utc": "2026-09-04T03:28:27.450556+00:00", "blocked": [], "registered": [], "killed": ["H0015.json"], "held": [], "proposed": ["H0015.json"], "unavailable": []}
 {"utc": "2026-09-04T04:13:39.650641+00:00", "blocked": [], "registered": [], "killed": ["H0016.json"], "held": [], "proposed": ["H0016.json"], "unavailable": []}
+{"utc": "2026-09-04T04:46:03.243910+00:00", "gate": "SKIP", "why": "마지막 패스가 32분 전입니다 — 패스 간 최소 45분을 둡니다"}

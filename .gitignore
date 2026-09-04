@@ -17,3 +17,7 @@ __pycache__/
 # Reasoning-cycle logs and the local NEWS.md the notifier appends to are
 # operational noise, not research output.
 logs/
+
+# scripts/mutation.py works in a throwaway copy of the tree; it removes it on
+# success and a crashed run must not leave it committable.
+.mutation/
