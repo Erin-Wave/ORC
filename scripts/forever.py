@@ -306,19 +306,43 @@ def release_lock() -> None:
 # ---------------------------------------------------------------------------
 # turning an action into a command
 # ---------------------------------------------------------------------------
-def track_b_cell() -> tuple[str, str] | None:
-    """A (hypothesis, symbol) pair execution_realism can actually run.
+def track_b_backlog() -> list[tuple[str, str]]:
+    """Every (hypothesis, symbol) whose minute-bar answer is not on record.
 
-    It is a Track B tool, and the symbol is not a free choice: taking the best
-    cell across the ledger would be the maximum-hunting the protocol exists to
-    contain.  So this takes the cell each family's OWN pre-registered surface
-    report already names, which is the same rule briefing.py follows.
+    The symbol is not a free choice: taking the best cell across the ledger
+    would be the maximum-hunting the protocol exists to contain. So each pair
+    is the cell that family's OWN pre-registered surface report already names,
+    which is the rule briefing.py follows -- and now EVERY symbol of every
+    Track B family rather than the first family's best one.
+
+    That single-pair version is why the loop rested. On 2026-09-04 eighteen
+    pairs had a surface and exactly ONE had ever been run on minute bars, while
+    `next_action` answered `rest` for two hours at a stretch and the duty cycle
+    over twelve hours was 37.6 % (docs/PIPELINE.md section 5). Seventeen pairs
+    of several minutes each is hours of real work that costs zero ledger rows.
+
+    Keyed on code_hash as well as the pair: the minute-bar answer is a
+    measurement of one kernel, so a kernel change re-opens the backlog exactly
+    as it starts a new trial in the ledger. Without that the backlog empties
+    once and the loop goes back to sleep forever.
     """
-    from orc.orchestrator.spec import load_registry
     import contextlib
     import io
+
+    from orc.ledger.trials import code_hash
+    from orc.orchestrator.spec import load_registry
+
+    try:
+        done = {(x.get("hypothesis_id"), x.get("symbol"))
+                for x in (json.loads((config.REPORTS / "EXECUTION_REALISM.json")
+                                     .read_text(encoding="utf-8"))["results"])
+                if x.get("code_hash") == code_hash()}
+    except (OSError, ValueError, KeyError):
+        done = set()
+
     with contextlib.redirect_stdout(io.StringIO()):
         every = load_registry(include_closed=True)
+    out = []
     for h in every:
         if h.track != "B":
             continue
@@ -329,11 +353,30 @@ def track_b_cell() -> tuple[str, str] | None:
             surfaces = json.loads(rep.read_text(encoding="utf-8")).get("surfaces") or {}
         except ValueError:
             continue
-        if not surfaces:
-            continue
-        sym = max(surfaces.items(),
-                  key=lambda kv: kv[1].get("best_value") or -9e9)[0]
-        return h.hypothesis_id, sym
+        for sym in sorted(surfaces):
+            if (h.hypothesis_id, sym) not in done:
+                out.append((h.hypothesis_id, sym))
+    return out
+
+
+def track_b_cell() -> tuple[str, str] | None:
+    """The next unmeasured pair, or None when the backlog is empty.
+
+    None means "not applicable", which forever records as work done and moves
+    on -- rather than re-measuring a pair whose answer is already on record for
+    this kernel, which would be a busy loop dressed as diligence.
+    """
+    backlog = track_b_backlog()
+    if not backlog:
+        return None
+    # A minute panel is 9.5 GB and lives only on the workstation. On the runner
+    # every pair would raise FileNotFoundError, burn the failure cooldown and
+    # crowd out work it CAN do, so an absent panel is "not applicable" and not
+    # a failure.
+    from orc.facts import panel as panel_mod
+    for hid, sym in backlog:
+        if panel_mod.panel_path(sym, "1m").exists():
+            return hid, sym
     return None
 
 

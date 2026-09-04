@@ -651,3 +651,135 @@ def test_the_workflow_keeps_the_runner_resident_and_out_of_the_budget():
     assert "--until-minutes 300" in wf
     assert "--skip reason,scout,kernel_review" in wf
     assert "ORC_WORKERS" in wf, "the runner would spawn a pool wider than itself"
+
+
+# --------------------------------------------------------------------------
+# the loop may not rest while there is unmeasured work on the disk
+# --------------------------------------------------------------------------
+def _fake_track_b(tmp_path, monkeypatch, measured=(), code="THIS"):
+    """Two Track B families with three symbols each, and a report of what has
+    already been run on minute bars."""
+    import json
+    from dataclasses import dataclass
+
+    from orc import config
+    from orc.facts import panel as panel_mod
+    from orc.ledger import trials
+    from orc.orchestrator import spec
+
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    monkeypatch.setattr(config, "REPORTS", reports)
+    monkeypatch.setattr(trials, "code_hash", lambda *a, **k: code)
+
+    @dataclass
+    class H:
+        hypothesis_id: str
+        track: str = "B"
+
+    monkeypatch.setattr(spec, "load_registry",
+                        lambda *a, **k: [H("H0002"), H("H0006"), H("H0001", "A")])
+    for hid in ("H0002", "H0006"):
+        (reports / f"{hid}_SURFACE.json").write_text(json.dumps(
+            {"hypothesis_id": hid, "track": "B",
+             "surfaces": {s: {"best_value": 1.0} for s in
+                          ("BTCUSDT", "ETHUSDT", "SOLUSDT")}}), encoding="utf-8")
+    # a Track A family must not appear even if it has a surface
+    (reports / "H0001_SURFACE.json").write_text(json.dumps(
+        {"hypothesis_id": "H0001", "track": "A",
+         "surfaces": {"BTCUSDT": {"best_value": 1.0}}}), encoding="utf-8")
+    (reports / "EXECUTION_REALISM.json").write_text(json.dumps(
+        {"results": [{"hypothesis_id": h, "symbol": s, "code_hash": c}
+                     for h, s, c in measured]}), encoding="utf-8")
+    # every minute panel exists unless a test says otherwise
+    monkeypatch.setattr(panel_mod, "panel_path",
+                        lambda sym, clock: tmp_path / f"{sym}_{clock}.parquet")
+    for sym in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+        (tmp_path / f"{sym}_1m.parquet").write_bytes(b"x")
+    return reports
+
+
+def test_the_backlog_is_every_pair_not_yet_run_on_minute_bars(tmp_path, monkeypatch):
+    """A tool that re-measured ONE cell is why the loop rested. Eighteen pairs
+    had a surface on 2026-09-04 and exactly one had ever been run on minute
+    bars, while next_action answered `rest` for two hours at a stretch."""
+    import forever
+
+    _fake_track_b(tmp_path, monkeypatch,
+                  measured=[("H0002", "BTCUSDT", "THIS")])
+    backlog = forever.track_b_backlog()
+    assert ("H0002", "BTCUSDT") not in backlog, "already measured on this kernel"
+    assert len(backlog) == 5, backlog
+    assert all(h in ("H0002", "H0006") for h, _ in backlog), "track A is not this tool"
+    assert forever.track_b_cell() == backlog[0]
+
+
+def test_a_kernel_change_reopens_the_backlog(tmp_path, monkeypatch):
+    """The minute-bar answer is a measurement of one kernel, exactly as a
+    ledger row is. Without the code_hash key the backlog empties once and the
+    loop goes back to sleep for good."""
+    import forever
+
+    _fake_track_b(tmp_path, monkeypatch,
+                  measured=[("H0002", s, "OLD") for s in
+                            ("BTCUSDT", "ETHUSDT", "SOLUSDT")] +
+                           [("H0006", s, "THIS") for s in
+                            ("BTCUSDT", "ETHUSDT", "SOLUSDT")])
+    backlog = forever.track_b_backlog()
+    assert sorted(backlog) == [("H0002", "BTCUSDT"), ("H0002", "ETHUSDT"),
+                               ("H0002", "SOLUSDT")], backlog
+
+
+def test_an_empty_backlog_is_not_applicable_rather_than_a_busy_loop(
+        tmp_path, monkeypatch):
+    """With a 20-minute floor, re-measuring a pair whose answer is already on
+    record would be a busy loop dressed as diligence. `plan()` returning None
+    is recorded as work done and the supervisor moves on."""
+    import forever
+
+    _fake_track_b(tmp_path, monkeypatch,
+                  measured=[(h, s, "THIS") for h in ("H0002", "H0006")
+                            for s in ("BTCUSDT", "ETHUSDT", "SOLUSDT")])
+    assert forever.track_b_backlog() == []
+    assert forever.track_b_cell() is None
+    assert forever.plan("execution_realism") is None
+
+
+def test_a_missing_minute_panel_is_not_applicable_either(tmp_path, monkeypatch):
+    """A minute panel is 9.5 GB and lives only on the workstation. On the
+    runner every pair would raise FileNotFoundError, burn the failure cooldown
+    and crowd out work it CAN do."""
+    import forever
+
+    _fake_track_b(tmp_path, monkeypatch)
+    for sym in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+        (tmp_path / f"{sym}_1m.parquet").unlink()
+    assert forever.track_b_backlog(), "the backlog is not empty"
+    assert forever.track_b_cell() is None, "but none of it can run here"
+
+
+def test_the_backlog_sets_the_pace_and_the_clock_is_only_a_floor():
+    from orc import runstate
+
+    floor = runstate.ZERO_N_WORK["execution_realism"]
+    assert floor <= 60, (
+        "twelve hours was the pace of a tool that re-measured one cell; the "
+        "backlog is the pacing now and this is a floor")
+    assert floor >= 5, "a floor of minutes still has to be a floor"
+
+
+def test_the_backlog_never_preempts_an_action_that_is_due():
+    """The filler's floor is the SHORTEST in the table and it is asked LAST.
+    Those two together are the design: it fills gaps without ever taking a turn
+    from the scout, which is the only action that brings a payer this
+    repository has no other way to hear about."""
+    from orc import runstate
+
+    assert "execution_realism" in runstate.FILLER_WORK
+    order = [a for a, _ in sorted(
+        runstate.ZERO_N_WORK.items(),
+        key=lambda kv: (kv[0] in runstate.FILLER_WORK, kv[1]))]
+    assert order[-1] in runstate.FILLER_WORK, order
+    assert (runstate.ZERO_N_WORK["execution_realism"]
+            < runstate.ZERO_N_WORK["scout"]), (
+        "a filler with a long floor would leave the gaps it exists to fill")

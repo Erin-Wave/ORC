@@ -870,7 +870,14 @@ ZERO_N_WORK = {
     "scout": 180,
     "kernel_review": 60 * 24,
     "robustness": 60 * 6,
-    "execution_realism": 60 * 12,
+    # Twelve hours was the pace of a tool that re-measured ONE cell. It now
+    # walks a backlog of every (family, symbol) not yet run on minute bars, so
+    # the BACKLOG is the pacing and this is only a floor: 20 minutes between
+    # runs of a job that takes several, which drains seventeen pairs in a day
+    # instead of nine days. When the backlog is empty `plan()` returns None,
+    # forever records "not applicable", and the clock resets without work --
+    # so a short floor cannot become a busy loop.
+    "execution_realism": 20,
     "survivorship": 60 * 24 * 3,
     # Breaks the kernel on purpose and asks whether any test notices. Daily,
     # because it is the only check here that measures the CHECKS: on the day it
@@ -878,6 +885,20 @@ ZERO_N_WORK = {
     # holdout truncation from panel.load -- passed a green 248-test suite.
     "mutation": 60 * 24,
 }
+
+# Work that fills a gap rather than competing for a turn.
+#
+# `execution_realism` walks a backlog of every (family, symbol) not yet run on
+# minute bars, so its floor is 20 minutes -- and the table below is consulted
+# in ascending order of allowance, which made the tightest clock win. That put
+# the backlog AHEAD of the scout, and the scout is the one action that brings a
+# payer this repository has no other way to hear about: six of the first eight
+# families rested on the funding rate because the proposer could only
+# re-arrange its own registry.
+#
+# So a filler is asked last, whatever its allowance. It replaces `rest`, which
+# is the only thing it should ever displace.
+FILLER_WORK = ("execution_realism",)
 
 ACTIVITY_LOG = config.REPORTS / "ACTIVITY.jsonl"
 
@@ -1072,8 +1093,10 @@ def next_action(now: datetime | None = None,
     if due and "reason" not in skip:
         return "reason", why
 
-    for action, max_age_min in sorted(ZERO_N_WORK.items(),
-                                      key=lambda kv: kv[1]):
+    # Tightest clock first, fillers last: (is_filler, allowance).
+    for action, max_age_min in sorted(
+            ZERO_N_WORK.items(),
+            key=lambda kv: (kv[0] in FILLER_WORK, kv[1])):
         if action in skip:
             continue
         # A failed attempt gets a short cooldown instead of the action's whole

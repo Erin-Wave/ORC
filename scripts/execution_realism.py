@@ -153,6 +153,13 @@ def main(argv: list[str]) -> int:
     print(f"  drift {r['relative_drift']:.1%}  sign agrees {r['sign_agrees']}  "
           f"-> {'PASS' if r['passed'] else 'FAIL'}")
 
+    # code_hash travels with the result, so the backlog re-opens itself when
+    # the evaluator changes: the minute-bar answer for a cell is a measurement
+    # of THIS kernel, exactly as a ledger row is. Without it the supervisor
+    # would consider every pair permanently done and go back to resting.
+    from orc.ledger.trials import code_hash
+    r["code_hash"] = code_hash()
+
     out = config.REPORTS / "EXECUTION_REALISM.json"
     prev = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {"results": []}
     prev["results"] = [x for x in prev["results"]
