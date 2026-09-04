@@ -2975,3 +2975,58 @@ def test_only_an_invariant_may_stop_the_research_cycle(pytestconfig):
              ).read_text(encoding="utf-8")
     assert "python -m pytest tests -q" in guard, (
         "전체 스위트는 여전히 push마다 돌아야 한다 — 조용해지면 안 된다")
+
+
+def test_the_null_leaves_the_owner_a_share_of_their_own_machine():
+    """2026-09-05. The pool took os.cpu_count() -- 24 workers on 24 cores, no
+    headroom. It survived that only because the search test ran on two symbols;
+    the same day it widened to nine and the owner said 다른 작업을 못하겠음.
+
+    A loop that makes the workstation unusable gets switched off, and a
+    switched-off loop runs at zero, so this is a throughput rule and not a
+    courtesy. The runner is the reason it is a fraction: four cores there, and
+    nobody sitting at them."""
+    from unittest import mock
+
+    from orc.orchestrator import search_test as st
+
+    with mock.patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("ORC_WORKERS", None)
+        for cores, expected in ((1, 1), (2, 2), (4, 4), (8, 6), (16, 12),
+                                (24, 18)):
+            with mock.patch("os.cpu_count", return_value=cores):
+                assert st.n_workers(999) == expected, cores
+
+        # Never more workers than there is work.
+        with mock.patch("os.cpu_count", return_value=24):
+            assert st.n_workers(3) == 3
+
+        # The workflow pins 4 on a 4-core runner and that must still win.
+        os.environ["ORC_WORKERS"] = "4"
+        with mock.patch("os.cpu_count", return_value=24):
+            assert st.n_workers(999) == 4
+        os.environ.pop("ORC_WORKERS", None)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="priority class is a Windows API")
+def test_yielding_to_the_owner_actually_changes_the_priority():
+    """The first version of _yield_to_the_owner called SetPriorityClass without
+    declaring argtypes, so ctypes marshalled the 64-bit pseudo-handle as a
+    32-bit int, the call failed, and every worker went on running at Normal.
+
+    Nothing raised. `python -c "...; _yield_to_the_owner()"` exited 0. Only
+    reading the priority BACK showed it -- which is section 10's rule about
+    verifying with the payload the real caller sends, on the smallest possible
+    scale."""
+    from orc.orchestrator import search_test as st
+
+    before = st.owner_priority()
+    assert before is not None, "GetPriorityClass could not be read at all"
+    try:
+        st._yield_to_the_owner()
+        assert st.owner_priority() == st._BELOW_NORMAL_PRIORITY_CLASS, \
+            "the call reported nothing and did nothing"
+    finally:
+        st._restore_priority(before)
+    assert st.owner_priority() == before, \
+        "best_of_g restores the caller's priority; so must this test"

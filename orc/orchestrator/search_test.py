@@ -29,6 +29,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import pickle
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from functools import partial
@@ -48,6 +49,27 @@ N_SYNTHETIC_PATHS = 199
 
 # A best that a random search would beat one time in twenty is not a finding.
 ALPHA = 0.05
+
+
+# The workstation is a machine the owner is sitting at
+# --------------------------------------------------------------------------
+# This pool used os.cpu_count() directly: 24 workers on 24 cores, zero
+# headroom. It survived that way only because the search test ran on two
+# symbols; widening it to nine on 2026-09-05 pegged the machine and the owner
+# said "다른 작업을 못하겠음". That is not a performance complaint, it is the
+# research stopping: a loop that makes the workstation unusable gets switched
+# off, and a switched-off loop runs at zero.
+#
+# A FRACTION rather than a count, because the runner has four cores and
+# reserving a fixed number there would leave nothing -- and nobody is sitting
+# at the runner. ORC_WORKERS still overrides both, which is how the workflow
+# pins 4.
+#
+# Neither number can change an answer. The synthetic paths are drawn up front
+# from one seeded generator and consumed in order, so the pool decides how long
+# the null takes and nothing about what it says.
+CPU_HEADROOM_FRACTION = 0.25    # the owner's share, frozen the day the screen froze
+MIN_CORES_BEFORE_SHARING = 8    # below this the machine is a worker, not a desk
 
 
 def n_workers(n_tasks: int) -> int:
@@ -71,7 +93,79 @@ def n_workers(n_tasks: int) -> int:
             n = 0
         if n > 0:
             return max(1, min(n, n_tasks))
-    return max(1, min(os.cpu_count() or 1, n_tasks))
+
+    total = os.cpu_count() or 1
+    if total >= MIN_CORES_BEFORE_SHARING:
+        total -= max(1, int(total * CPU_HEADROOM_FRACTION))
+    return max(1, min(total, n_tasks))
+
+
+# Windows has no os.nice, and this needs no new dependency.
+_BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+
+
+def _yield_to_the_owner() -> None:
+    """Run each worker below normal priority.
+
+    Headroom alone does not make a machine usable: eighteen workers spinning at
+    normal priority still make a foreground window stutter, because the
+    scheduler has no reason to prefer it. Below-normal says the owner's editor
+    wins every time they touch it and the null gets the rest -- which costs
+    nothing at all on an idle machine, and is exactly the trade wanted on a
+    busy one.
+
+    Best effort by design. A platform where this fails is a platform where the
+    null still has to run, so a failure here is silent -- which is exactly why
+    it is checked rather than assumed. The first version of this function
+    called SetPriorityClass without declaring argtypes, so ctypes marshalled
+    the 64-bit pseudo-handle (-1) as a 32-bit int, the call failed, and every
+    worker went on running at Normal while the code claimed otherwise.
+    GetPriorityClass returning 0 is what caught it.
+    """
+    try:
+        if sys.platform == "win32":
+            import ctypes
+            k = ctypes.windll.kernel32                             # type: ignore[attr-defined]
+            k.GetCurrentProcess.restype = ctypes.c_void_p
+            k.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+            k.SetPriorityClass.restype = ctypes.c_int
+            k.SetPriorityClass(k.GetCurrentProcess(),
+                               _BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            os.nice(10)
+    except Exception:                                              # noqa: BLE001
+        pass
+
+
+def _restore_priority(value: int | None) -> None:
+    """Undo _yield_to_the_owner.  A no-op where there was nothing to read."""
+    if value is None or sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32                                 # type: ignore[attr-defined]
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        k.SetPriorityClass(k.GetCurrentProcess(), value)
+    except Exception:                                              # noqa: BLE001
+        pass
+
+
+def owner_priority() -> int | None:
+    """This process's Windows priority class, or None where there is no such
+    thing.  Exists so that a test can assert _yield_to_the_owner WORKED rather
+    than that it ran without raising."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32                                 # type: ignore[attr-defined]
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.GetPriorityClass.argtypes = [ctypes.c_void_p]
+        k.GetPriorityClass.restype = ctypes.c_uint32
+        return int(k.GetPriorityClass(k.GetCurrentProcess()))
+    except Exception:                                              # noqa: BLE001
+        return None
 
 
 def _safe_score(score_grid, close) -> float:
@@ -148,9 +242,18 @@ def best_of_g(observed_best: float, score_grid, panel, n_configs: int,
     scored: list[float] = []
     if workers > 1 and _is_picklable(score_grid):
         chunk = max(1, len(paths) // (workers * 4))
+        # Lower THIS process first, because a spawned child inherits its
+        # parent's priority class: the initializer cannot run until the worker
+        # has re-imported numpy and polars, and eighteen workers doing that at
+        # Normal is a second or two of exactly the stutter this avoids. The
+        # initializer stays as the belt to this pair of braces -- it is what
+        # covers a platform where the parent call failed.
+        was = owner_priority()
+        _yield_to_the_owner()
         try:
             with ProcessPoolExecutor(max_workers=workers,
-                                     mp_context=pool_context()) as pool:
+                                     mp_context=pool_context(),
+                                     initializer=_yield_to_the_owner) as pool:
                 scored = list(pool.map(partial(_safe_score, score_grid), paths,
                                        chunksize=chunk))
         except (BrokenProcessPool, OSError) as exc:
@@ -164,6 +267,13 @@ def best_of_g(observed_best: float, score_grid, panel, n_configs: int,
                   f"{str(exc)[:120]}); re-running the null on one core",
                   flush=True)
             scored = []
+        finally:
+            # Put this process back where it was found. best_of_g is called
+            # from inside a cycle that goes on to do other things, and silently
+            # leaving the caller de-prioritised is a side effect nobody asked
+            # for -- the serial fallback below runs at the restored priority
+            # for the same reason.
+            _restore_priority(was)
     if not scored:
         scored = [_safe_score(score_grid, close) for close in paths]
 
