@@ -153,24 +153,41 @@ def reject(rec: dict) -> str | None:
     return None
 
 
-def scout_once(provider: str, notebook: Path | None = None) -> dict:
-    """One provider, one pass.  Returns what happened, and never raises for a
-    provider problem: a scout that cannot be reached has found nothing, which
-    is a normal outcome and not a failure of the loop."""
-    nb = notebook or NOTEBOOK
-    known = known_payers(nb)
-    prompt = PROMPT.read_text(encoding="utf-8").format(
+def scout_prompt(notebook: Path | None = None) -> str:
+    """The question, which is the same for every provider."""
+    known = known_payers(notebook or NOTEBOOK)
+    return PROMPT.read_text(encoding="utf-8").format(
         closed=closed_mechanisms(),
         known=("\n".join(f"- {k}" for k in known[:40]) if known
                else "(the notebook is empty)"))
+
+
+def scout_once(provider: str, notebook: Path | None = None,
+               text: str | None = None, error: str | None = None) -> dict:
+    """One provider, one pass.  Returns what happened, and never raises for a
+    provider problem: a scout that cannot be reached has found nothing, which
+    is a normal outcome and not a failure of the loop.
+
+    `text` and `error` let the CALLER do the asking, so several providers can be
+    asked at once while the merge below stays serial.  The merge must stay
+    serial: it dedupes against payers already in the notebook, and two of them
+    appending at the same time would each miss what the other had just added
+    and write the same payer twice.
+    """
+    nb = notebook or NOTEBOOK
+    known = known_payers(nb)
     out = {"provider": provider, "asked_utc": datetime.now(timezone.utc).isoformat(),
            "added": [], "rejected": [], "duplicates": []}
-    try:
-        text = llm.ask(prompt, tools=SCOUT_TOOLS, provider=provider,
-                       cwd=config.ORC_ROOT)
-    except llm.LLMUnavailable as exc:
-        out["error"] = str(exc)
+    if error is not None:
+        out["error"] = error
         return out
+    if text is None:
+        try:
+            text = llm.ask(scout_prompt(nb), tools=SCOUT_TOOLS, provider=provider,
+                           cwd=config.ORC_ROOT)
+        except llm.LLMUnavailable as exc:
+            out["error"] = str(exc)
+            return out
     m = re.search(r"\[.*\]", text, re.S)
     if not m:
         out["error"] = f"no JSON array in the reply: {text[:200]}"
@@ -231,9 +248,15 @@ def main(argv: list[str]) -> int:
         print("no provider is ready; nothing was asked")
         return 1
 
+    # Asked at once, merged in turn.  Two providers in series made the scout
+    # cost the sum of two model calls -- 483s on the run that found three new
+    # payers -- for two questions that do not depend on each other.
+    replies, errors = llm.ask_many(scout_prompt(), wanted, tools=SCOUT_TOOLS,
+                                   cwd=config.ORC_ROOT)
+
     worst = 0
     for p in wanted:
-        r = scout_once(p)
+        r = scout_once(p, text=replies.get(p), error=errors.get(p))
         if r.get("error"):
             print(f"{p}: SKIPPED -- {r['error'][:200]}")
             worst = max(worst, 1)

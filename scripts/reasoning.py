@@ -232,12 +232,11 @@ def review(path: Path) -> dict:
     if not ready:
         raise llm.LLMUnavailable("no provider is available to review")
 
-    verdicts, unreachable = {}, {}
-    for name in ready:
-        try:
-            verdicts[name] = llm.ask_json(prompt, cwd=config.ORC_ROOT, provider=name)
-        except llm.LLMUnavailable as exc:
-            unreachable[name] = str(exc)
+    # Every provider at once.  The veto is unanimous-to-register -- any one of
+    # them can refuse -- so all of them have to be asked either way, and asking
+    # them in turn made the pass pay the sum of two model calls for a decision
+    # that needs the maximum of them.
+    verdicts, unreachable = llm.ask_json_many(prompt, ready, cwd=config.ORC_ROOT)
     if not verdicts:
         raise llm.LLMUnavailable(
             "; ".join(f"{k}: {v}" for k, v in unreachable.items()))
@@ -345,19 +344,13 @@ def close_votes() -> dict:
             kill_condition=h.kill_condition,
             surface=json.dumps(trimmed, ensure_ascii=False, default=str))
 
-        votes, unreachable = {}, {}
-        for name in ready:
-            try:
-                v = llm.ask_json(prompt, cwd=config.ORC_ROOT, provider=name)
-            except llm.LLMUnavailable as exc:
-                unreachable[name] = str(exc)
-                continue
+        votes, unreachable = llm.ask_json_many(prompt, ready, cwd=config.ORC_ROOT)
+        for name, v in votes.items():
             # A vote that says CONTINUE while reporting a met clause is
             # self-contradictory; it is recorded and not counted.
             if v.get("verdict") == "CONTINUE" and v.get("clause_met") is True:
                 v["broken"] = ("verdict CONTINUE with clause_met true; the vote "
                                "contradicts itself and is not counted")
-            votes[name] = v
 
         counted = {k: v for k, v in votes.items() if not v.get("broken")}
         decided = {k: v.get("verdict") for k, v in counted.items()}

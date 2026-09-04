@@ -1907,6 +1907,34 @@
       "what": "The token comparison decodes as strict UTF-8 and canonicalises with str.strip(), which removes neither a byte-order mark nor a UTF-16 encoding, so a byte-correct token written by the environment's default tools is rejected.",
       "trigger": "Verified by execution: a UTF-8-with-BOM token reads back as '\\ufeffI am opening...' and compares unequal, because U+FEFF is not whitespace to str.strip(); a UTF-16LE token reads back as 'I\\x00 \\x00a\\x00m\\x00'. This environment's own PowerShell notes record that `>` and `Out-File` here default to UTF-8 with BOM, and MANUAL_SETUP.md:287 instructs the operator to create the file with an editor. (CRLF is not affected — Path.read_text uses universal newlines, which I checked before reporting.)",
       "why_silent": "It is not silent: it fails closed with \"FINAL_TEST_TOKEN text does not match; refusing to open.\" It is listed only because the door's identity check depends on an incidental encoding rather than on the text, and the message names no differing byte — the operator sees a correct-looking file rejected, which is the state that invites editing the check or TOKEN_TEXT rather than the token."
+    },
+    "e897d3c0234c": {
+      "id": "e897d3c0234c",
+      "status": "fixed",
+      "first_seen_utc": "2026-09-04T00:40:00.053421+00:00",
+      "last_seen_utc": "2026-09-04T00:40:00.053421+00:00",
+      "disposition": "fixed: every dirty path in the fingerprint now carries a sha256 of its content, so a further edit to an already-dirty file changes the fingerprint even though the status line does not. Measured on a scratch repo: status-line sets identical before and after, fingerprint differs, and the changed file is named. tests/test_protocol.py::test_a_file_that_was_already_dirty_is_still_watched",
+      "file": "orc/llm.py",
+      "line": 98,
+      "severity": "high",
+      "what": "tree_fingerprint compared `git status --porcelain` LINE SETS, so it could see a file become dirty but not a dirty file being edited further: a path already listed as ' M' stayed ' M' and the set difference was empty. The read-only guarantee was therefore blind over exactly the files a human is working on.",
+      "trigger": "On 2026-09-04 the resident supervisor fired a reason pass while tests/test_protocol.py was modified in the working tree. A provider appended four tests to that file. tree_violations recorded null, REASONING_LOG.json recorded null, and the edit was found only because the tests referenced ask_many -- a function written minutes earlier in the same session and therefore impossible for the pass to have known about from the repository.",
+      "why_silent": "The detector reports only what it can name, and it named nothing, so the pass completed and committed with no warning on any channel.",
+      "decided_utc": "2026-09-04T00:40:00.099684+00:00"
+    },
+    "285d5c2e6c2d": {
+      "id": "285d5c2e6c2d",
+      "status": "fixed",
+      "first_seen_utc": "2026-09-04T00:40:00.053421+00:00",
+      "last_seen_utc": "2026-09-04T00:40:00.053421+00:00",
+      "disposition": "fixed: tests/conftest.py refuses llm._binary for every test in the suite, which is the last step before a provider CLI is launched. _which() was split out of _binary so availability() -- a probe every step makes -- still works. A test that means to fake a provider points _binary at a fake and is unaffected; a test that forgot to stub now fails with a message naming the four functions it could pin. Measured: the suite is back to ~10s and 215 tests pass.",
+      "file": "tests/conftest.py",
+      "line": 1,
+      "severity": "high",
+      "what": "The suite could reach a live model provider. Two tests pinned llm.ask_json and nothing else, so when the adversary veto and the close vote moved to llm.ask_json_many they stopped stubbing anything and launched the real CLIs.",
+      "trigger": "Measured: the suite went from 8s to 356s (5m56s) and two verdicts came back from a live model instead of from the fixture. It surfaced as an assertion on the ANSWER -- 'CONTINUE' == 'CLOSE' -- which is the shape a test takes when it has quietly started measuring something else, and it was caught only because a live model happened to disagree with the fixture.",
+      "why_silent": "A test that stubs the wrong function does not fail for stubbing the wrong function. It passes, slowly, against whatever the network returns.",
+      "decided_utc": "2026-09-04T00:40:00.145435+00:00"
     }
   }
 }

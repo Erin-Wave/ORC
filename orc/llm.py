@@ -28,6 +28,7 @@ than a patch.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -112,7 +113,40 @@ def tree_fingerprint(cwd: str | Path | None = None) -> str | None:
                            cwd=str(cwd) if cwd else None)
     except (OSError, subprocess.TimeoutExpired):
         return None
-    return r.stdout if r.returncode == 0 else None
+    if r.returncode != 0:
+        return None
+
+    # Each dirty path carries a hash of its CONTENT, because the status line
+    # alone is blind in exactly the case that bit this project.
+    #
+    # On 2026-09-04 a reasoning pass ran while tests/test_protocol.py was
+    # already modified, and a provider appended four tests to it. The file was
+    # " M" before the call and " M" after, the line sets were identical, and
+    # nothing was recorded: the detector could see a file BECOME dirty and not
+    # a dirty file being edited further. An unattended model writing into a
+    # working tree it was told to leave alone is the whole reason this function
+    # exists, and it had a hole the size of every file already being worked on.
+    root = Path(cwd) if cwd else Path.cwd()
+    out = []
+    for line in (r.stdout or "").splitlines():
+        if not line.strip():
+            continue
+        path = line[3:].strip()
+        if " -> " in path:                       # a rename; the target is what exists
+            path = path.split(" -> ")[-1]
+        path = path.strip('"')
+        try:
+            digest = hashlib.sha256(
+                (root / path).read_bytes()).hexdigest()[:16]
+        except (OSError, ValueError):
+            digest = "-"                         # deleted, or a directory
+        out.append(f"{line[:3]}{line[3:]}\t{digest}")
+    return "\n".join(out) + ("\n" if out else "")
+
+
+def _named(entry: str) -> str:
+    """The path out of a fingerprint line, without the content hash."""
+    return entry.split("\t")[0].strip().strip('"')
 
 
 def providers() -> dict[str, dict]:
@@ -130,7 +164,14 @@ def providers() -> dict[str, dict]:
     return out
 
 
-def _binary(provider: str = DEFAULT_PROVIDER) -> str:
+def _which(provider: str = DEFAULT_PROVIDER) -> str:
+    """Where a provider's CLI is, or raise.  A LOOKUP, and nothing more.
+
+    Split from `_binary` so that asking whether a provider exists and being
+    about to launch it are two different calls.  The suite closes the second
+    door and leaves the first open: availability() is a probe every step makes,
+    and a test that probes has not tried to reach a model.
+    """
     spec = providers().get(provider)
     if spec is None:
         raise LLMUnavailable(f"no provider {provider!r} in configs/providers.json")
@@ -144,6 +185,12 @@ def _binary(provider: str = DEFAULT_PROVIDER) -> str:
     raise LLMUnavailable(f"the {name} CLI is not on PATH; this step is skipped")
 
 
+def _binary(provider: str = DEFAULT_PROVIDER) -> str:
+    """The last step before a provider CLI is launched, and the only caller of
+    it is ask().  tests/conftest.py refuses this and not _which."""
+    return _which(provider)
+
+
 def availability() -> dict[str, str]:
     """Which providers could answer right now, and why the others could not.
 
@@ -153,7 +200,7 @@ def availability() -> dict[str, str]:
     out = {}
     for name, spec in providers().items():
         try:
-            _binary(name)
+            _which(name)                     # a probe, never a launch
         except LLMUnavailable as exc:
             out[name] = f"unavailable: {exc}"
             continue
@@ -167,8 +214,16 @@ def ask(prompt: str, *, model: str | None = None,
         tools: tuple[str, ...] = READ_ONLY_TOOLS,
         cwd: str | Path | None = None,
         timeout_s: int = DEFAULT_TIMEOUT_S,
-        provider: str = DEFAULT_PROVIDER) -> str:
-    """Run one prompt and return what came back, or raise LLMUnavailable."""
+        provider: str = DEFAULT_PROVIDER,
+        check_tree: bool = True) -> str:
+    """Run one prompt and return what came back, or raise LLMUnavailable.
+
+    `check_tree` exists for ask_many and nothing else.  The before/after
+    fingerprint below attributes a working-tree edit to the provider that made
+    it, and two calls running at once in one directory would each see the
+    other's edits.  A concurrent batch therefore takes the fingerprint once,
+    around the whole batch, and this is how the per-call check is turned off.
+    """
     spec = providers().get(provider) or {}
     if not spec.get("verified", False):
         raise LLMUnavailable(
@@ -183,7 +238,7 @@ def ask(prompt: str, *, model: str | None = None,
         cmd += [spec["tools_flag"], *tools]
     use_stdin = spec.get("stdin", True)
     cmd += [a.replace("{prompt}", prompt) if not use_stdin else a for a in argv]
-    before = tree_fingerprint(cwd) if cwd else None
+    before = tree_fingerprint(cwd) if (cwd and check_tree) else None
     try:
         r = subprocess.run(cmd, input=prompt if use_stdin else None,
                            capture_output=True, text=True,
@@ -207,7 +262,7 @@ def ask(prompt: str, *, model: str | None = None,
         if after is not None and after != before:
             b = {ln[3:] for ln in before.splitlines()}
             a = {ln[3:] for ln in after.splitlines()}
-            touched = sorted(a - b) or ["(a tracked file changed)"]
+            touched = sorted({_named(e) for e in a - b}) or ["(a tracked file changed)"]
             ask.tree_violations.append({"provider": provider, "files": touched})
             print(f"WARNING: the {provider!r} call was read-only and changed the "
                   f"working tree: {', '.join(touched)}. The answer is kept and "
@@ -219,6 +274,99 @@ def ask(prompt: str, *, model: str | None = None,
 # Appended to by ask(); the reasoning pass writes it into REASONING_LOG.json so
 # a broken invariant is visible in the record rather than only on a console.
 ask.tree_violations = []
+
+
+def ask_many(prompt: str, provider_names: list[str], *,
+             cwd: str | Path | None = None,
+             **kw) -> tuple[dict[str, str], dict[str, str]]:
+    """Ask several providers the same question AT ONCE.
+
+    Returns ({provider: reply}, {provider: why it could not answer}).  A
+    provider that cannot be reached is reported, never assumed to have agreed:
+    that rule belongs to the callers and this must not quietly break it.
+
+    Every step that wants more than one opinion -- the adversary veto, the
+    close vote, the scout -- asked each provider in turn and paid the SUM of
+    them, and these are subprocesses waiting on a network rather than on this
+    CPU.  A pass that runs two providers serially is a pass that uses the
+    second subscription half as often as it could.
+
+    Threads, not processes: the work is entirely in `subprocess.run` waiting on
+    a child, so the GIL is not held and a process pool would only add the cost
+    of shipping the prompt.
+
+    The tree check moves from the call to the BATCH.  ask() fingerprints the
+    working tree before and after so a read-only call that edited it is
+    recorded against whoever did it -- codex, invoked with
+    `--sandbox read-only`, once wrote a 193-line copy of the constitution into
+    AGENTS.md.  Concurrent calls in one directory would each see the other's
+    edits and name the wrong provider, so the batch records every provider that
+    was running when the tree changed.  That is a weaker attribution than the
+    serial path gives, and unlike the alternative it is true.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    names = list(provider_names)
+    if not names:
+        return {}, {}
+
+    before = tree_fingerprint(cwd) if cwd else None
+
+    def _one(name: str) -> tuple[str, str | None, str | None]:
+        try:
+            return name, ask(prompt, cwd=cwd, provider=name,
+                             check_tree=False, **kw), None
+        except LLMUnavailable as exc:
+            return name, None, str(exc)
+
+    replies: dict[str, str] = {}
+    errors: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=len(names)) as pool:
+        for name, text, err in pool.map(_one, names):
+            if err is None:
+                replies[name] = text
+            else:
+                errors[name] = err
+
+    if before is not None:
+        after = tree_fingerprint(cwd)
+        if after is not None and after != before:
+            b = {ln[3:] for ln in before.splitlines()}
+            a = {ln[3:] for ln in after.splitlines()}
+            touched = sorted({_named(e) for e in a - b}) or ["(a tracked file changed)"]
+            ask.tree_violations.append(
+                {"provider": "+".join(sorted(names)),
+                 "files": touched,
+                 "note": "concurrent batch; the tree changed while these "
+                         "providers were running and the edit cannot be "
+                         "attributed to one of them"})
+            print(f"WARNING: a concurrent read-only batch ({', '.join(names)}) "
+                  f"changed the working tree: {', '.join(touched)}. The answers "
+                  "are kept and the violation is recorded; nothing was reverted.",
+                  file=sys.stderr)
+    return replies, errors
+
+
+def ask_json_many(prompt: str, provider_names: list[str],
+                  **kw) -> tuple[dict[str, dict], dict[str, str]]:
+    """ask_many, with each reply parsed as a verdict.
+
+    A reply that cannot be parsed joins the errors rather than the verdicts: an
+    unreadable answer is not a vote, and defaulting it to either side is how a
+    veto gets lost.
+    """
+    replies, errors = ask_many(prompt, provider_names, **kw)
+    out: dict[str, dict] = {}
+    for name, text in replies.items():
+        m = re.search(r"\{.*\}", text, re.S)
+        if not m:
+            errors[name] = f"no JSON object in the reply: {text[:200]}"
+            continue
+        try:
+            out[name] = json.loads(m.group(0))
+        except json.JSONDecodeError as exc:
+            errors[name] = f"unparseable JSON: {exc}"
+    return out, errors
 
 
 def ask_json(prompt: str, **kw) -> dict:

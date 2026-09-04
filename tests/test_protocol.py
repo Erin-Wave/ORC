@@ -1009,8 +1009,11 @@ def test_a_second_adversary_can_only_kill(monkeypatch, tmp_path):
 
     answers = {"claude": {"verdict": "REGISTER", "reason": "the payer is real"},
                "codex": {"verdict": "REGISTER", "reason": "agreed"}}
-    monkeypatch.setattr(llm, "ask_json",
-                        lambda prompt, provider="claude", **kw: answers[provider])
+    # The batch call, because that is what review() makes: the veto is
+    # unanimous-to-register, so every provider has to be asked either way and
+    # asking them one after another cost the sum of two model calls.
+    monkeypatch.setattr(llm, "ask_json_many",
+                        lambda prompt, names, **kw: ({n: answers[n] for n in names}, {}))
     v = reasoning.review(p)
     assert v["verdict"] == "REGISTER"
     assert v["reviewed_by"] == ["claude", "codex"]
@@ -1024,12 +1027,14 @@ def test_a_second_adversary_can_only_kill(monkeypatch, tmp_path):
     assert "nobody is structurally paying" in v["reason"]
 
     # A provider that cannot be reached is skipped, never counted as agreeing.
-    def one_down(prompt, provider="claude", **kw):
-        if provider == "codex":
-            raise llm.LLMUnavailable("not on PATH")
-        return {"verdict": "REGISTER", "reason": "the payer is real"}
+    # ask_json_many reports it in the second return value rather than raising,
+    # which is the same rule the serial loop kept and the one that matters:
+    # silence is not a vote.
+    def one_down(prompt, names, **kw):
+        return ({"claude": {"verdict": "REGISTER", "reason": "the payer is real"}},
+                {"codex": "not on PATH"})
 
-    monkeypatch.setattr(llm, "ask_json", one_down)
+    monkeypatch.setattr(llm, "ask_json_many", one_down)
     v = reasoning.review(p)
     assert v["verdict"] == "REGISTER"
     assert v["reviewed_by"] == ["claude"]
@@ -1152,6 +1157,157 @@ def test_a_read_only_call_that_dirties_the_tree_is_recorded(monkeypatch, tmp_pat
     assert llm.ask.tree_violations == []
 
 
+def test_the_providers_are_asked_at_once_and_not_in_turn(monkeypatch):
+    """The veto is unanimous-to-register and the close vote needs every ballot,
+    so both steps ask every provider whatever the first one says.  Asked in
+    turn they cost the SUM of two model calls -- the scout paid 483s on the run
+    that found three payers -- for two questions that do not depend on each
+    other.
+
+    The barrier is the check.  Each fake call blocks until the OTHER one has
+    also arrived, so this passes only if the two are genuinely in flight
+    together; a serial loop reaches it one at a time and the wait expires."""
+    import threading
+
+    from orc import llm
+
+    monkeypatch.setattr(llm, "providers", lambda: {
+        name: {"binary": name, "argv": [], "stdin": True, "verified": True}
+        for name in ("alpha", "beta")})
+    monkeypatch.setattr(llm, "_binary", lambda provider=None: str(provider))
+
+    both_inside = threading.Barrier(2, timeout=30)
+
+    class R:
+        returncode, stderr = 0, ""
+        stdout = '{"verdict": "REGISTER"}'
+
+    def fake_run(cmd, **kw):
+        both_inside.wait()
+        return R()
+
+    monkeypatch.setattr(llm.subprocess, "run", fake_run)
+
+    replies, errors = llm.ask_many("prompt", ["alpha", "beta"])
+    assert errors == {}
+    assert sorted(replies) == ["alpha", "beta"]
+
+
+def test_a_provider_that_could_not_answer_is_reported_and_never_a_yes(monkeypatch):
+    """Both callers read the batch as ballots: `review` registers only if no
+    verdict objects, `close_votes` closes only on agreement.  A provider that
+    was never reached, or that answered in prose, must therefore land in the
+    ERRORS half -- silently dropping it from both halves turns an absent
+    adversary into consent, which is the one failure mode of a unanimous
+    veto."""
+    from orc import llm
+
+    monkeypatch.setattr(llm, "providers", lambda: {
+        "alpha": {"binary": "alpha", "argv": [], "stdin": True, "verified": True},
+        "prosy": {"binary": "prosy", "argv": [], "stdin": True, "verified": True},
+        "beta": {"binary": "beta", "argv": [], "stdin": True, "verified": False}})
+    monkeypatch.setattr(llm, "_binary", lambda provider=None: str(provider))
+
+    bodies = {"alpha": '{"verdict": "REGISTER"}',
+              "prosy": "I think this one is fine, honestly."}
+
+    def fake_run(cmd, **kw):
+        class R:
+            returncode, stderr = 0, ""
+            stdout = bodies[cmd[0]]
+        return R()
+
+    monkeypatch.setattr(llm.subprocess, "run", fake_run)
+
+    # "gamma" is not in the registry at all; "beta" is there but unverified.
+    verdicts, unreachable = llm.ask_json_many(
+        "prompt", ["alpha", "prosy", "beta", "gamma"])
+
+    assert list(verdicts) == ["alpha"]
+    assert verdicts["alpha"] == {"verdict": "REGISTER"}
+    # every provider asked is accounted for in exactly one of the two halves
+    assert set(verdicts) | set(unreachable) == {"alpha", "prosy", "beta", "gamma"}
+    assert set(verdicts) & set(unreachable) == set()
+    assert "no JSON object" in unreachable["prosy"]
+    assert "not marked verified" in unreachable["beta"]
+
+
+def test_a_concurrent_batch_that_dirties_the_tree_names_everyone_who_was_running(
+        monkeypatch, tmp_path):
+    """`ask` fingerprints the tree per call so an edit is attributed to whoever
+    made it.  Two calls in one directory would each see the other's edits and
+    name the wrong provider, so the batch takes the fingerprint ONCE around the
+    whole thing and records the set that was in flight.  That is a weaker
+    attribution than the serial path gives; the alternative is a confident and
+    wrong one."""
+    from orc import llm
+
+    monkeypatch.setattr(llm, "providers", lambda: {
+        name: {"binary": name, "argv": [], "stdin": True, "verified": True}
+        for name in ("alpha", "beta")})
+    monkeypatch.setattr(llm, "_binary", lambda provider=None: str(provider))
+
+    class R:
+        returncode, stderr = 0, ""
+        stdout = "a verdict"
+    monkeypatch.setattr(llm.subprocess, "run", lambda *a, **k: R())
+
+    states = iter([" M orc/eval/signal.py\n",
+                   " M orc/eval/signal.py\n?? AGENTS.md\n"])
+    monkeypatch.setattr(llm, "tree_fingerprint", lambda cwd=None: next(states))
+
+    llm.ask.tree_violations.clear()
+    replies, errors = llm.ask_many("prompt", ["beta", "alpha"], cwd=tmp_path)
+    assert errors == {} and len(replies) == 2
+
+    assert len(llm.ask.tree_violations) == 1
+    v = llm.ask.tree_violations[0]
+    assert v["provider"] == "alpha+beta"     # sorted, and nobody is singled out
+    assert v["files"] == ["AGENTS.md"]
+    assert "cannot be attributed" in v["note"]
+
+    # A batch that leaves the tree alone records nothing.
+    same = iter([" M orc/eval/signal.py\n", " M orc/eval/signal.py\n"])
+    monkeypatch.setattr(llm, "tree_fingerprint", lambda cwd=None: next(same))
+    llm.ask.tree_violations.clear()
+    llm.ask_many("prompt", ["alpha", "beta"], cwd=tmp_path)
+    assert llm.ask.tree_violations == []
+
+
+def test_the_scout_merges_in_turn_even_though_it_asks_at_once(monkeypatch, tmp_path):
+    """The merge dedupes each candidate payer against the notebook on disk.
+    Asking is what got parallelised; merging did not, because two appends racing
+    would each miss what the other had just written and record the same payer
+    twice -- and a duplicate payer is a mechanism the proposer thinks is two."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import scout
+
+    nb = tmp_path / "SCOUT.jsonl"
+    monkeypatch.setattr(scout, "NOTEBOOK", nb)
+    monkeypatch.setattr(scout, "closed_mechanisms", lambda: "")
+    monkeypatch.setattr(scout, "reject", lambda rec: None)
+
+    body = json.dumps([{"payer": "the market maker quoting into a funding flip",
+                        "why_they_keep_paying": "inventory it cannot refuse",
+                        "observable": "funding_rate", "test": "carry side"}])
+
+    first = scout.scout_once("alpha", notebook=nb, text=body)
+    assert len(first["added"]) == 1
+
+    # The identical payer from the second provider is merged AFTER the first,
+    # sees it on disk, and is a duplicate rather than a second mechanism.
+    second = scout.scout_once("beta", notebook=nb, text=body)
+    assert second["added"] == []
+    assert len(second["duplicates"]) == 1
+    assert len(nb.read_text(encoding="utf-8").strip().splitlines()) == 1
+
+    # A provider the batch could not reach is that provider's error, and does
+    # not stop the others from being merged.
+    dead = scout.scout_once("gamma", notebook=nb, error="exit 1: not on PATH")
+    assert dead["error"] == "exit 1: not on PATH"
+    assert dead["added"] == []
+
+
 def test_closing_a_family_needs_agreement_and_a_split_closes_nothing(monkeypatch, tmp_path):
     """Section 9 step 2 was being decided by the proposer in prose -- one model,
     one paragraph, no cross-check -- on the decision that matters most. A family
@@ -1182,8 +1338,8 @@ def test_closing_a_family_needs_agreement_and_a_split_closes_nothing(monkeypatch
                       "clause_met": True, "reason": "0.82"},
            "codex": {"verdict": "CLOSE", "clause": "PBO at or above 0.5",
                      "clause_met": True, "reason": "0.82 on BTCUSDT"}}
-    monkeypatch.setattr(llm, "ask_json",
-                        lambda prompt, provider="claude", **kw: say[provider])
+    monkeypatch.setattr(llm, "ask_json_many",
+                        lambda prompt, names, **kw: ({n: say[n] for n in names}, {}))
     out = reasoning.close_votes()
     assert out["families"]["H9300"]["decision"] == "CLOSE"
     assert (closed / "H9300.json").exists()
@@ -1691,3 +1847,52 @@ def test_the_worker_count_is_bounded_by_the_work_and_overridable(monkeypatch):
     assert st.n_workers(199) == 3
     monkeypatch.setenv("ORC_WORKERS", "nonsense")
     assert st.n_workers(199) >= 1
+
+
+def test_a_file_that_was_already_dirty_is_still_watched(tmp_path):
+    """The hole the detector had, found the hard way on 2026-09-04.
+
+    A reasoning pass ran while tests/test_protocol.py was already modified, and
+    a provider appended four tests to it. The file was " M" before the call and
+    " M" after; the status lines were identical; nothing was recorded. The
+    detector could see a file BECOME dirty and could not see a dirty file being
+    edited further -- blind over exactly the files someone is working on, which
+    is where an unattended model writing into the tree does the most harm.
+
+    So each dirty path carries a hash of its content. The status-line set is
+    unchanged here, which is the whole point: this passes only because the
+    fingerprint stopped being the status line.
+    """
+    import subprocess
+
+    from orc import llm
+
+    def git(*a):
+        return subprocess.run(("git",) + a, cwd=tmp_path, capture_output=True,
+                              text=True)
+
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    f = tmp_path / "notes.py"
+    f.write_text("original\n", encoding="utf-8")
+    git("add", "notes.py")
+    git("commit", "-qm", "base")
+
+    f.write_text("original\nan edit of my own\n", encoding="utf-8")
+    before = llm.tree_fingerprint(tmp_path)
+    f.write_text("original\nan edit of my own\nand one nobody asked for\n",
+                 encoding="utf-8")
+    after = llm.tree_fingerprint(tmp_path)
+
+    # What the old detector compared, and why it saw nothing.
+    status_only = lambda s: {ln[3:].split("\t")[0] for ln in s.splitlines()}
+    assert status_only(before) == status_only(after)
+
+    assert before != after, "a further edit to an already-dirty file is invisible"
+    b = {ln[3:] for ln in before.splitlines()}
+    a = {ln[3:] for ln in after.splitlines()}
+    assert sorted({llm._named(e) for e in a - b}) == ["notes.py"]
+
+    # A tree nobody touched still reports nothing.
+    assert llm.tree_fingerprint(tmp_path) == after
