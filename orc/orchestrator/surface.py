@@ -45,6 +45,29 @@ PRIMARY_METRIC = "tm_q05"          # 5th percentile terminal multiple
 # reportable. Frozen before any family cleared.
 MIN_SPAN_OVER_HORIZON = 1.0
 
+# How much of a report gets the two expensive checks
+# --------------------------------------------------------------------------
+# These were unnamed slices of the ranked list -- the top three for the PBO and
+# the top two for the search test. The comment above them explained WHICH
+# symbols they picked and never why only that many;
+# the answer was cost, and cost was assumed rather than measured. Measured on
+# 2026-09-05 on the 24-core workstation, over H0019's eight configurations:
+# the search test is 3.9s per symbol and the PBO 0.2-0.5s. So the caps were
+# buying about ten seconds of wall clock and paying for it with seven of nine
+# symbols recorded `search test unmeasured` and six of nine `PBO unmeasured`.
+#
+# That is not a saving, it is a silent downgrade. Section 12 is explicit that a
+# check which did not run is not a check that passed, so verdict.disqualifiers
+# correctly refused those seven -- for never having been measured rather than
+# for anything they showed. Widening the coverage cannot make a cell easier to
+# pass: every symbol it reaches gains a check it did not have.
+#
+# None means "every symbol in the report" -- `list[:None]` is the whole list.
+# The names exist so that putting a number back is a visible edit carrying a
+# reason, which is exactly what the bare slices did not require.
+PBO_SYMBOL_LIMIT: int | None = None
+SEARCH_TEST_SYMBOL_LIMIT: int | None = None
+
 
 # --------------------------------------------------------------------------
 def ranking_metric(h: Hypothesis) -> str:
@@ -621,7 +644,7 @@ def write_report(h: Hypothesis, metric: str | None = None,
     # which is the one place the check was needed.
     ranked = [s for s, _ in sorted(surfaces.items(),
                                    key=lambda kv: -kv[1]["best_value"])]
-    for sym in (pbo_symbols or ranked[:3]):
+    for sym in (pbo_symbols or ranked[:PBO_SYMBOL_LIMIT]):
         try:
             pbo[sym] = run_pbo(h, sym, best_config=surfaces[sym]["best_config"])
         except (ValueError, FileNotFoundError) as exc:
@@ -629,7 +652,7 @@ def write_report(h: Hypothesis, metric: str | None = None,
 
     # The question N exists to answer, on the cells anyone would be tempted by.
     search = {}
-    for sym in ranked[:2]:
+    for sym in ranked[:SEARCH_TEST_SYMBOL_LIMIT]:
         try:
             search[sym] = search_test_for(h, sym, surfaces[sym]["best_value"])
         except Exception as exc:                                   # noqa: BLE001

@@ -1685,6 +1685,43 @@ def test_the_panel_cache_is_keyed_on_the_clock_as_well_as_the_symbol():
     assert "if cfg.symbol not in panels" not in src
 
 
+def test_every_symbol_in_a_report_gets_the_pbo_and_the_search_test():
+    """The two expensive checks were capped at `ranked[:3]` and `ranked[:2]` --
+    unnamed slices whose only justification was a cost nobody had measured.
+
+    Measured on 2026-09-05 on the 24-core workstation over H0019's eight
+    configurations: the search test is 3.9s per symbol and the PBO 0.2-0.5s, so
+    `write_report` for all nine symbols is 36.6s against about ten for the
+    capped version. The caps bought those ~27 seconds and paid with seven of
+    nine symbols carrying `search test unmeasured` and six of nine `PBO
+    unmeasured` -- and `verdict.disqualifiers` then refused them for not having
+    been measured rather than for anything they showed. Re-run at full
+    coverage, all nine came back INDISTINGUISHABLE_FROM_SEARCH: the same
+    closure for H0019, on nine measurements instead of two.
+
+    Widening coverage can only ever add a check, never relax one, so the risk
+    here is the reverse edit. That is what this pins."""
+    from orc.orchestrator import surface
+
+    assert surface.PBO_SYMBOL_LIMIT is None, \
+        "a number here silently downgrades symbols to 'PBO unmeasured'"
+    assert surface.SEARCH_TEST_SYMBOL_LIMIT is None, \
+        "a number here silently downgrades symbols to 'search test unmeasured'"
+
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+    assert "ranked[:PBO_SYMBOL_LIMIT]" in src
+    assert "ranked[:SEARCH_TEST_SYMBOL_LIMIT]" in src
+    # The bare slices are what this replaced. They carried no name and no
+    # reason, which is why lowering the coverage never had to argue for itself.
+    for gone in ("ranked[:3]", "ranked[:2]"):
+        assert gone not in src, f"the unnamed cap {gone} is back"
+
+    # `list[:None]` being the whole list is the entire mechanism, so it is
+    # worth one line rather than a comment claiming it.
+    assert ["a", "b", "c"][:surface.PBO_SYMBOL_LIMIT] == ["a", "b", "c"]
+
+
 def test_the_track_a_null_scores_the_statistic_the_search_selected_on():
     """1d24187e83e0.  write_report passes surfaces[sym]["best_value"], ranked by
     ranking_metric on mwrr_q05 -- an annualised RETURN, ~0.14 -- and the Track A
