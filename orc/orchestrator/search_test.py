@@ -26,9 +26,11 @@ That is what makes this expensive and what makes it worth anything.
 """
 from __future__ import annotations
 
+import multiprocessing
 import os
 import pickle
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from functools import partial
 
 import numpy as np
@@ -87,6 +89,30 @@ def _safe_score(score_grid, close) -> float:
     return v if np.isfinite(v) else float("nan")
 
 
+def pool_context():
+    """Always spawn, never fork.
+
+    Linux defaults to fork and Windows has only spawn, and that difference cost
+    this project a job: the workstation ran the pooled null in 3.1 minutes and
+    the Linux runner sat in the same step past 50 minutes, having taken 35 when
+    it was serial.
+
+    Forking is the reason.  polars runs a Rayon thread pool -- 24 threads on
+    this machine -- and `fork` copies the memory of those threads without the
+    threads themselves, so any lock one of them held at the instant of the fork
+    is held forever in the child.  Every worker here calls panel.load, which is
+    `pl.read_parquet`, so every worker reached for a lock that could never be
+    released.  Not slow: stopped.
+
+    Spawn starts each worker from a clean interpreter.  It costs a second or so
+    per worker to re-import, once, against workers that then live for the whole
+    batch -- and it makes the two platforms behave the same way, which for a
+    project whose results have to match across machines is worth more than the
+    second.
+    """
+    return multiprocessing.get_context("spawn")
+
+
 def _is_picklable(obj) -> bool:
     """Can this scorer cross a process boundary?
 
@@ -122,10 +148,23 @@ def best_of_g(observed_best: float, score_grid, panel, n_configs: int,
     scored: list[float] = []
     if workers > 1 and _is_picklable(score_grid):
         chunk = max(1, len(paths) // (workers * 4))
-        with ProcessPoolExecutor(max_workers=workers) as pool:
-            scored = list(pool.map(partial(_safe_score, score_grid), paths,
-                                   chunksize=chunk))
-    else:
+        try:
+            with ProcessPoolExecutor(max_workers=workers,
+                                     mp_context=pool_context()) as pool:
+                scored = list(pool.map(partial(_safe_score, score_grid), paths,
+                                       chunksize=chunk))
+        except (BrokenProcessPool, OSError) as exc:
+            # A pool that dies takes every result with it, including the ones
+            # already computed, so the p-value would be lost to an accident of
+            # scheduling -- a worker killed for memory, a fork that failed, a
+            # runner reclaiming the machine. The whole point of the null is
+            # that it is expensive and worth having, so pay for it serially
+            # rather than report no answer.
+            print(f"  the worker pool broke ({type(exc).__name__}: "
+                  f"{str(exc)[:120]}); re-running the null on one core",
+                  flush=True)
+            scored = []
+    if not scored:
         scored = [_safe_score(score_grid, close) for close in paths]
 
     nulls = [v for v in scored if np.isfinite(v)]

@@ -1896,3 +1896,95 @@ def test_a_file_that_was_already_dirty_is_still_watched(tmp_path):
 
     # A tree nobody touched still reports nothing.
     assert llm.tree_fingerprint(tmp_path) == after
+
+
+class _CountingScorer:
+    """Deterministic, and counts nothing across processes -- it is used only to
+    prove the serial fallback produces the same nulls the pool would have."""
+
+    def __eq__(self, other):
+        return isinstance(other, _CountingScorer)
+
+    def __call__(self, close):
+        import numpy as np
+        return float(np.mean(close))
+
+
+def test_a_pool_that_dies_does_not_take_the_null_with_it(monkeypatch):
+    """A worker killed for memory, a fork that failed, a runner reclaiming the
+    machine -- ProcessPoolExecutor reports all of it as BrokenProcessPool, and
+    it discards the results already computed along with the ones pending.
+
+    The null is the most expensive thing this project computes and the whole
+    argument for paying for it is that a p-value priced on the real search
+    width is worth having. Losing it to an accident of scheduling, and
+    reporting no answer, is the one outcome worse than paying for it twice.
+    """
+    import numpy as np
+    from concurrent.futures.process import BrokenProcessPool
+
+    from orc.orchestrator import search_test as st
+
+    class _Panel:
+        close = np.exp(np.cumsum(
+            np.random.default_rng(3).normal(0, 0.01, 2048))) * 100.0
+
+    scorer = _CountingScorer()
+
+    monkeypatch.setenv("ORC_WORKERS", "1")
+    serial = st.best_of_g(1.0, scorer, _Panel(), 4, n_paths=16)
+
+    class _DeadPool:
+        def __init__(self, *a, **k):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def map(self, *a, **k):
+            raise BrokenProcessPool("a worker was terminated abruptly")
+
+    monkeypatch.setenv("ORC_WORKERS", "4")
+    monkeypatch.setattr(st, "ProcessPoolExecutor", _DeadPool)
+    recovered = st.best_of_g(1.0, scorer, _Panel(), 4, n_paths=16)
+
+    assert recovered["status"] == "ok", "a broken pool lost the whole null"
+    assert recovered["n_null"] == 16
+    assert recovered == serial, "the fallback answered something else"
+
+
+def test_the_worker_pool_never_forks():
+    """The regression that cost a whole job, and the one this suite cannot
+    reproduce on the machine it was written on.
+
+    Windows has only `spawn`; Linux defaults to `fork`. The workstation ran the
+    pooled null in 3.1 minutes and the Linux runner sat in the same step past
+    50 minutes, having taken 35 when it was serial. Not slow -- stopped.
+
+    polars runs a Rayon thread pool, and `fork` copies the memory of those
+    threads without the threads, so a lock one of them held at the instant of
+    the fork is held forever in the child. Every worker calls panel.load, which
+    is pl.read_parquet, so every worker reached for a lock nothing would ever
+    release.
+
+    A platform default is not a thing to leave to the platform when the two
+    platforms have to agree on the answer, so the context is pinned. This test
+    is the pin: it passes on Windows for free and is the only thing that would
+    fail if someone dropped mp_context on the grounds that it made no
+    difference here.
+    """
+    import multiprocessing
+
+    from orc.orchestrator import search_test as st
+
+    ctx = st.pool_context()
+    assert ctx.get_start_method() == "spawn"
+    assert "spawn" in multiprocessing.get_all_start_methods()
+
+    src = (config.ORC_ROOT / "orc" / "orchestrator"
+           / "search_test.py").read_text(encoding="utf-8")
+    assert "mp_context=pool_context()" in src, \
+        "the pool is back on the platform default, which forks on Linux"
