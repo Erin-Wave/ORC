@@ -6,11 +6,11 @@
   },
   "candidates": [],
   "best_cagr": {
-    "cagr": 0.9338815525304167,
-    "max_drawdown": 0.6667165174873233,
-    "calmar": 1.400717588413689,
-    "hypothesis_id": "H0006",
-    "symbol": "SOLUSDT"
+    "cagr": 2.098047326825465,
+    "max_drawdown": 0.6978850907014267,
+    "calmar": 3.0062933780642465,
+    "hypothesis_id": "H0017",
+    "symbol": "DOGEUSDT"
   },
   "best_cagr_within_drawdown": {
     "cagr": 0.2764460131612052,
@@ -19,6 +19,6 @@
     "hypothesis_id": "H0006",
     "symbol": "BTCUSDT"
   },
-  "rows_considered": 5292,
-  "headline": "목표(CAGR 100% / MDD 25%)를 만족하는 셀 없음, 트랙B 5292행 기준"
+  "rows_considered": 5382,
+  "headline": "목표(CAGR 100% / MDD 25%)를 만족하는 셀 없음, 트랙B 5382행 기준"
 }

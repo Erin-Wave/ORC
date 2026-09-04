@@ -4,7 +4,8 @@
       "passed": false,
       "failed": [],
       "unmeasured": [
-        "regime"
+        "regime",
+        "execution"
       ],
       "checks": [
         {
@@ -49,11 +50,8 @@
         },
         {
           "check": "execution",
-          "hourly_return": 2.6056116382051298,
-          "minute_return": 2.6153177585502414,
-          "relative_drift": 0.003725083279025299,
-          "sign_agrees": true,
-          "passed": true
+          "passed": null,
+          "reason": "no minute panel here; certification has to happen locally"
         }
       ],
       "hypothesis_id": "H0001",
@@ -63,6 +61,75 @@
         "include_funding": false,
         "n_contributions": 52,
         "stride_days": 30.0
+      }
+    },
+    {
+      "passed": false,
+      "failed": [
+        "walk_forward",
+        "regime"
+      ],
+      "unmeasured": [
+        "execution"
+      ],
+      "checks": [
+        {
+          "check": "cost",
+          "multiplier": 2.0,
+          "base": 3.0062933780642465,
+          "stressed": 2.294254986055207,
+          "passed": true
+        },
+        {
+          "check": "walk_forward",
+          "n_blocks": 4,
+          "train_blocks": 2,
+          "chosen": {
+            "symbol": "DOGEUSDT",
+            "rule": "cci_breakout",
+            "lookback_days": 5.0,
+            "enter_rate": 0.00015,
+            "exit_rate": 5e-05,
+            "timeframe_hours": 2.0,
+            "enter_level": 100.0,
+            "exit_level": 50.0,
+            "filter_timeframe_hours": null,
+            "filter_lookback_days": null,
+            "filter_level": 100.0,
+            "capital": 10000.0,
+            "leverage": 1.0,
+            "stop_loss": 0.25,
+            "take_profit": null,
+            "max_hold_days": 5.0,
+            "clock": "1h",
+            "fee_bps": 4.5,
+            "slippage_bps": 1.0,
+            "cost_multiplier": 1.0
+          },
+          "in_sample": 79.34058935505315,
+          "out_of_sample": 1.8558648005754366,
+          "retention": 0.02339111437993418,
+          "passed": false
+        },
+        {
+          "check": "regime",
+          "window_bars": 720,
+          "rising": 15.505190786641142,
+          "falling": -0.21976532353936376,
+          "passed": false
+        },
+        {
+          "check": "execution",
+          "passed": null,
+          "reason": "no minute panel here; certification has to happen locally"
+        }
+      ],
+      "hypothesis_id": "H0017",
+      "symbol": "DOGEUSDT",
+      "metric": "calmar",
+      "config": {
+        "rule": "cci_breakout",
+        "timeframe_hours": 2.0
       }
     }
   ]
