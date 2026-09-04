@@ -115,18 +115,29 @@ jobs:
       # they need a model provider this runner does not have -- and because the
       # registration budget belongs to one supervisor. Two of them reading it
       # independently is how four registrations become six.
+      # Immediately, not at the end of the job.
+      #
+      # The cycle finishes in the first few minutes and the step below then
+      # holds the machine for five hours. On 2026-09-04 H0017's ninety rows
+      # were computed at 07:07Z and would have reached the repository at about
+      # 12:00Z: five hours in which the question was answered, `orc.target`
+      # still reported the old N, and the local tree still showed H0017 waiting
+      # in a queue that had already been consumed. The results are what the job
+      # exists to produce, so they leave as soon as they exist; the same script
+      # runs again at the end for whatever the window itself produced.
+      - name: Land the cycle's results now
+        run: python scripts/commit_results.py
+
       - name: Keep working for the rest of the window
         if: steps.cycle.outcome == 'success'
         env:
           ORC_WORKERS: "4"
         run: |
           set -uo pipefail
-          git config user.name  "orc-cycle"
-          git config user.email "orc-cycle@users.noreply.github.com"
-          git config merge.orcledger.name   "union the ORC trial ledger"
-          git config merge.orcledger.driver "python scripts/merge_ledger.py %O %A %B"
-          git config merge.ours.name        "keep the published version"
-          git config merge.ours.driver      true
+          # The merge policy and the committer identity, from the one
+          # place that defines them. forever.py's land() commits and
+          # pushes inside this window, so a rebase can happen here.
+          python scripts/commit_results.py --configure-only
           # 300 of the job's 350 minutes, leaving room for the commit, the
           # notification and the artifact upload, and finishing before the next
           # schedule fires.
@@ -134,50 +145,7 @@ jobs:
             --skip reason,scout,kernel_review || true
 
       - name: Commit results
-        run: |
-          set -uo pipefail
-          git config user.name  "orc-cycle"
-          git config user.email "orc-cycle@users.noreply.github.com"
-
-          # The ledger is a binary SQLite file and two machines write to it, so
-          # a concurrent push is a conflict git cannot resolve on its own. Run
-          # #19 computed 112 trials over 39 minutes and lost all of them: the
-          # rebase stopped on reports/H0001_SURFACE.json and the push never
-          # happened. Rows are the one thing here that must never be resolved by
-          # picking a side, so .gitattributes points the ledger at a union
-          # driver and the derived reports at `ours`, which the next cycle
-          # regenerates anyway.
-          git config merge.orcledger.name   "union the ORC trial ledger"
-          git config merge.orcledger.driver "python scripts/merge_ledger.py %O %A %B"
-          git config merge.ours.name        "keep the published version"
-          git config merge.ours.driver      true
-
-          git add -A reports ledger configs/registry configs/queue configs/closed
-          if git diff --cached --quiet; then
-            echo "no change"
-            exit 0
-          fi
-          git commit -m "orc cycle $(date -u +%Y-%m-%dT%H:%MZ)"
-
-          # Retry, because the collision window is the length of a cycle -- 39
-          # minutes with the honest search test -- and anything can land in it.
-          for attempt in 1 2 3; do
-            if git pull --rebase --autostash; then
-              if git push; then
-                echo "pushed on attempt $attempt"
-                exit 0
-              fi
-              echo "push rejected on attempt $attempt; someone else got there first"
-              continue
-            fi
-            echo "rebase did not complete cleanly on attempt $attempt"
-            git rebase --abort || true
-            git status --short
-          done
-          echo "::error::could not land the cycle after 3 attempts. The trials are"
-          echo "::error::deterministic and the next cycle recomputes them, but the"
-          echo "::error::merge drivers or .gitattributes are not doing their job."
-          exit 1
+        run: python scripts/commit_results.py
 
       # Runs whatever the cycle did, refusing included. A blocked cycle is the
       # most important thing to be told about: the loop has stopped itself and

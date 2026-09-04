@@ -1502,8 +1502,22 @@ def test_the_ledger_is_pointed_at_the_union_driver():
     assert "reports/*.json merge=ours" in ga
     wf = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
           / "orc-cycle.yml").read_text(encoding="utf-8")
-    assert "merge.orcledger.driver" in wf and "merge_ledger.py" in wf
-    assert "merge.ours.driver" in wf
+    # The four `git config merge.*` lines used to be inline in the workflow,
+    # twice -- once in the commit step and once in the resident-window step.
+    # They now live in scripts/commit_results.py, which both steps call. Same
+    # property, one file over: the driver must be configured wherever the cycle
+    # can rebase.
+    cr = (config.ORC_ROOT / "scripts" / "commit_results.py").read_text(
+        encoding="utf-8")
+    assert "merge.orcledger.driver" in cr and "merge_ledger.py" in cr
+    assert "commit_results.py" in wf, (
+        "the workflow must actually invoke the file that sets the policy")
+    assert "--configure-only" in wf, (
+        "the resident window commits through forever.py's land(), so it needs "
+        "the drivers set even though it does not call land() here")
+    assert "merge.ours.driver" in cr, (
+        "the derived reports need `ours` too, or a rebase stops on a file the "
+        "next cycle regenerates anyway -- which is how run #19 lost 112 trials")
 
 
 def test_the_surface_takes_the_newest_row_by_time_not_by_rowid():
@@ -2711,3 +2725,127 @@ def test_the_in_window_cycle_is_wired_like_every_other_action():
     # through the workflow step that configures the union merge driver first.
     assert all(p.startswith("reports/") for p in forever.COMMIT_PATHS["cycle"])
     assert not any("ledger" in p for p in forever.COMMIT_PATHS["cycle"])
+
+
+# --------------------------------------------------------------------------
+# the results leave the machine that computed them
+# --------------------------------------------------------------------------
+def _repo(tmp_path):
+    """A git repo with an upstream, so push and rev-list have something real."""
+    import subprocess
+
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    subprocess.run(["git", "clone", "-q", str(origin), str(work)], check=True)
+    for k, v in (("user.email", "t@example.com"), ("user.name", "t")):
+        subprocess.run(["git", "config", k, v], cwd=work, check=True)
+    (work / "reports").mkdir()
+    (work / "reports" / "CYCLE_SUMMARY.json").write_text("{}", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=work, check=True)
+    subprocess.run(["git", "commit", "-qm", "base"], cwd=work, check=True)
+    subprocess.run(["git", "branch", "-M", "master"], cwd=work, check=True)
+    subprocess.run(["git", "push", "-q", "-u", "origin", "master"], cwd=work,
+                   check=True)
+    return work
+
+
+def test_landing_results_does_not_take_over_the_owners_identity(tmp_path, monkeypatch):
+    """The runner has no committer identity and needs one invented; this
+    workstation has one and it belongs to a person. Setting it unconditionally
+    would put `orc-cycle` on a human's commits."""
+    import subprocess
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import commit_results
+
+    work = _repo(tmp_path)
+    monkeypatch.setattr(commit_results, "ROOT", work)
+    commit_results.configure()
+    got = subprocess.run(["git", "config", "user.email"], cwd=work,
+                         capture_output=True, text=True).stdout.strip()
+    assert got == "t@example.com"
+
+    # With no identity ANYWHERE, one is invented rather than failing the
+    # commit -- which is the runner's case. Tested by pinning the probe rather
+    # than by unsetting the local key: `git config user.email` falls through to
+    # the global config, so on this workstation the unset key still answers
+    # with the owner's address and the test would pass for the wrong reason.
+    calls = []
+    real = commit_results._git
+
+    def _probe(*args, **kw):
+        calls.append(args)
+        if args[:2] == ("config", "user.email"):
+            class R:
+                stdout = ""
+                returncode = 1
+            return R()
+        return real(*args, **kw)
+
+    monkeypatch.setattr(commit_results, "_git", _probe)
+    commit_results.configure()
+    assert ("config", "user.email", "orc-cycle@users.noreply.github.com") in calls
+    monkeypatch.setattr(commit_results, "_git", real)
+
+    # and the merge policy is set either way -- it is the whole reason this
+    # runs in one place instead of two shell blocks
+    drivers = subprocess.run(["git", "config", "--get-regexp", "^merge"],
+                             cwd=work, capture_output=True, text=True).stdout
+    assert "merge_ledger.py" in drivers and "merge.ours.driver" in drivers
+
+
+def test_a_committed_but_unpushed_result_is_not_left_behind(tmp_path, monkeypatch):
+    """"Nothing to stage" is not "nothing to send".
+
+    forever.py's land() reports a rejected push and deliberately does not
+    retry, so a real commit can be sitting on one machine. Returning early on
+    "no change" is how it stays there -- the stuck push the notifier watches
+    for, where the question exists on exactly one machine and is never
+    answered. Found by running the script against a clone in that state.
+    """
+    import subprocess
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import commit_results
+
+    work = _repo(tmp_path)
+    monkeypatch.setattr(commit_results, "ROOT", work)
+
+    # a result committed locally, never pushed, and nothing else outstanding
+    (work / "reports" / "CYCLE_SUMMARY.json").write_text('{"n": 2}', encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=work, check=True)
+    subprocess.run(["git", "commit", "-qm", "landed nowhere"], cwd=work, check=True)
+    assert commit_results._unpushed() == 1
+
+    assert commit_results.land("orc cycle") == 0
+    assert commit_results._unpushed() == 0, "the commit is still only here"
+    remote = subprocess.run(["git", "--git-dir", str(tmp_path / "origin.git"),
+                             "log", "--oneline", "-1"], capture_output=True,
+                            text=True).stdout
+    assert "landed nowhere" in remote
+
+
+def test_the_cycle_lands_its_results_before_the_five_hour_window(tmp_path):
+    """The step used to run once, at the END of the job, after a step that
+    holds the machine for five hours. H0017's ninety rows were computed at
+    07:07Z and would have reached the repository at about 12:00Z."""
+    from orc import config
+
+    wf = (config.ORC_ROOT / ".github" / "workflows" / "orc-cycle.yml"
+          ).read_text(encoding="utf-8")
+    landings = wf.count("run: python scripts/commit_results.py" + chr(10))
+    assert landings == 2, (
+        "once right after the cycle, once at the end for whatever the "
+        f"resident window produced -- found {landings}")
+    assert wf.count("--configure-only") == 1, (
+        "and one policy-only call, which lands nothing")
+    body = wf.split("- name: Research cycle", 1)[1]
+    assert body.index("commit_results.py") < body.index("- name: Keep working"), (
+        "the first landing has to come BEFORE the step that holds the job")
+    # and the inline copy is gone: two copies of a merge policy drift, and the
+    # one that drifts is the one that runs.
+    assert "git add -A reports ledger" not in wf
+    assert "merge.orcledger.driver" not in wf
