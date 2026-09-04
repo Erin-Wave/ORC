@@ -97,6 +97,9 @@ TIMEOUTS_S = {
     "execution_realism": 3600,
     "survivorship": 3600,
     "mutation": 3600,
+    # A cycle is the one action here that ADDS ledger rows, and the local pass
+    # took 20 minutes on a 90-cell registration.
+    "cycle": 3 * 3600,
 }
 
 # Exit codes that mean THE WORK HAPPENED, per action.
@@ -131,6 +134,7 @@ DONE_EXIT_CODES = {
     # 2 is the run measuring nothing, and that is the only outcome here that
     # must not reset the clock.
     "mutation": (0, 1),
+    "cycle": (0,),
 }
 
 # What each action changes, so the commit names its paths.  Section 10: never
@@ -145,6 +149,20 @@ COMMIT_PATHS = {
     "execution_realism": ("reports/EXECUTION_REALISM.json",),
     "survivorship": ("reports/KT3_SURVIVORSHIP.json",),
     "mutation": ("reports/MUTATION.json",),
+    # Reports only, and deliberately NOT the ledger.
+    #
+    # Section 10 bans staging by wildcard and these are named files, but the
+    # ledger is a binary SQLite file two machines write to: it reaches the
+    # remote through the workflow's own "Commit results" step, which configures
+    # the union merge driver first. Run #19 computed 112 trials over 39 minutes
+    # and lost every one of them to a rebase that stopped on a report, and
+    # pushing the ledger from here would be doing that again with the driver
+    # unconfigured. The delay is not new either: the cycle step has always run
+    # before the resident window, so its rows have always been committed at the
+    # end of the job.
+    "cycle": ("reports/CYCLE_REPORT.md", "reports/CYCLE_SUMMARY.json",
+              "reports/CYCLE_LOG.jsonl", "reports/NEWS.json",
+              "reports/TARGET.json", "reports/BRIEFING.md"),
 }
 
 # Committed with every action, whatever the action was.  ACTIVITY.jsonl is the
@@ -335,6 +353,8 @@ def plan(action: str) -> list[str] | None:
         return [py, str(config.ORC_ROOT / "scripts" / "kernel_review.py")]
     if action == "robustness":
         return [py, str(config.ORC_ROOT / "scripts" / "robustness.py")]
+    if action == "cycle":
+        return [py, str(config.ORC_ROOT / "scripts" / "daily_cycle.py")]
     if action == "mutation":
         return [py, str(config.ORC_ROOT / "scripts" / "mutation.py")]
     if action == "survivorship":

@@ -996,9 +996,32 @@ def next_action(now: datetime | None = None,
                                 f"검증이 비어 있습니다 — {tgt['headline']}")
 
     if queued:
-        # The worker evaluates on GitHub, so the workstation is free.  Fall
-        # through to zero-N work rather than waiting on it.
-        pass
+        # A registered question already cost N, and section 9 calls leaving it
+        # unanswered the one kind of idling that has already been paid for.
+        #
+        # The runner used to be unable to act on that. Its own supervisor fell
+        # through to zero-N work, and the only thing that collected the queue
+        # was a workflow_dispatch fired by reasoning.py -- which lands in the
+        # `orc-cycle` concurrency group with cancel-in-progress false, behind
+        # the resident "keep working for the rest of the window" step that
+        # holds the group for five hours. On 2026-09-04 H0017 was registered at
+        # 05:28Z, its dispatched cycle waited 1h29m for the group, and then
+        # failed on a test that could only pass on the workstation. The
+        # question sat unanswered for two hours with a machine holding the
+        # panel and looking for something to do.
+        #
+        # So the runner evaluates it. Gated on GITHUB_ACTIONS rather than
+        # offered everywhere, because the division of labour is deliberate: the
+        # workstation has the panels too, and two supervisors running cycles at
+        # once is the concurrent ledger write that once lost 112 trials and 39
+        # minutes. One machine collects the queue, and it is the one whose
+        # whole job is to.
+        if os.environ.get("GITHUB_ACTIONS") and "cycle" not in skip:
+            return "cycle", (
+                f"큐에 등록된 질문 {len(queued)}개({', '.join(queued)}) — "
+                "이 러너가 패널을 들고 있으니 워크플로 디스패치를 기다리지 않고 "
+                "여기서 평가합니다")
+        # On the workstation, fall through to zero-N work rather than waiting.
 
     due, why = reasoning_due(now)
     if due and "reason" not in skip:

@@ -2651,3 +2651,63 @@ def test_the_owner_screen_carries_the_two_answers_that_are_easiest_to_miss():
     labels = {label for _, label, _ in rows}
     assert "종료 조건" in labels
     assert "뮤테이션 게이트" in labels
+
+
+# --------------------------------------------------------------------------
+# a registered question may not wait behind the machine that could answer it
+# --------------------------------------------------------------------------
+def test_the_runner_collects_its_own_queue(tmp_path, monkeypatch):
+    """H0017 was registered at 05:28Z on 2026-09-04 and evaluated two hours
+    later, and nothing was broken while it waited.
+
+    reasoning.py fires a workflow_dispatch, which lands in the `orc-cycle`
+    concurrency group with cancel-in-progress false -- behind the resident
+    "keep working for the rest of the window" step that holds the group for
+    five hours. Meanwhile the supervisor INSIDE that window fell through to
+    zero-N work with the panel on its own disk and a paid-for question sitting
+    in the queue. Section 9 calls that the one kind of idling already paid for.
+    """
+    import findings
+
+    from orc import config, runstate, target
+
+    monkeypatch.setattr(findings, "blocking", lambda: [])
+    monkeypatch.setattr(target, "state",
+                        lambda *a, **k: {"state": target.NO_CANDIDATE,
+                                         "headline": "none", "candidates": []})
+    queue = tmp_path / "queue"
+    queue.mkdir()
+    (queue / "H9999.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(config, "QUEUE", queue)
+
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    action, why = runstate.next_action(skip={"reason", "scout", "kernel_review"})
+    assert action == "cycle"
+    assert "H9999" in why
+
+    # The workstation is unchanged, and that is not an oversight: it has the
+    # panels too, and two supervisors running cycles at once is the concurrent
+    # ledger write that once cost 112 trials and 39 minutes.
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    assert runstate.next_action(skip={"reason", "scout", "kernel_review"})[0] != "cycle"
+
+    # and a caller that cannot run one is told the next best thing rather than
+    # being handed the one action it has already declined
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert runstate.next_action(
+        skip={"reason", "scout", "kernel_review", "cycle"})[0] != "cycle"
+
+
+def test_the_in_window_cycle_is_wired_like_every_other_action():
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import forever
+
+    assert forever.plan("cycle")[-1].endswith("daily_cycle.py")
+    assert forever.TIMEOUTS_S["cycle"] >= 3600, "a 90-cell registration took 20 min"
+    assert forever.DONE_EXIT_CODES["cycle"] == (0,)
+    # Reports only. The ledger is binary and two machines write it, so it goes
+    # through the workflow step that configures the union merge driver first.
+    assert all(p.startswith("reports/") for p in forever.COMMIT_PATHS["cycle"])
+    assert not any("ledger" in p for p in forever.COMMIT_PATHS["cycle"])
