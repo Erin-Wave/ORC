@@ -330,7 +330,7 @@ def test_an_inapplicable_action_still_resets_its_clock(sandbox, monkeypatch):
     import forever
     monkeypatch.setattr(forever, "track_b_cell", lambda: None)
     monkeypatch.setattr(runstate, "next_action",
-                        lambda now=None: ("execution_realism", "pinned"))
+                        lambda now=None, skip=None: ("execution_realism", "pinned"))
     # A guard, not decoration: if the pinning above ever stops working, this
     # turns a 40-minute model run into an immediate failure.
     monkeypatch.setattr(forever, "run", lambda *a, **k: pytest.fail(
@@ -576,3 +576,78 @@ def test_the_closed_digest_handed_to_the_scout_carries_no_metric():
     text = scout.closed_mechanisms()
     assert "funding" in text                    # it must know the closed family
     assert scout.PERFORMANCE_WORDS.search(text) is None, text
+
+
+# ---------------------------------------------------------------------------
+# The resident runner.  Making the cycle ten times faster made the IDLE problem
+# worse: 35 minutes of work every six hours became 3, so the runner stood down
+# for 5h57m -- and a hypothesis registered a minute after a cycle waited most
+# of six hours for anything to evaluate it.
+# ---------------------------------------------------------------------------
+def test_a_supervisor_that_cannot_reason_still_finds_work(sandbox, monkeypatch):
+    """The runner has no model provider, so `reason`, `scout` and
+    `kernel_review` are not available to it.  Declining the answer AFTER asking
+    would leave it being told to do the one thing it cannot, once per tick, for
+    its entire budget -- idling for the most literal reason there is.  skip has
+    to go into the decision."""
+    _register("H0001", datetime.now(UTC) - timedelta(days=9))
+
+    blind = {"reason", "scout", "kernel_review"}
+    action, why = runstate.next_action(skip=blind)
+    assert action not in blind, why
+    # What it picked is real work, not a refusal dressed as one.
+    assert action in set(runstate.ZERO_N_WORK) | {"rest"}, why
+
+    # And skipping is what moved it: whatever the unrestricted answer is, asking
+    # again with that one excluded gives something else. Asserted against the
+    # answer the code actually gives rather than against one this test set up,
+    # so it cannot pass by getting the fixture wrong.
+    natural, _ = runstate.next_action()
+    if natural in runstate.ZERO_N_WORK:
+        assert runstate.next_action(skip={natural})[0] != natural
+
+
+def test_skipping_every_zero_n_action_says_so_rather_than_crashing(sandbox):
+    """`rest` reports which clock expires first, and that minimum is over the
+    actions this supervisor can actually run.  Over an empty set it would
+    raise, taking the supervisor down on a tick that had nothing to do."""
+    action, why = runstate.next_action(skip=set(runstate.ZERO_N_WORK) | {"reason"})
+    assert action == "rest"
+    assert "제외" in why
+
+
+def test_a_skipped_action_does_not_reset_the_clock_of_the_one_who_can_do_it(
+        sandbox):
+    """Two supervisors share these clocks through the repository.  If the
+    runner's refusal counted as the work being done, the workstation -- the
+    only one with a model provider -- would stop being told to do it."""
+    before = runstate.last_activity_at("scout")
+    runstate.next_action(skip={"scout"})
+    assert runstate.last_activity_at("scout") == before
+
+
+def test_the_supervisor_honours_a_deadline_and_never_sleeps_past_it():
+    """--until-minutes is what makes the runner resident for its window rather
+    than for one cycle.  A nap longer than the time left is time the job paid
+    for and did not use."""
+    src = (config.ORC_ROOT / "scripts" / "forever.py").read_text(encoding="utf-8")
+    assert "--until-minutes" in src
+    assert "nap = min(nap, max(left, 0))" in src
+
+    import forever
+    assert forever._arg(["--until-minutes", "300"], "--until-minutes") == "300"
+    assert forever._arg(["--until-minutes=300"], "--until-minutes") == "300"
+    assert forever._arg(["--skip", "a,b"], "--until-minutes") is None
+
+
+def test_the_workflow_keeps_the_runner_resident_and_out_of_the_budget():
+    """The claim in the workflow comment, checked against the workflow.
+
+    The registration budget belongs to ONE supervisor: two of them reading it
+    independently is how four registrations become six, which is the failure
+    MAX_REGISTRATIONS_PER_DAY exists to prevent."""
+    wf = (config.ORC_ROOT / ".github" / "workflows"
+          / "orc-cycle.yml").read_text(encoding="utf-8")
+    assert "--until-minutes 300" in wf
+    assert "--skip reason,scout,kernel_review" in wf
+    assert "ORC_WORKERS" in wf, "the runner would spawn a pool wider than itself"

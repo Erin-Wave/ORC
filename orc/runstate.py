@@ -925,15 +925,24 @@ def supervisor(now: datetime | None = None) -> dict:
     return out
 
 
-def next_action(now: datetime | None = None) -> tuple[str, str]:
+def next_action(now: datetime | None = None,
+                skip: set[str] | None = None) -> tuple[str, str]:
     """The single most useful thing to do at this instant, and why.
 
     Ordered by what would be wasted by doing something else first.  A blocking
     finding comes first because every number computed on top of it is void; the
     queue comes next because a registered question already costs N and leaving
     it unanswered is the one form of idling that has already been paid for.
+
+    `skip` names actions THIS caller cannot perform, and the answer is then the
+    best of what remains rather than a refusal.  The GitHub runner is the
+    caller that needs it: it has no model provider, so `reason`, `scout` and
+    `kernel_review` are not available to it, and a supervisor that simply
+    declined the top answer would sit through its whole budget being told to do
+    the one thing it cannot -- idling for the most literal reason there is.
     """
     now = now or datetime.now(timezone.utc)
+    skip = skip or set()
 
     try:
         sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
@@ -946,7 +955,9 @@ def next_action(now: datetime | None = None) -> tuple[str, str]:
         # but reading that code harder is exactly the right response, so the
         # kernel review is the one action allowed through.
         due = last_activity_at("kernel_review")
-        if due is None or (now - due) > timedelta(minutes=ZERO_N_WORK["kernel_review"]):
+        if "kernel_review" not in skip and (
+                due is None
+                or (now - due) > timedelta(minutes=ZERO_N_WORK["kernel_review"])):
             return "kernel_review", (
                 f"high 결함 {len(blocking)}건이 열려 있어 연구는 멈춥니다 — "
                 "그 코드를 더 읽는 것만 허용됩니다")
@@ -962,11 +973,13 @@ def next_action(now: datetime | None = None) -> tuple[str, str]:
         pass
 
     due, why = reasoning_due(now)
-    if due:
+    if due and "reason" not in skip:
         return "reason", why
 
     for action, max_age_min in sorted(ZERO_N_WORK.items(),
                                       key=lambda kv: kv[1]):
+        if action in skip:
+            continue
         # A failed attempt gets a short cooldown instead of the action's whole
         # allowance, so a transient provider error costs minutes and a broken
         # one still cannot become a hot loop.
@@ -988,9 +1001,13 @@ def next_action(now: datetime | None = None) -> tuple[str, str]:
 
     # Everything is fresh and no question is due.  Say which clock will expire
     # first, so a supervisor tick that does nothing still explains itself.
+    available = {a: m for a, m in ZERO_N_WORK.items() if a not in skip}
+    if not available:
+        return "rest", ("이 감독자가 할 수 있는 zero-N 작업이 없습니다 "
+                        f"(제외: {', '.join(sorted(skip))})")
     soonest = min(
         ((a, (last_activity_at(a) or now) + timedelta(minutes=m))
-         for a, m in ZERO_N_WORK.items()), key=lambda kv: kv[1])
+         for a, m in available.items()), key=lambda kv: kv[1])
     return "rest", (f"모든 zero-N 작업이 최신이고 새 질문도 예정에 없습니다. "
                     f"다음은 {soonest[0]}, {until(soonest[1], now)}. "
                     f"게이트: {why}")

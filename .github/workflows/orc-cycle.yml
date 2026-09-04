@@ -91,10 +91,47 @@ jobs:
 
       - name: Research cycle
         id: cycle
+        env:
+          # The runner is 4 cores where the workstation is 24, and a pool wider
+          # than the machine is slower, not faster. The search test reads this.
+          ORC_WORKERS: "4"
         run: |
           python scripts/daily_cycle.py \
             ${{ github.event.inputs.rerun_all == 'true' && '--all' || '' }} \
             ${{ github.event.inputs.hypotheses }}
+
+      # The cycle used to take 35 minutes and now takes about three, which made
+      # the idle problem WORSE rather than better: the schedule fires every six
+      # hours, so the runner was working for 3 minutes and standing down for 5
+      # hours and 57. The waste is not the point -- runner minutes are unmetered
+      # on a public repository. The point is that a hypothesis registered a
+      # minute after a cycle waited most of six hours for anything to evaluate
+      # it, and section 9 calls that the one kind of idling that has already
+      # been paid for, because registering it already cost N.
+      #
+      # So the supervisor stays resident for the rest of the window and asks
+      # runstate.next_action() every tick, exactly as it does on the
+      # workstation. `reason`, `scout` and `kernel_review` are skipped because
+      # they need a model provider this runner does not have -- and because the
+      # registration budget belongs to one supervisor. Two of them reading it
+      # independently is how four registrations become six.
+      - name: Keep working for the rest of the window
+        if: steps.cycle.outcome == 'success'
+        env:
+          ORC_WORKERS: "4"
+        run: |
+          set -uo pipefail
+          git config user.name  "orc-cycle"
+          git config user.email "orc-cycle@users.noreply.github.com"
+          git config merge.orcledger.name   "union the ORC trial ledger"
+          git config merge.orcledger.driver "python scripts/merge_ledger.py %O %A %B"
+          git config merge.ours.name        "keep the published version"
+          git config merge.ours.driver      true
+          # 300 of the job's 350 minutes, leaving room for the commit, the
+          # notification and the artifact upload, and finishing before the next
+          # schedule fires.
+          python scripts/forever.py --until-minutes 300 \
+            --skip reason,scout,kernel_review || true
 
       - name: Commit results
         run: |

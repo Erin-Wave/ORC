@@ -191,6 +191,13 @@ def claim_lock() -> bool:
     return True
 
 
+# A rename onto a file a reader has open fails on Windows.  Total wait is well
+# under a second, so a beat is never delayed enough to matter, and both numbers
+# are here rather than inline because they are a judgement about a race.
+BEAT_REPLACE_TRIES = 5
+BEAT_REPLACE_WAIT_S = 0.02
+
+
 def beat_lock() -> None:
     try:
         # Self-sufficient on purpose.  claim_lock() makes the directory today,
@@ -215,7 +222,22 @@ def beat_lock() -> None:
             {"pid": os.getpid(),
              "heartbeat_utc": datetime.now(timezone.utc).isoformat()}),
             encoding="utf-8")
-        os.replace(tmp, LOCK)
+        # Windows refuses a rename onto a file another process has open, and
+        # this lock is polled by health.py, the briefing and two watchdogs. The
+        # failure is silent -- the beat is simply dropped and the lock keeps an
+        # older timestamp -- so a run of unlucky collisions ages it towards
+        # LOCK_STALE_MIN and the supervisor starts reading as a corpse while it
+        # works. A reader holds the file for microseconds; a few short retries
+        # cover that window, and giving up is still safe because the next beat
+        # is a minute away.
+        for attempt in range(BEAT_REPLACE_TRIES):
+            try:
+                os.replace(tmp, LOCK)
+                return
+            except OSError:
+                if attempt == BEAT_REPLACE_TRIES - 1:
+                    raise
+                time.sleep(BEAT_REPLACE_WAIT_S)
     except OSError:                                                # pragma: no cover
         # A rename that did not happen leaves the side file behind, and a
         # process that beats every minute would fill logs/ with them.
@@ -371,9 +393,12 @@ def land(action: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-def tick(dry_run: bool = False) -> tuple[str, int]:
+def tick(dry_run: bool = False, skip: set[str] | None = None) -> tuple[str, int]:
     """One decision and, unless dry, one action.  Returns (action, sleep_s)."""
-    action, why = runstate.next_action()
+    # skip goes INTO the decision, not around it.  Declining the answer
+    # afterwards would leave this supervisor being told to do the one thing it
+    # cannot, once per tick, for its whole budget.
+    action, why = runstate.next_action(skip=skip)
     log(f"next: {action} -- {why}")
     if dry_run:
         return action, 0
@@ -406,18 +431,52 @@ def tick(dry_run: bool = False) -> tuple[str, int]:
     return action, WORKED_SLEEP_S
 
 
+def _arg(argv: list[str], name: str) -> str | None:
+    """`--name value` or `--name=value`, or None."""
+    for i, a in enumerate(argv):
+        if a == name and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith(name + "="):
+            return a.split("=", 1)[1]
+    return None
+
+
 def main(argv: list[str]) -> int:
     dry = "--dry-run" in argv
     once = "--once" in argv or dry
+
+    # A supervisor with a deadline.  The GitHub job is the caller: its schedule
+    # fires every six hours and the cycle now finishes in about three minutes,
+    # so the runner was doing 3 minutes of work and then standing down for 5
+    # hours and 57.  Worse than the waste, a hypothesis registered a minute
+    # after a cycle waited most of six hours for anyone to evaluate it -- the
+    # one kind of idling the constitution calls already paid for, because
+    # registering it has already cost N.  Staying resident makes that wait a
+    # tick instead.
+    until_min = _arg(argv, "--until-minutes")
+    deadline = None
+    if until_min:
+        deadline = time.monotonic() + float(until_min) * 60.0
+
+    # Actions this process must not choose.  The runner has no model provider,
+    # so `reason`, `scout` and `kernel_review` would fail there on every tick,
+    # burn the failure cooldown and crowd out the work it CAN do.  It also must
+    # not be able to register: the workstation supervisor holds that budget, and
+    # two supervisors reading it independently is how four registrations become
+    # six.
+    skip = {s.strip() for s in (_arg(argv, "--skip") or "").split(",") if s.strip()}
+
     if not dry and not claim_lock():
         return 3
     log(f"=== supervisor start (pid {os.getpid()}, "
-        f"budget {config.MAX_REGISTRATIONS_PER_DAY} registrations/24h) ===")
+        f"budget {config.MAX_REGISTRATIONS_PER_DAY} registrations/24h"
+        + (f", until {until_min}m" if deadline else "")
+        + (f", skipping {sorted(skip)}" if skip else "") + ") ===")
     stop_beat = None if dry else start_heartbeat()
     try:
         while True:
             try:
-                _, nap = tick(dry_run=dry)
+                _, nap = tick(dry_run=dry, skip=skip)
             except KeyboardInterrupt:
                 raise
             except Exception as exc:                               # noqa: BLE001
@@ -432,6 +491,14 @@ def main(argv: list[str]) -> int:
                 nap = IDLE_SLEEP_S
             if once:
                 return 0
+            if deadline is not None:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    log(f"=== deadline reached ({until_min}m); standing down ===")
+                    return 0
+                # Never sleep past the deadline: an oversleep is time the job
+                # paid for and did not use.
+                nap = min(nap, max(left, 0))
             time.sleep(nap)
     except KeyboardInterrupt:
         log("=== supervisor stopped by hand ===")
