@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T03:28:27.450556+00:00",
+  "utc": "2026-09-04T04:13:39.650641+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -8,16 +8,16 @@
       }
     },
     "propose": [
-      "H0015.json"
+      "H0016.json"
     ],
     "adversary": [
       {
-        "file": "H0015.json",
+        "file": "H0016.json",
         "verdict": "KILL",
-        "reason": "[claude] 제안서가 스스로 확인하지 못했다고 밝힌 지점을 실제로 실행해 보면 orc/eval/simulate.py는 숏을 표현하지 못한다: leverage=-1.0이면 qty가 음수가 되어 has_pos = act & (qty > 0.0)이 영원히 False이므로 청산이 단 한 번도 평가되지 않고(6배 상승 구간에서도 liquidation_rate가 정확히 0.0), 동시에 ep = np.where(qty > 0.0, ...)가 진입가를 0으로 고정해 terminal_multiple이 tm_short = 1 - tm_long이라는 기계적 반사값으로 나온다(진입·청산 수수료 부호도 함께 뒤집혀 비용이 보조금이 된다). 따라서 핵심 조항 1(L(s,156) >= 0.20)은 구조상 절대 발화할 수 없고 PRIMARY_METRIC인 tm_q05는 숏의 종료배수가 아니며, 제안서가 마련한 유일한 안전장치인 조항 0은 magnitude 구현만 잡도록 쓰여 있어 실제 결함(1 - tm_long)을 통과시킨다. | [codex] The Track A simulator is explicitly long-only: it recognizes positions only when qty > 0 and tests liquidation against the bar low, so leverage -1 creates negative quantity that can never liquidate and is accounted with invalid long-side entry/exit conventions. Clause 0 will not catch this—negative leverage is not discarded—making the proposed short-carry results and liquidation clause invalid.",
+        "reason": "[claude] I ran all 72 proposed trials at zero ledger rows (development panels, same evaluator path the runner uses) and clause 1 is already resolved for every cell: the single positive Calmar in the entire grid is +0.031 on BTCUSDT at the exit_rate=+5e-05 CONTROL — H0002's own fixed setting — 1 symbol of 9, with the other 71 cells negative on every symbol, so registration buys a CLOSED verdict a zero-row script already produced plus the section-6 right to enumerate 2000 cells next. Compounding it, the observable rule is `carry_funding` with enter_rate, lookback_days, leverage and max_hold_days all pinned to values inside closed H0002's own grid and only the untried numeric exit_rate axis moved — the 'an untried numeric axis is not a new rule shape' ground that killed H0011 and H0012 — while the unwind payer meant to distinguish it from H0002 is one the proposal itself concedes it cannot observe, leaving H0002's state variable, H0002's entry and H0002's short. | [codex] This is the already-closed H0002 carry_funding rule with a newly enumerated exit_rate axis, not a different rule shape; changing hysteresis duration inside the same signal function is precisely a finer grid over an existing form. Clause 2 is also underspecified because “5 percent in relative terms” is undefined when Calmar is zero or negative.",
         "payer_is_structural": true,
-        "kill_condition_is_falsifiable": false,
-        "configurations": 48,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 72,
         "killed_by": "adversary:claude,codex",
         "reviewed_by": [
           "claude",
@@ -31,6 +31,31 @@
         "provider": "claude",
         "files": [
           "configs/proposed/"
+        ]
+      },
+      {
+        "provider": "claude+codex",
+        "files": [
+          "orc/eval/signal_rules.py",
+          "orc/orchestrator/runner.py",
+          "orc/orchestrator/spec.py",
+          "orc/orchestrator/surface.py",
+          "scripts/execution_realism.py",
+          "scripts/robustness.py"
+        ],
+        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "tests/test_kernel.py"
+        ]
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "orc/config.py",
+          "orc/target.py"
         ]
       }
     ]
