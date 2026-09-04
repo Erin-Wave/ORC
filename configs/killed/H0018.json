@@ -1,0 +1,57 @@
+{
+  "proposal": {
+    "hypothesis_id": "H0018",
+    "family": "cci_mtf_pullback",
+    "track": "B",
+    "claim": "ORIGIN. The same line as H0017 -- reports/SCOUT.jsonl line 4 (codex, slug leveraged-binance-usd-m-perpetual-short-whose-collateral), the payer CLAUDE.md section 7b names -- and the same payer, read the third way. This is deliberately NOT a third mechanism and must not be counted as one: section 6 says a tree that re-arranges one idea is narrower than its hypothesis count suggests, and H0017 and H0018 together are one idea costing 90 + 72 = 162 ledger rows, 2.4 % of the 6,848 recorded so far. If the payer is not there, both die together.\n\nWHO IS STRUCTURALLY PAYING, AND WHY THEY KEEP DOING IT. A Binance USD-M position past maintenance margin is closed by the venue's risk engine with an immediate-or-cancel order and a clearance fee. It picks neither its price nor its timing and cannot wait: the order goes because a margin ratio crossed a line. The base rebuilds after every flush because leverage is the whole reason to hold a perpetual instead of spot, and the venue's fee schedule and insurance fund are written on the assumption that it will. Nothing in these rules reads panel.funding_rate; the funding the evaluator charges or credits on the position is a cost of holding, not an input, and clause 6 refuses any result the coupon rather than the price leg produced.\n\nWHAT THIS SHAPE ASKS THAT H0017 CANNOT. H0017 puts continuation and relaxation on one grid so they can disagree, and a disagreement is exactly what neither of them can resolve from inside: at the moment of entry a single-timeframe rule cannot tell an exhausted cascade from the beginning of one, which is the question the two halves of the scouted sentence split on. cci_mtf is the shape that has an answer: the SLOW candle decides which side may be taken at all, the fast candle triggers entry on a pullback AGAINST that side. It is a different rule function, not a different parameterisation -- orc/eval/signal_rules.py::cci_mtf takes two readings and two thresholds, its entry is conjunctive (a side is permitted only while abs(filter) >= filter_level) and its exit has two independent clauses, the regime ending and the pullback resolving along the permitted direction, neither of which exists in _two_sided. The family has no rows in the ledger, so this is a probe under the 96-configuration ceiling and it spends its width on the two axes that decide whether the shape is there at all.\n\nWHY filter_timeframe_hours IS THE AXIS, AND WHY IT CARRIES FOUR NUMERIC LEVELS. The whole claim of the shape is that the direction of a cascade is visible at a resolution the entry is not taken on, so the SEPARATION between the two readings is what decides whether the shape exists: 12, 24, 48 and 72 hours against a fast candle fixed at the 4-hour one the owner named. Four ordinal levels means the diagnostic has a cell either side of whichever wins, which H0006 did not have and was closed without. The second axis, filter_level at 100 and 200, is how strong the slow reading must be before a side is permitted at all; the code refuses filter_level <= 0 because at zero the filter stops filtering and the shape collapses into the reversion rule it exists to be distinguished from.\n\nDESIGN CHOICES CHECKED IN THE CODE RATHER THAN ASSUMED. filter_lookback_days is set to 20.0 instead of being left at its default. The default makes the filter cover the same span as the base reading, and _period_bars(5.0, tf) is 10 / 5 / 2 / 2 candles at 12 / 24 / 48 / 72 hours -- I computed it -- so two of the four cells would have run a CCI whose mean absolute deviation was taken over two observations. At 20.0 the filter reads 40 / 20 / 10 / 7 candles, and it is also the right thing on its own terms: the slow read is meant to describe a regime, not the same five days at a coarser resolution. Everything else is deliberately identical to H0017 -- lookback_days 5.0, enter_level 100.0, exit_level 50.0, leverage 1.0 (KT-2 closed leverage above 1x), stop_loss 0.25 of margin as a tail bound rather than an exit, max_hold_days 5.0 so a position cannot outlive the window that justified it, capital 10,000, clock 1h, default costs of 4.5 bps taker plus 1.0 bps slippage -- so that clause 2 below compares two SHAPES and not two parameter sets.\n\nWHAT THIS PROBE CANNOT SEE, SAID BEFORE ANY NUMBER EXISTS. Identical to H0017's reach and stated again because a claim that forgets it is claiming something it did not measure: the liquidation stream, the forced-order feed, open interest and the mark price are not in this archive, so a displaced price is evidence of forced flow and not a measurement of it, and ordinary aggressive trading displaces price too. The scouted continuation is ASYMMETRIC -- a liquidated short must BUY -- and cci_mtf permits both sides symmetrically with no field to restrict it, so the sharpest fingerprint of the payer is untestable here; no rule reads volume, which is the other half of the observable; and enter_level is fixed at 100, so a FAIL is a FAIL at the band with extreme readings diluted into it rather than a FAIL at the extreme. The stop condition in CLAUDE.md is not a bar this family is judged against and no clause below mentions it.",
+    "kill_condition": "NOTATION. Nine symbols; f in {12, 24, 48, 72} hours; L in {100, 200}. C(s,f,L) is the recorded `calmar`, Lq the `liquidation_rate`, T the `n_trades`, G the `gross_collected`. A cell that does not record -- run_signal_trial raises UnsupportedConfig('no_trades_fired') -- counts as FAILING every clause and never as passing. A (symbol, cell) with T < 20 is not counted as a positive symbol anywhere below, because on Track B effective_independent_paths IS n_trades. If every cell is disqualified by that floor on five or more symbols the family is reported UNMEASURABLE rather than closed: a permitted state that almost never occurs has not been tested, and the honest next step is a different filter_level, not a re-run of this one. All thresholds are frozen now, before any of these 72 configurations has been run.\n\n1. NO EDGE. Closed if no single cell (f,L) reaches C > 0 on at least 5 of the 9 symbols while recording Lq = 0 on all nine. Deliberately the same bar, on the same universe, that H0002 and H0006 were graded against and both failed.\n\n2. ADDS NOTHING -- the clause that makes this shape answerable rather than merely different. Closed as SUBSUMED if the best cell here does not exceed, on at least 5 of the 9 symbols, the better of H0017's two rules at timeframe_hours = 4.0 on the same symbol. The two grids are deliberately identical in every fixed field, so that comparison is between a filtered pullback and an unfiltered extreme and nothing else. If H0017 is not registered, or its 4-hour cells did not record, this clause is reported UNMEASURED and does NOT close the family -- and no other clause is loosened to compensate for it.\n\n3. THE FILTER DOES NOT FILTER. Closed as UNMEASURABLE if, at the same f, T at L = 200 is within 10 % of T at L = 100 on 5 or more of the 9 symbols. Raising the level a side is permitted at must remove permitted bars; if the trade count does not move, the filter is not what decided the trade and this shape was never actually run, whatever its Calmar says.\n\n4. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols. filter_timeframe_hours carries four ordinal levels so that this is answerable.\n\n5. COST. Closed if no cell meeting clause 1 still reaches C > 0 on at least 5 of the 9 symbols under scripts/robustness.py's cost stress at COST_STRESS_MULTIPLIER = 2.0 -- 22 bps a round trip rather than 11. Zero ledger rows: it re-prices cells already recorded.\n\n6. THE COUPON, NOT THE INDICATOR. Closed if, among the symbols on which a clause-1 cell is positive, more than half record G <= 0. The price and funding legs sum to total P&L by construction (orc/eval/signal.py), so that pattern says the price leg lost and the funding coupon carried the curve -- H0002's and H0006's payer wearing a CCI hat, and both are closed.\n\nWHAT SURVIVAL WOULD REQUIRE, on the record before the numbers: one cell meeting clause 1, beating the better single-timeframe rule at 4 hours on 5 of 9 symbols, with a filter that demonstrably filtered, a shape that is not SPIKE on a majority, still positive at twice the assumed cost, and a positive price leg on most of the symbols it won on. A FAIL on any clause is a publishable result and closes this reading of the payer.",
+    "universe": [
+      "ADAUSDT",
+      "AVAXUSDT",
+      "BNBUSDT",
+      "BTCUSDT",
+      "DOGEUSDT",
+      "ETHUSDT",
+      "LTCUSDT",
+      "SOLUSDT",
+      "XRPUSDT"
+    ],
+    "grid": {
+      "filter_timeframe_hours": [
+        12.0,
+        24.0,
+        48.0,
+        72.0
+      ],
+      "filter_level": [
+        100.0,
+        200.0
+      ]
+    },
+    "fixed": {
+      "rule": "cci_mtf",
+      "timeframe_hours": 4.0,
+      "lookback_days": 5.0,
+      "filter_lookback_days": 20.0,
+      "enter_level": 100.0,
+      "exit_level": 50.0,
+      "leverage": 1.0,
+      "stop_loss": 0.25,
+      "max_hold_days": 5.0,
+      "capital": 10000.0,
+      "clock": "1h"
+    }
+  },
+  "verdict": {
+    "verdict": "KILL",
+    "reason": "[claude] 제안된 72셀 전부를 개발 패널에서 `run_trial`로(원장 0행) 그대로 돌려보니 filter_level=200 축은 두 번째 필터 강도가 아니라 그냥 스위치 OFF다: 36셀 중 18셀은 `no_trades_fired`로 기록조차 되지 않고, 나머지 18셀은 심볼당 1~3거래뿐이어서 이 제안서가 스스로 못 박은 T>=20 하한에 전부 걸린다 — 즉 이 등록이 N에 추가하는 54행 중 18행은 계산되기도 전에 자신의 kill condition 어디에서도 positive symbol로 셀 수 없는 죽은 행이다(criterion 5, 패딩된 그리드). 그 축을 필요로 하는 유일한 조항인 clause 3은 이미 원장 0행으로 해소되었다(모든 f에서 거래수가 96~100 % 감소, 10 % 이내인 심볼은 0/9) — 영구히 N을 올리지 않고도 얻어지는 진단이므로, filter_level을 실제로 살아 있고 ordinal한 수준(예: 60/80/100/120)으로 바꾼 새 id로 재제안할 것. L=100 팔은 살아 있고 정보량이 있으므로(f=48에서 9심볼 중 6개가 C>0, n>=20, 청산 0) 이 shape 자체는 재제안 가치가 있다. | [codex] Clause 2 is not falsifiable as written: “the best cell” has no frozen selection rule across symbols, and the text leaves an H0017-unavailable result UNMEASURED even though the stated survival condition requires beating H0017, creating an undecidable outcome. The payer is structural and the 4×2 grid is not padded, but this ambiguity must be fixed before permanently spending 72 rows.",
+    "payer_is_structural": true,
+    "kill_condition_is_falsifiable": true,
+    "configurations": 72,
+    "killed_by": "adversary:claude,codex",
+    "reviewed_by": [
+      "claude",
+      "codex"
+    ]
+  }
+}

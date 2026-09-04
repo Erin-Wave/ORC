@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T04:13:39.650641+00:00",
+  "utc": "2026-09-04T05:03:36.139420+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -8,13 +8,26 @@
       }
     },
     "propose": [
-      "H0016.json"
+      "H0017.json",
+      "H0018.json"
     ],
     "adversary": [
       {
-        "file": "H0016.json",
+        "file": "H0017.json",
+        "verdict": "REGISTER",
+        "reason": "[claude] Well posed on every axis I could check in the code: 90 configurations sits under probe_ceiling's 96 for a family with zero ledger rows, all ten fixed/grid keys are real SignalTrialConfig fields with cci_breakout/cci_reversion live in signal_rules.py's dispatch table, _period_bars confirms 120/60/30/15/10 candles, _two_sided's exit on abs(value)<=exit_level makes the 50.0 choice necessary rather than cosmetic, clause 1 is verbatim H0002's bar on the identical nine symbols, and clause 5 is correctly oriented because gross is the price leg with pnl = gross + funding (tests/test_kernel.py:589). The one real defect is that clause 2 is close to unfirable — fade only flips the side, so both rules enter and exit on identical bars and their P&Ls are near-negatives that cannot both clear 11 bps a round trip on a shared symbol, meaning the advertised duel is arithmetically pre-passed; it survives because an unfirable clause 2 can only fail to close the family and leaves clause 1's hard bar untouched, and section 7b prescribes this pairing. | [codex] The forced-liquidation payer is structural and explicitly established as the open family in CLAUDE.md §7b; the 90-cell grid tests the prescribed breakout/reversion disagreement across a plausibly outcome-changing horizon axis, with concrete numerical closure conditions.",
+        "payer_is_structural": true,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 90,
+        "reviewed_by": [
+          "claude",
+          "codex"
+        ]
+      },
+      {
+        "file": "H0018.json",
         "verdict": "KILL",
-        "reason": "[claude] I ran all 72 proposed trials at zero ledger rows (development panels, same evaluator path the runner uses) and clause 1 is already resolved for every cell: the single positive Calmar in the entire grid is +0.031 on BTCUSDT at the exit_rate=+5e-05 CONTROL — H0002's own fixed setting — 1 symbol of 9, with the other 71 cells negative on every symbol, so registration buys a CLOSED verdict a zero-row script already produced plus the section-6 right to enumerate 2000 cells next. Compounding it, the observable rule is `carry_funding` with enter_rate, lookback_days, leverage and max_hold_days all pinned to values inside closed H0002's own grid and only the untried numeric exit_rate axis moved — the 'an untried numeric axis is not a new rule shape' ground that killed H0011 and H0012 — while the unwind payer meant to distinguish it from H0002 is one the proposal itself concedes it cannot observe, leaving H0002's state variable, H0002's entry and H0002's short. | [codex] This is the already-closed H0002 carry_funding rule with a newly enumerated exit_rate axis, not a different rule shape; changing hysteresis duration inside the same signal function is precisely a finer grid over an existing form. Clause 2 is also underspecified because “5 percent in relative terms” is undefined when Calmar is zero or negative.",
+        "reason": "[claude] 제안된 72셀 전부를 개발 패널에서 `run_trial`로(원장 0행) 그대로 돌려보니 filter_level=200 축은 두 번째 필터 강도가 아니라 그냥 스위치 OFF다: 36셀 중 18셀은 `no_trades_fired`로 기록조차 되지 않고, 나머지 18셀은 심볼당 1~3거래뿐이어서 이 제안서가 스스로 못 박은 T>=20 하한에 전부 걸린다 — 즉 이 등록이 N에 추가하는 54행 중 18행은 계산되기도 전에 자신의 kill condition 어디에서도 positive symbol로 셀 수 없는 죽은 행이다(criterion 5, 패딩된 그리드). 그 축을 필요로 하는 유일한 조항인 clause 3은 이미 원장 0행으로 해소되었다(모든 f에서 거래수가 96~100 % 감소, 10 % 이내인 심볼은 0/9) — 영구히 N을 올리지 않고도 얻어지는 진단이므로, filter_level을 실제로 살아 있고 ordinal한 수준(예: 60/80/100/120)으로 바꾼 새 id로 재제안할 것. L=100 팔은 살아 있고 정보량이 있으므로(f=48에서 9심볼 중 6개가 C>0, n>=20, 청산 0) 이 shape 자체는 재제안 가치가 있다. | [codex] Clause 2 is not falsifiable as written: “the best cell” has no frozen selection rule across symbols, and the text leaves an H0017-unavailable result UNMEASURED even though the stated survival condition requires beating H0017, creating an undecidable outcome. The payer is structural and the 4×2 grid is not padded, but this ambiguity must be fixed before permanently spending 72 rows.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
         "configurations": 72,
@@ -25,38 +38,33 @@
         ]
       }
     ],
-    "surfaces": "written",
+    "surfaces": "skipped: exit 1: ",
     "tree_violations": [
       {
         "provider": "claude",
         "files": [
-          "configs/proposed/"
+          "configs/proposed/",
+          "scripts/mutation.py"
         ]
       },
       {
         "provider": "claude+codex",
         "files": [
-          "orc/eval/signal_rules.py",
-          "orc/orchestrator/runner.py",
-          "orc/orchestrator/spec.py",
-          "orc/orchestrator/surface.py",
-          "scripts/execution_realism.py",
-          "scripts/robustness.py"
+          "orc/ledger/trials.py",
+          "reports/MUTATION.json",
+          "scripts/mutation.py",
+          "tests/test_protocol.py"
         ],
         "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
       },
       {
-        "provider": "claude",
+        "provider": "claude+codex",
         "files": [
-          "tests/test_kernel.py"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "orc/config.py",
-          "orc/target.py"
-        ]
+          ".github/workflows/orc-guard.yml",
+          "reports/REASONING_LOG.jsonl",
+          "scripts/health.py"
+        ],
+        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
       }
     ]
   }
