@@ -1,21 +1,21 @@
 {
-  "run_id": "9f6246125e60",
-  "started_utc": "2026-09-03T22:57:47.977007+00:00",
-  "finished_utc": "2026-09-03T23:32:42.117553+00:00",
+  "run_id": "70dae2406666",
+  "started_utc": "2026-09-04T01:32:51.002116+00:00",
+  "finished_utc": "2026-09-04T01:42:45.338689+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
-  "panels": 253,
+  "panels": 325,
   "hypotheses_run": [
     "H0001"
   ],
-  "trials_before": 6736,
-  "trials_after": 6736,
+  "trials_before": 6848,
+  "trials_after": 6848,
   "trials_added": 0,
   "results": [
     {
       "hypothesis_id": "H0001",
       "family": "unconditional_dca_spot_style",
-      "run_id": "9f6246125e60",
+      "run_id": "70dae2406666",
       "configurations": 162,
       "evaluated": 112,
       "new_trials": 0,
@@ -23,7 +23,7 @@
       "skip_reasons": {
         "horizon_exceeds_history": 50
       },
-      "ledger_total_trials": 6736
+      "ledger_total_trials": 6848
     }
   ]
 }

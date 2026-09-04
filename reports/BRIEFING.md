@@ -1,23 +1,25 @@
-# ORC 연구 브리핑 — 2026-09-04 08:32 KST
+# ORC 연구 브리핑 — 2026-09-04 10:42 KST
 
 ## 지금 돌고 있는가
 
-🟡 **감독자가 떠 있지 않습니다** — 예약된 추론 발화까지 아무것도 하지 않습니다.
+🟢 **24시간 감독자가 살아 있고 지금도 일하고 있습니다.**
 
-- 마지막 신규 시행 20시간 6분 전, 큐는 비었고 감독자도 떠 있지 않습니다 — `python scripts/forever.py` 또는 `python scripts/schedule.py --install`
+- 감독자 살아 있음 (pid 27212, 박동 미래). 지금 할 일: **rest** — 모든 zero-N 작업이 최신이고 새 질문도 예정에 없습니다. 다음은 execution_realism, 1시간 6분 후. 게이트: 마지막 패스가 40분 전입니다 — 패스 간 최소 45분을 둡니다
+- 마지막으로 한 일: scout (1분 전) — exit 0:   + the Binance USDⓈ-M derivatives user resident in a jurisdiction Binance has announced it is exiting, whose remaining open positio
+- 24시간 등록 예산 0/4 사용 — 제안과 검토는 공짜고, N을 올리는 것은 등록뿐입니다
 
 | 무엇 | 언제 | 무슨 일이 있었나 |
 |---|---|---|
-| **마지막 신규 시행** (백테스트가 아무도 묻지 않았던 것에 답한 시각) | 2026-09-03 12:26 KST · 20시간 6분 전 | 시행 112건 추가 · H0001 · 소요 48초 |
-| 마지막 워커 사이클 | 2026-09-04 07:57 KST · 34분 전 | 소요 34분 54초 · 신규 0건  ← 돌았지만 새로 답한 것이 없음 |
-| 다음 워커 발화 (명목) | 2026-09-04 09:00 KST · 27분 후 | 6시간마다. 공개 저장소의 예약 실행은 2~4시간 지연이 흔합니다 |
-| 마지막 추론 패스 (아이디어 발굴) | 2026-09-04 06:58 KST · 1시간 34분 전 | 적대자가 기각 1건 |
-| 추론 계층 마지막 기동 | 2026-09-04 06:58 KST · 1시간 34분 전 | 파이프라인을 실행했습니다 |
+| **마지막 신규 시행** (백테스트가 아무도 묻지 않았던 것에 답한 시각) | 2026-09-04 09:05 KST · 1시간 36분 전 | 시행 112건 추가 · H0001 · 소요 31초 |
+| 마지막 워커 사이클 | 2026-09-04 10:32 KST · 9분 전 | 소요 9분 54초 · 신규 0건  ← 돌았지만 새로 답한 것이 없음 |
+| 다음 워커 발화 (명목) | 2026-09-04 15:00 KST · 4시간 17분 후 | 6시간마다. 공개 저장소의 예약 실행은 2~4시간 지연이 흔합니다 |
+| 마지막 추론 패스 (아이디어 발굴) | 2026-09-04 10:02 KST · 40분 전 | 적대자가 기각 1건 |
+| 추론 계층 마지막 기동 | 2026-09-04 10:02 KST · 40분 전 | 파이프라인을 실행했습니다 |
 | 다음 추론 발화 | 2026-09-04 14:25 KST | 매일 02:25, 08:25, 14:25, 20:25 KST. 증거가 그대로면 스스로 건너뜁니다 |
 | 대기 중인 질문 (큐) | — | 0개 — 다음 추론 패스가 만들 차례 |
 | 열린 가족 | — | H0001 |
-| 24시간 감독자 | 기록 없음 | **떠 있지 않습니다** — `python scripts/schedule.py --install` 로 등록하거나 `python scripts/forever.py` 로 띄웁니다 |
-| 지금 할 일 | — | **reason** — 이 저장소에서 지문이 기록된 패스가 없습니다 |
+| 24시간 감독자 | 2026-09-04 10:42 KST | 살아 있음 (pid 27212, 박동 미래) |
+| 지금 할 일 | — | **rest** — 모든 zero-N 작업이 최신이고 새 질문도 예정에 없습니다. 다음은 execution_realism, 1시간 6분 후. 게이트: 마지막 패스가 40분 전입니다 — 패스 간 최소 45분을 둡니다 |
 | 24시간 등록 예산 | — | 0/4 사용. 제안·적대자 검토·웹 정찰은 N을 쓰지 않고, 등록만 씁니다 |
 
 ### 가동 기록 — 감독자가 실제로 한 일
@@ -26,24 +28,29 @@
 
 | 시각 (KST) | 한 일 | 소요 | 결과 |
 |---|---|---|---|
+| 2026-09-04 10:40 KST | `scout` | 13분 | exit 0:   + the Binance USDⓈ-M derivatives user resident in a jurisdiction Binance has announced it is exiting, whose remaining open positions are for |
+| 2026-09-04 10:22 KST | `reason` | 20분 | exit 0: mechanism / surfaces /   4491 chars written / postmortem /   WARNING: 1 read-only call(s) changed the working tree; see REASONING_LOG.json / c |
+| 2026-09-04 09:26 KST | `reason` | 13분 | exit 4: tests\test_protocol.py:1339: AssertionError / ---------------------------- Captured stdout call ----------------------------- /   H9300 contin |
+| 2026-09-04 09:12 KST | `survivorship` | 3분 | exit 0: gap in median terminal multiple : +0.038 / threshold (frozen in advance)   : 0.20 / usable survivors / delisted     : 32 / 28 (need 10 each) / |
+| 2026-09-04 08:54 KST | `blocked` | — | high 결함 9건: 309614dd45f2, 1fda815109fc, e19968047193, c8250bb33b10, 1d24187e83e0, 0e76e5167368, 3f5eecddcf2e, 356ad9d05565, 11971cd77077. 사람이 고치거나 fin |
+| 2026-09-04 08:39 KST | `blocked` | — | high 결함 9건: 309614dd45f2, 1fda815109fc, e19968047193, c8250bb33b10, 1d24187e83e0, 0e76e5167368, 3f5eecddcf2e, 356ad9d05565, 11971cd77077. 사람이 고치거나 fin |
+| 2026-09-04 08:24 KST | `blocked` | — | high 결함 9건: 309614dd45f2, 1fda815109fc, e19968047193, c8250bb33b10, 1d24187e83e0, 0e76e5167368, 3f5eecddcf2e, 356ad9d05565, 11971cd77077. 사람이 고치거나 fin |
+| 2026-09-04 08:23 KST | `kernel_review` | 57분 | exit 1:   high   orc/holdout.py:149  openings_used() takes max() of the recorded ordinals, so two records claiming the same ope /   medium orc/holdout |
+| 2026-09-04 07:26 KST | `robustness` | 3초 | exit 0:   ETHUSDT    UNMEASURED: regime /       cost x2   +3.6056 -> +3.6016 /       walk        in +1.7285  out +0.9916 /       regime      the cell  |
 | 2026-09-04 07:25 KST | `scout` | 8분 | exit 0:   + the Binance USDⓈ-M futures liquidity-provider-program participant whose next week's maker rebate tier is set by its share of Monday-to-Sun |
-| 2026-09-04 07:16 KST | `reason` | 21분 | exit 3: postmortem /   WARNING: 2 read-only call(s) changed the working tree; see REASONING_LOG.json / Created autostash: beea0ff / committed and push |
-| 2026-09-03 23:49 KST | `execution_realism` | 2초 | exit 1: H0002 BTCUSDT  {'enter_rate': 0.0002, 'leverage': 1.0, 'lookback_days': 21.0, 'max_hold_days': 7.0, 'stop_loss': None} /   hourly  bars    39, |
-| 2026-09-03 23:48 KST | `robustness` | 3초 | exit 0:   ETHUSDT    UNMEASURED: regime /       cost x2   +3.6056 -> +3.6016 /       walk        in +1.7285  out +0.9916 /       regime      the cell  |
-| 2026-09-03 23:47 KST | `scout` | 4분 | exit 1: claude: SKIPPED -- exit 1:  / codex: SKIPPED -- exit 1: 2026-09-03T14:47:42.599840Z ERROR codex_models_manager::manager: failed to refresh ava |
 
-### 정찰 노트북 — 외부에서 모은 지불자 13명
+### 정찰 노트북 — 외부에서 모은 지불자 18명
 
 제안자의 도구는 `Read/Glob/Grep/Write` 뿐이라 저장소 안의 것만 재배열할 수 있고, 그래서 첫 여덟 가족 중 여섯이 펀딩 요율에 얹혀 있었습니다. 이 노트북은 웹과 두 번째 벤더에서 **지불자**를 모아 그 구멍을 막습니다. 성능 숫자는 규칙으로 금지돼 있습니다 — 이 파일을 읽는 단계는 이 프로젝트의 결과를 보지 않아야 하기 때문입니다.
 
 | 언제 | 출처 | 확신 | 누가 지불하는가 |
 |---|---|---|---|
+| 2026-09-04 10:40 KST | codex | medium | the registered Binance Futures tournament entrant trading to satisfy a daily volume qualification or leaderboard tie-break ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 10:40 KST | codex | medium | the BNB Launchpool participant who shorts BNBUSDT perpetuals while retaining reward-eligible BNB ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 10:40 KST | claude | medium | the Binance USDⓈ-M perpetual holder whose position is closed by the venue on a Mark Price built from other exchanges' spot feeds, when one of those fe ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 10:40 KST | claude | medium | the holder of a CME-cleared bitcoin or ether futures obligation priced off the CME CF Reference Rate, whose offsetting leg sits in a Binance USDⓈ-M pe ⚠︎ 보유 데이터 부족 |
+| 2026-09-04 10:40 KST | claude | medium | the Binance USDⓈ-M derivatives user resident in a jurisdiction Binance has announced it is exiting, whose remaining open positions are force-closed by ⚠︎ 보유 데이터 부족 |
 | 2026-09-04 07:25 KST | codex | medium | the Binance USDⓈ-M TWAP user who has committed a large order to a finite completion window ⚠︎ 보유 데이터 부족 |
-| 2026-09-04 07:25 KST | codex | medium | the Binance USDⓈ-M Futures copy trader whose account automatically duplicates a lead trader's close ⚠︎ 보유 데이터 부족 |
-| 2026-09-04 07:25 KST | codex | high | the Binance Leveraged Token hedge basket that must restore its mandated leverage through underlying perpetual contracts ⚠︎ 보유 데이터 부족 |
-| 2026-09-04 07:24 KST | claude | medium | the USDⓈ-M perpetual holder whose order-entry path degrades while the venue's own risk engine keeps closing positions ⚠︎ 보유 데이터 부족 |
-| 2026-09-04 07:24 KST | claude | medium | the Binance USDⓈ-M futures liquidity-provider-program participant whose next week's maker rebate tier is set by its share of Monday-to-Sunday maker vo ⚠︎ 보유 데이터 부족 |
-| 2026-09-04 07:24 KST | claude | medium | the Binance Dual Investment subscriber, locked until settlement, whose payoff is decided by an average of the market price over the 30 minutes before  ⚠︎ 보유 데이터 부족 |
 
 ### 가동 기록 — 최근 사이클
 
@@ -51,29 +58,31 @@
 
 | 시작 (KST) | 소요 | 신규 시행 | 가설 |
 |---|---|---|---|
+| 2026-09-04 10:32 KST | 9분 54초 | +0 | H0001 |
+| 2026-09-04 09:05 KST | 3분 6초 | +112 | H0001 |
 | 2026-09-04 07:57 KST | 34분 54초 | +0 | H0001 |
 | 2026-09-03 12:25 KST | 48초 (평가만) | +112 | H0001 |
 | 2026-09-03 08:25 KST | 55초 (평가만) | +238 | H0001, H0006, H0007 |
 | 2026-09-02 22:23 KST | 1분 29초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
 | 2026-09-02 21:20 KST | 1분 44초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
 | 2026-09-02 20:48 KST | 51초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
-| 2026-09-02 17:30 KST | 56초 (평가만) | +1,210 | H0001, H0002, H0006, H0007 |
-| 2026-09-02 17:06 KST | 35초 (평가만) | +126 | H0006, H0007 |
 
 ### 가동 기록 — 최근 추론 패스
 
 | 시각 (KST) | 등록 | 기각 | 거부/보류 |
 |---|---|---|---|
+| 2026-09-04 10:02 KST | 0 | 1 | — |
+| 2026-09-04 09:13 KST | 0 | 0 | 판단 불가 2건 |
+| 2026-09-04 08:25 KST | 0 | 0 | high 결함 9건으로 거부 |
 | 2026-09-04 06:58 KST | 0 | 1 | — |
 | 2026-09-04 06:55 KST | 0 | 0 | 판단 불가 1건 |
 | 2026-09-03 23:34 KST | 0 | 0 | 판단 불가 2건 |
-| 2026-09-03 23:08 KST | 0 | 2 | — |
 
-**다음 패스가 실제로 물을 것인가**: 예 — 이 저장소에서 지문이 기록된 패스가 없습니다
+**다음 패스가 실제로 물을 것인가**: 아니오 — 마지막 패스가 40분 전입니다 — 패스 간 최소 45분을 둡니다
 
 ## 한 줄 요약
 
-**지금 실전에 쓸 수 있는 전략은 없습니다.** 시행 6,736건을 기록했고 모든 검사를 통과한 셀은 0개입니다. 닫힌 가족 3개가 **왜** 안 되는지가 현재까지의 성과입니다 — 이 프로젝트의 산출물은 '되는 것 하나'가 아니라 '어디서 깨지는지의 지도'이고, `FAIL`은 발표 가능한 결과입니다.
+**지금 실전에 쓸 수 있는 전략은 없습니다.** 시행 6,848건을 기록했고 모든 검사를 통과한 셀은 0개입니다. 닫힌 가족 3개가 **왜** 안 되는지가 현재까지의 성과입니다 — 이 프로젝트의 산출물은 '되는 것 하나'가 아니라 '어디서 깨지는지의 지도'이고, `FAIL`은 발표 가능한 결과입니다.
 
 ## 지금까지 무엇을 확립했는가
 
@@ -114,12 +123,12 @@
 - **무엇을 물었나**: Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.
 - **가장 좋았던 규칙** (ETHUSDT): 100 USDT를 30일마다 52번 매수, (총 5,200 USDT, 약 4.2년에 걸쳐), — 가격을 보지 않고 일정대로만, **펀딩 비용 제외** (perpetual에서는 실제로 낼 수 없는 조건), 만기까지 보유.
 - **성과**: 연 수익률 +67.9%, 최대 낙폭 481.5% (투입자본 대비), mwrr_q05 +0.6789
-- **근거의 두께**: 독립 경로 1.02개, 이 가족 시행 1120건
+- **근거의 두께**: 독립 경로 1.02개, 이 가족 시행 1232건
 - **전략이 아닌 이유**:
     - spike  (SPIKE — 이웃 셀이 더 나쁘고 부호도 반대인 봉우리. 메커니즘이 아니라 격자의 모서리)
     - 1.02 paths  (독립 경로 부족 — 겹치는 시작일은 별개의 실험이 아니다)
     - PBO unmeasured  (PBO 미측정 — 같은 horizon을 공유하는 설정이 2개 미만)
-    - p=1.000 vs a random search  (무작위 탐색과 구별 불가)
+    - p=0.725 vs a random search  (무작위 탐색과 구별 불가)
 
 ### H0002 `funding_carry_short` — 닫힘 (트랙 B)
 
@@ -161,11 +170,11 @@
 2. **큐가 비어 있습니다.** 다음 제안은 추론 패스가 만듭니다 (매일 02:25, 08:25, 14:25, 20:25 KST, 증거가 바뀌었을 때만).
 3. **새 메커니즘의 첫 등록은 96셀 탐침으로 제한**됩니다. 살아남으면 새 id로 넓게 열거할 수 있습니다 — 깊이는 결과로 벌어야 합니다.
 4. **펀딩 기반 제안은 재론 금지.** 롱·숏 양쪽 다리가 닫혔습니다. 펀딩은 KT-1이 측정한 **비용**으로만 남고 신호로는 남지 않습니다.
-5. **차단 없음.** medium/low 38건이 열려 있고, 그중 트랙 A 서치 테스트의 귀무모형 오설정이 판정 신뢰도에 직접 걸립니다 (부트스트랩 95분위가 역사상 최댓값의 35배).
+5. **차단 없음.** medium/low 55건이 열려 있고, 그중 트랙 A 서치 테스트의 귀무모형 오설정이 판정 신뢰도에 직접 걸립니다 (부트스트랩 95분위가 역사상 최댓값의 35배).
 
 ## 봉인된 홀드아웃
 
 **0/3 회 사용.** 2024-03-01 이후는 물리적으로 부재하며, 평생 3번만 열립니다. 통과한 셀이 0개인 지금 열 이유는 없습니다.
 
 ---
-시행 6,736건 (N), 마지막 신규 시행 2026-09-03T03:26:42Z. 자세한 표는 `python scripts/status.py`, 기계 상태는 `python scripts/health.py`.
+시행 6,848건 (N), 마지막 신규 시행 2026-09-04T00:05:52Z. 자세한 표는 `python scripts/status.py`, 기계 상태는 `python scripts/health.py`.

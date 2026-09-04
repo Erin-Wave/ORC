@@ -1,7 +1,7 @@
 # ORC cycle report
 
-- run `9f6246125e60` finished 2026-09-03T23:32:42.117553+00:00
-- trials in project: **6736** (+0 this cycle)
+- run `70dae2406666` finished 2026-09-04T01:42:45.338689+00:00
+- trials in project: **6848** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
 
@@ -13,8 +13,8 @@ Best cell per family per symbol, ranked on the metric that survives a horizon ch
 
 | family | symbol | return p.a. | max drawdown | basis | not a finding because |
 |---|---|---:|---:|---|---|
-| H0001 | ETHUSDT | +67.9% | 481.5% | invested | spike, 1.02 paths, PBO unmeasured, p=1.000 vs a random search |
-| H0001 | SOLUSDT | +37.3% | 849.7% | invested | spike, 1.16 paths, PBO unmeasured, p=1.000 vs a random search |
+| H0001 | ETHUSDT | +67.9% | 481.5% | invested | spike, 1.02 paths, PBO unmeasured, p=0.725 vs a random search |
+| H0001 | SOLUSDT | +37.3% | 849.7% | invested | spike, 1.16 paths, PBO unmeasured, p=0.790 vs a random search |
 | H0001 | BTCUSDT | +36.2% | 193.4% | invested | spike, 1.07 paths, PBO unmeasured, search test unmeasured |
 | H0001 | BNBUSDT | +8.1% | 271.9% | invested | spike, 1.36 paths, PBO unmeasured, search test unmeasured |
 | H0001 | XRPUSDT | -5.3% | 139.1% | invested | at or below 0, shape unmeasured, 1.4 paths, PBO unmeasured, search test unmeasured |
@@ -41,7 +41,7 @@ These are not gaps in the map. Each was closed against its own pre-registered ki
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 1120. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 1232. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
