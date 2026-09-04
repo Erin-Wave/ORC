@@ -381,7 +381,41 @@ def test_the_heartbeat_outlives_the_longest_action(monkeypatch, tmp_path):
         else:
             pytest.fail("the heartbeat thread never beat the lock")
     finally:
+        # set() only ASKS the beat to stop; it can already be inside
+        # beat_lock(). Without the join the thread leaks into the NEXT test and
+        # writes the lock under its spy -- which is exactly how this file
+        # produced `assert 3 == 2` on the runner and a PermissionError on the
+        # workstation, on 2026-09-05, from one defect that read as two flakes.
         stop.set()
+        stop.thread.join(timeout=5)
+        assert not stop.thread.is_alive(), "the heartbeat outlived its test"
+
+
+def test_a_stopped_heartbeat_can_be_waited_for(monkeypatch):
+    """start_heartbeat must hand back something a caller can WAIT on.
+
+    It used to return the Event alone, so no caller could tell the difference
+    between "asked to stop" and "stopped" -- and every test after one that
+    started a beat was racing it."""
+    import forever
+    import threading
+
+    monkeypatch.setattr(forever, "HEARTBEAT_S", 0.01)
+    stop = forever.start_heartbeat()
+    assert isinstance(stop, threading.Event)
+    assert isinstance(stop.thread, threading.Thread)
+    assert stop.thread.daemon, "it must not hold the process open"
+
+    stop.set()
+    stop.thread.join(timeout=5)
+    assert not stop.thread.is_alive()
+
+    # And once joined, no further beat can land -- which is the property the
+    # next test in the file depends on.
+    beats = []
+    monkeypatch.setattr(forever, "beat_lock", lambda: beats.append(1))
+    time.sleep(0.05)
+    assert beats == []
 
 
 def test_the_lock_is_beaten_atomically(monkeypatch):

@@ -355,7 +355,18 @@ HEARTBEAT_S = 60
 
 
 def start_heartbeat() -> "threading.Event":
-    """Beat the lock on its own thread for the life of the process."""
+    """Beat the lock on its own thread for the life of the process.
+
+    The returned Event carries the thread as `.thread`, because setting the
+    Event only ASKS the beat to stop and the beat can already be inside
+    beat_lock() at that instant. In the supervisor that does not matter -- the
+    thread is a daemon and the process is exiting -- but a caller that keeps
+    running does not get to assume the beat has stopped just because it said
+    so, and on 2026-09-05 that cost two failures with the same root cause:
+    a PermissionError on the tmp lock locally, and `assert 3 == 2` on the
+    runner when a leaked beat performed a third os.replace inside the NEXT
+    test's spy. Both read as flakes and neither was one.
+    """
     import threading
     stop = threading.Event()
 
@@ -365,6 +376,7 @@ def start_heartbeat() -> "threading.Event":
 
     t = threading.Thread(target=_beat, name="orc-heartbeat", daemon=True)
     t.start()
+    stop.thread = t                     # type: ignore[attr-defined]
     return stop
 
 
