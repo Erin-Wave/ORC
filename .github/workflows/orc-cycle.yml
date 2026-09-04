@@ -87,7 +87,11 @@ jobs:
           PY
 
       - name: Kernel test suite
-        run: python -m pytest tests -q
+        # -m gate, not the whole suite. A test about a briefing's line count
+        # or a screen's wording must not be able to stop research;
+        # tests/conftest.py declares what may. The full suite runs on every
+        # push in orc-guard, so a tooling defect is still loud.
+        run: python -m pytest tests -m gate -q
 
       - name: Research cycle
         id: cycle

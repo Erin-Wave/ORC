@@ -2881,3 +2881,60 @@ def test_the_committed_briefing_is_short_enough_to_be_read():
     cycle = (Path(__file__).resolve().parent.parent / "scripts" / "daily_cycle.py"
              ).read_text(encoding="utf-8")
     assert "briefing.build_short()" in cycle
+
+
+def test_only_an_invariant_may_stop_the_research_cycle(pytestconfig):
+    """오늘 두 번, 이 워크스테이션에 관한 제 테스트가 연구를 멈췄다.
+
+    `orc-cycle`은 `pytest tests -q`를 돌리고 빨간색이면 Research 스텝을
+    건너뛴다. 그래서 `.git/hooks` 존재를 단정한 테스트와, 실제 큐를 읽으면서
+    `GITHUB_ACTIONS`에 의존한 테스트가 각각 연구를 몇 시간씩 멈췄다 —
+    브리핑 줄 수와 화면 문구가 연구를 멈출 권한을 갖고 있었다.
+
+    `CLAUDE.md §5`가 무엇이 결과를 void로 만드는지 말한다: 두 평가기가
+    어긋나는 것. 그래서 게이트는 그것들이고, 나머지는 orc-guard에서 시끄럽게
+    실패한다.
+    """
+    import subprocess
+    import sys
+
+    from orc import config
+
+    # 목록이 썩지 않아야 한다: 이름이 바뀌어 조용히 게이트에서 빠진 불변식이
+    # 이 목록에서 가장 일어나기 쉬운 실패다. 뮤테이션 목록과 같은 장치다.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import conftest
+
+    r = subprocess.run([sys.executable, "-m", "pytest", "tests",
+                        "--collect-only", "-q", "-p", "no:cacheprovider"],
+                       cwd=config.ORC_ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    collected = r.stdout or ""
+    missing = [n for n in conftest.GATE_TESTS if n not in collected]
+    assert not missing, (
+        f"게이트에 선언됐지만 존재하지 않는 테스트: {missing}. 이름이 바뀌면 "
+        "그 불변식은 조용히 게이트에서 빠진다")
+
+    # 게이트에 반드시 있어야 하는 것, 그리고 절대 있어서는 안 되는 것
+    g = subprocess.run([sys.executable, "-m", "pytest", "tests", "-m", "gate",
+                        "--collect-only", "-q", "-p", "no:cacheprovider"],
+                       cwd=config.ORC_ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace").stdout or ""
+    assert "test_analytic_matches_simulator" in g, (
+        "두 평가기의 일치는 이 프로젝트의 하중을 받는 테스트다")
+    assert "test_a_development_load_actually_truncates_at_the_seal" in g
+    assert "test_the_stop_condition_needs_both_halves" in g
+    for tooling in ("test_the_committed_briefing_is_short_enough_to_be_read",
+                    "test_the_installer_wires_both_halves_of_the_gate",
+                    "test_a_frequent_workflow_cannot_hide_the_cycles_verdict"):
+        assert tooling not in g, (
+            f"{tooling}은 도구에 관한 테스트다 — 연구를 멈출 권한이 없어야 한다")
+
+    # 그리고 사이클이 실제로 게이트만 돌려야 한다
+    wf = (config.ORC_ROOT / ".github" / "workflows" / "orc-cycle.yml"
+          ).read_text(encoding="utf-8")
+    assert "pytest tests -m gate -q" in wf
+    guard = (config.ORC_ROOT / ".github" / "workflows" / "orc-guard.yml"
+             ).read_text(encoding="utf-8")
+    assert "python -m pytest tests -q" in guard, (
+        "전체 스위트는 여전히 push마다 돌아야 한다 — 조용해지면 안 된다")
