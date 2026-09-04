@@ -131,6 +131,17 @@ def collect() -> list[str]:
     elif tgt.get("state") == "CANDIDATE_UNVERIFIED":
         news.append(f"ORC: {tgt.get('headline')}")
 
+    # A surviving mutation is not a broken build and nothing goes red for it,
+    # which is exactly why it needs a line here: the suite is green, the code
+    # is correct, and a defect of that shape would not be noticed.
+    mut = _load("MUTATION.json") or {}
+    if mut.get("survived"):
+        news.append(
+            f"ORC mutation gate: {len(mut['survived'])} of {mut.get('mutations')} "
+            f"deliberate defects were NOT caught by the suite "
+            f"({', '.join(mut['survived'])}). The code is fine; the tests are "
+            "not looking. See reports/MUTATION.json")
+
     # Two providers reading one pre-registered sentence differently is a fact
     # about the sentence, and it closes nothing, so without this it would sit in
     # a JSON file nobody opens while the family is re-enumerated every six

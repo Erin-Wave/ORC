@@ -2395,3 +2395,81 @@ def test_the_commit_message_gate_is_installed_as_a_hook():
     hook = config.ORC_ROOT / ".git" / "hooks" / "commit-msg"
     assert hook.exists(), "run: python scripts/precommit.py --install"
     assert "--message" in hook.read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
+# the check that measures the checks
+# --------------------------------------------------------------------------
+def test_every_mutation_still_applies_to_the_code_it_names():
+    """A mutation whose target string has moved tests nothing, silently.
+
+    This is the failure mode of every list of patterns kept beside a codebase:
+    the code is refactored, the pattern stops matching, and the harness goes on
+    reporting a clean kill rate for defects it is no longer able to inject. The
+    harness refuses to run in that state; this fails in the suite, which is
+    where the person who moved the line will see it.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import mutation
+
+    assert mutation.verify_targets() == []
+    assert len(mutation.MUTATIONS) >= 10
+    assert len({m["id"] for m in mutation.MUTATIONS}) == len(mutation.MUTATIONS)
+
+
+def test_the_mutation_gate_is_work_the_supervisor_actually_does():
+    """A check nobody runs is a document.
+
+    It is wired as zero-N work rather than to a commit hook because it takes
+    two minutes: on a hook it would be disabled within a week, and on the daily
+    loop it costs nothing anyone is waiting for.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import forever
+
+    from orc import runstate
+
+    assert "mutation" in runstate.ZERO_N_WORK
+    cmd = forever.plan("mutation")
+    assert cmd and cmd[-1].endswith("mutation.py")
+    # exit 1 is "mutations survived": a verdict about the suite, not a crash,
+    # so it must still count as the work having happened.
+    assert 1 in forever.DONE_EXIT_CODES["mutation"]
+    assert 2 not in forever.DONE_EXIT_CODES["mutation"]
+    assert "reports/MUTATION.json" in forever.COMMIT_PATHS["mutation"]
+
+
+def test_a_surviving_mutation_is_news():
+    """Nothing goes red for it. The suite is green, the code is correct, and a
+    defect of that shape would not be noticed -- which is precisely the kind of
+    quiet that this project's notifier exists for."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import notify
+
+    from orc import config
+
+    reports = config.REPORTS
+    saved = (reports / "MUTATION.json").read_text(encoding="utf-8") \
+        if (reports / "MUTATION.json").exists() else None
+    try:
+        (reports / "MUTATION.json").write_text(json.dumps(
+            {"mutations": 10, "survived": ["the_seal_is_not_applied"]}),
+            encoding="utf-8")
+        assert any("mutation gate" in n for n in notify.collect())
+        (reports / "MUTATION.json").write_text(json.dumps(
+            {"mutations": 10, "survived": []}), encoding="utf-8")
+        assert not any("mutation gate" in n for n in notify.collect())
+    finally:
+        if saved is not None:
+            (reports / "MUTATION.json").write_text(saved, encoding="utf-8")
+        else:                                                  # pragma: no cover
+            (reports / "MUTATION.json").unlink(missing_ok=True)

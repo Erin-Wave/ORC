@@ -839,6 +839,11 @@ ZERO_N_WORK = {
     "robustness": 60 * 6,
     "execution_realism": 60 * 12,
     "survivorship": 60 * 24 * 3,
+    # Breaks the kernel on purpose and asks whether any test notices. Daily,
+    # because it is the only check here that measures the CHECKS: on the day it
+    # was written, three of ten deliberate defects -- including deleting the
+    # holdout truncation from panel.load -- passed a green 248-test suite.
+    "mutation": 60 * 24,
 }
 
 ACTIVITY_LOG = config.REPORTS / "ACTIVITY.jsonl"

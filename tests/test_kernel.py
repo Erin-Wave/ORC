@@ -1049,3 +1049,98 @@ def test_a_higher_timeframe_reading_does_not_depend_on_the_execution_clock():
     both = np.isfinite(a) & np.isfinite(b)
     assert both.sum() > 10
     np.testing.assert_allclose(a[both], b[both], rtol=1e-12, atol=1e-9)
+
+
+# --------------------------------------------------------------------------
+# holes the mutation harness found, 2026-09-04
+#
+# scripts/mutation.py breaks the kernel on purpose and asks whether anything
+# fails.  Three mutations SURVIVED a green 248-test suite, which means the code
+# was right and the oracle was not looking:
+#
+#   the_seal_is_not_applied   deleting `df = holdout.development_slice(df)`
+#                             from panel.load broke NO test. The sealed holdout
+#                             is section 2 of the constitution and the one
+#                             guarantee the whole project rests on, and it was
+#                             enforced by a line nobody was watching.
+#   drawdown_upside_down      inverting max_drawdown broke no test either, and
+#                             it is half of the owner's stop condition: every
+#                             candidate would clear TARGET_MAX_DRAWDOWN.
+#   cci_partial_window        the carry rules are tested for refusing a partial
+#                             window; the CCI path was not.
+#
+# These three tests exist so that those three mutations die. A test written
+# because a mutation survived is the only kind that is known to be load-bearing
+# before it ever fails for real.
+# --------------------------------------------------------------------------
+def test_a_development_load_actually_truncates_at_the_seal(tmp_path, monkeypatch):
+    """Not that it refuses a sealed read -- that the ordinary read is cut.
+
+    The existing tests cover the door: `development_only=False` and
+    `sealed_only=True` both raise unless a final test is open. Nothing covered
+    the floor, which is that the DEFAULT path physically drops every bar at or
+    after HOLDOUT_START. That is the line research calls thousands of times a
+    day and the only thing standing between it and the sealed period.
+    """
+    import polars as pl
+
+    from orc import config
+    from orc.facts import panel as panel_mod
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    d = tmp_path / "panel_1h"
+    d.mkdir()
+
+    # 40 days of clean hourly bars straddling the seal.
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(20 * 24, "h")
+    ts = start + np.arange(40 * 24) * np.timedelta64(1, "h")
+    n = ts.size
+    px = 100.0 + np.arange(n) * 0.01
+    pl.DataFrame({"ts": ts.astype("datetime64[ms]"), "open": px, "high": px + 1.0,
+                  "low": px - 1.0, "close": px, "volume": np.ones(n)}
+                 ).write_parquet(d / "TESTUSDT.parquet")
+
+    p = panel_mod.load("TESTUSDT", "1h", development_only=True, with_funding=False)
+    seal = np.datetime64(str(config.HOLDOUT_START), "ms")
+    assert p.holdout_state == panel_mod.DEVELOPMENT
+    assert len(p) == 20 * 24, "half the file is on the sealed side of the seal"
+    assert p.ts.astype("datetime64[ms]").max() < seal, (
+        "a development load handed research a bar at or past the seal")
+
+
+def test_max_drawdown_is_the_fall_from_the_peak_not_the_rise_to_it():
+    """Half of the stop condition, pinned to a number computed by hand.
+
+    Inverted, this returns ~0 for every curve that ever made a new high, so
+    every candidate clears TARGET_MAX_DRAWDOWN and `orc.target` declares the
+    research finished on the first cell it sees.
+    """
+    from orc.kernel import metrics_fc
+
+    assert metrics_fc.max_drawdown(np.array([100.0, 200.0, 100.0])) == pytest.approx(0.5)
+    assert metrics_fc.max_drawdown(np.array([100.0, 90.0, 120.0, 60.0])) == pytest.approx(0.5)
+    # a curve that only rises has no drawdown, and that is 0.0 rather than a
+    # negative number: the metric is a magnitude of loss.
+    assert metrics_fc.max_drawdown(np.array([1.0, 2.0, 3.0])) == 0.0
+    assert metrics_fc.max_drawdown(np.array([100.0, 50.0])) == pytest.approx(0.5)
+
+
+def test_a_window_longer_than_the_series_is_no_reading_rather_than_a_crash():
+    """The CCI path's version of "a partial window is not evidence".
+
+    `carry_funding` has this covered on the funding side. The price side did
+    not, and the harness proved it: relaxing the guard to `n < 1` left the
+    suite green, and every caller with a short history would then have gone on
+    to `sliding_window_view` on an array too small for the window.
+    """
+    from orc.eval.signal_rules import _rolling_mean_and_mad
+
+    x = np.arange(5, dtype=np.float64)
+    mean, mad = _rolling_mean_and_mad(x, period=20)
+    assert mean.shape == mad.shape == x.shape
+    assert np.isnan(mean).all() and np.isnan(mad).all()
+
+    # and the boundary: exactly enough bars for one window is a reading
+    mean, mad = _rolling_mean_and_mad(x, period=5)
+    assert np.isnan(mean[:4]).all()
+    assert mean[4] == pytest.approx(2.0)

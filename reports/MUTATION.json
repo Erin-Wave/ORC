@@ -1,0 +1,123 @@
+{
+  "generated_utc": "2026-09-04T05:04:08.832884+00:00",
+  "mutations": 10,
+  "killed": 10,
+  "survived": [],
+  "baseline_deselected": [
+    "tests/test_forever.py::test_the_commit_paths_name_files_and_never_a_wildcard",
+    "tests/test_forever.py::test_the_workflow_keeps_the_runner_resident_and_out_of_the_budget",
+    "tests/test_protocol.py::test_the_ledger_is_pointed_at_the_union_driver",
+    "tests/test_protocol.py::test_the_constitution_agrees_with_the_kill_test_it_quotes",
+    "tests/test_runstate.py::test_the_real_schedule_points_at_the_real_repository"
+  ],
+  "seconds": 110.7,
+  "results": [
+    {
+      "id": "fill_bar_extremes",
+      "file": "orc/eval/signal.py",
+      "why": "lets a target be hit by a wick that printed BEFORE the fill. This is a defect that really happened: a flat series with high[5]=130 and a fill at close[5]=100 returned a closed trade with bars_held 0 and +20%.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_long_and_short_are_exact_mirrors_without_costs",
+        "tests/test_kernel.py::test_a_short_is_paid_the_funding_a_long_pays",
+        "tests/test_kernel.py::test_a_signal_is_filled_on_the_next_bar_never_its_own",
+        "tests/test_kernel.py::test_stop_and_target_in_one_bar_resolve_against_us"
+      ],
+      "seconds": 8.6
+    },
+    {
+      "id": "funding_before_the_fill",
+      "file": "orc/eval/signal.py",
+      "why": "credits a full-notional settlement to a position that did not yet exist, on roughly one trade in eight, in a family whose entire subject is funding income.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_a_settlement_before_the_fill_is_not_collected"
+      ],
+      "seconds": 8.3
+    },
+    {
+      "id": "target_wins_the_tie",
+      "file": "orc/eval/signal.py",
+      "why": "an hourly bar cannot say whether the stop or the target was touched first, and resolving it in our own favour is how a backtest invents money.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_stop_and_target_in_one_bar_resolve_against_us"
+      ],
+      "seconds": 10.7
+    },
+    {
+      "id": "higher_timeframe_lookahead",
+      "file": "orc/eval/signal_rules.py",
+      "why": "makes the 00:00-04:00 candle readable at 01:00, so the rule decides on the high, low and close of hours that have not happened. It looks like a working strategy because it is one, for someone who can see three hours ahead.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_a_four_hour_reading_is_not_available_until_its_candle_closes"
+      ],
+      "seconds": 8.2
+    },
+    {
+      "id": "cci_scaled_by_stdev",
+      "file": "orc/eval/signal_rules.py",
+      "why": "a standard deviation runs about 1.25x the mean absolute deviation, so every level a hypothesis pre-registered would mean about 80 % of what it says.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_cci_is_the_textbook_definition"
+      ],
+      "seconds": 8.6
+    },
+    {
+      "id": "cci_partial_window",
+      "file": "orc/eval/signal_rules.py",
+      "why": "a statistic computed on however many observations happened to exist is a statistic fitted to the start of the archive.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_a_window_longer_than_the_series_is_no_reading_rather_than_a_crash"
+      ],
+      "seconds": 8.4
+    },
+    {
+      "id": "carry_reads_the_bar_not_the_settlement",
+      "file": "orc/eval/signal_rules.py",
+      "why": "divides by the window instead of by the settlements in it, so 0.0001 stops meaning 0.01 % per settlement and every pre-registered threshold silently means something else.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_a_carry_signal_stays_flat_until_its_window_is_full",
+        "tests/test_kernel.py::test_carry_reads_the_rate_per_settlement_not_per_bar",
+        "tests/test_protocol.py::test_the_per_settlement_mean_counts_the_zero_rate_ones"
+      ],
+      "seconds": 11.1
+    },
+    {
+      "id": "drawdown_upside_down",
+      "file": "orc/kernel/metrics_fc.py",
+      "why": "max drawdown is half of the owner's stop condition. Inverted it reports ~0 for every curve, and every candidate clears TARGET_MAX_DRAWDOWN.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_max_drawdown_is_the_fall_from_the_peak_not_the_rise_to_it"
+      ],
+      "seconds": 8.3
+    },
+    {
+      "id": "the_seal_is_not_applied",
+      "file": "orc/facts/panel.py",
+      "why": "research would read the sealed period on every load. Nothing else in this project matters if this one is not caught.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_kernel.py::test_a_development_load_actually_truncates_at_the_seal"
+      ],
+      "seconds": 8.5
+    },
+    {
+      "id": "unmeasured_counts_as_passed",
+      "file": "orc/orchestrator/verdict.py",
+      "why": "a check that never ran becomes a check that passed, which is the easiest possible way for a cell to clear every bar.",
+      "killed": true,
+      "killed_by": [
+        "tests/test_protocol.py::test_a_spike_is_not_a_finding_however_large",
+        "tests/test_protocol.py::test_a_pbo_that_was_never_computed_is_not_a_pass",
+        "tests/test_protocol.py::test_a_pbo_measured_on_other_cells_does_not_clear_this_one"
+      ],
+      "seconds": 8.6
+    }
+  ]
+}

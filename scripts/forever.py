@@ -96,6 +96,7 @@ TIMEOUTS_S = {
     "robustness": 1800,
     "execution_realism": 3600,
     "survivorship": 3600,
+    "mutation": 3600,
 }
 
 # Exit codes that mean THE WORK HAPPENED, per action.
@@ -125,6 +126,11 @@ DONE_EXIT_CODES = {
     "robustness": (0,),
     "execution_realism": (0, 1),
     "survivorship": (0,),
+    # 1 means mutations SURVIVED, which is a verdict about the test suite and
+    # not a failure of the run: the work happened and its answer was bad news.
+    # 2 is the run measuring nothing, and that is the only outcome here that
+    # must not reset the clock.
+    "mutation": (0, 1),
 }
 
 # What each action changes, so the commit names its paths.  Section 10: never
@@ -138,6 +144,7 @@ COMMIT_PATHS = {
     "robustness": ("reports/ROBUSTNESS.json",),
     "execution_realism": ("reports/EXECUTION_REALISM.json",),
     "survivorship": ("reports/KT3_SURVIVORSHIP.json",),
+    "mutation": ("reports/MUTATION.json",),
 }
 
 # Committed with every action, whatever the action was.  ACTIVITY.jsonl is the
@@ -328,6 +335,8 @@ def plan(action: str) -> list[str] | None:
         return [py, str(config.ORC_ROOT / "scripts" / "kernel_review.py")]
     if action == "robustness":
         return [py, str(config.ORC_ROOT / "scripts" / "robustness.py")]
+    if action == "mutation":
+        return [py, str(config.ORC_ROOT / "scripts" / "mutation.py")]
     if action == "survivorship":
         return [py, str(config.ORC_ROOT / "scripts" / "kt3_survivorship.py"), "120"]
     if action == "execution_realism":
