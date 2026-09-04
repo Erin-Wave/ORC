@@ -184,8 +184,20 @@ def test_weakening(path: str, before: str | None, after: str | None) -> list[str
 
     out = []
     gone = sorted(was - now)
-    if gone:
-        out.append(f"{path}: {len(gone)} test(s) removed -- {', '.join(gone[:6])}"
+    # A rename is not a weakening, and the first version of this could not tell
+    # the two apart: renaming test_the_commit_message_gate_is_installed_as_a_hook
+    # to test_the_installer_wires_both_halves_of_the_gate read as a deleted
+    # test and would have demanded a WEAKENS-TESTS: line for a commit that
+    # deleted nothing. A gate that cries wolf is a gate people learn to bypass,
+    # so the count decides and the names only describe.
+    #
+    # What this deliberately cannot catch: a test deleted and replaced by a
+    # weaker one, which keeps the count level. No text comparison can -- that
+    # is what scripts/mutation.py is for, and it is why the mutation gate runs
+    # daily rather than as a formality.
+    if gone and len(now) < len(was):
+        out.append(f"{path}: {len(was) - len(now)} fewer test(s); gone from this "
+                   f"file: {', '.join(gone[:6])}"
                    f"{' ...' if len(gone) > 6 else ''}")
     a, b = _skips(before), _skips(after)
     if a is not None and b is not None and b > a:

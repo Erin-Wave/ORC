@@ -181,6 +181,21 @@ def local_tasks(tasks: list[dict] | None = None,
     else:
         out.append((OK, "schedule -> repository",
                     f"every ORC task points at {config.ORC_ROOT}"))
+
+    # Whether the gate is wired up on THIS machine, which is a question about a
+    # checkout and not about the code -- so it belongs here and not in the
+    # suite. A test asserting it took the first server-side gate run red: true
+    # on the workstation, false in every fresh clone and on every CI runner.
+    missing = [h for h in ("pre-commit", "commit-msg")
+               if not (config.ORC_ROOT / ".git" / "hooks" / h).exists()]
+    if missing:
+        out.append((BAD, "git 훅",
+                    f"{', '.join(missing)} 미설치 — 이 체크아웃에서는 커밋이 "
+                    "검사 없이 통과합니다. python scripts/precommit.py --install"))
+    else:
+        out.append((OK, "git 훅",
+                    "pre-commit(테스트·원장·새 파일) + commit-msg(테스트 약화·"
+                    "동결 임계값·변경 예산) 설치됨"))
     for t in tasks:
         sev, note = runstate.task_result_note(t.get("result"))
         # A launch failure recorded against paths that are now correct is

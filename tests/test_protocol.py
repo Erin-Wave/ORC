@@ -735,11 +735,40 @@ def test_the_per_settlement_mean_counts_the_zero_rate_ones(tmp_path):
         "the old count put this window on the other side of enter_rate")
 
 
-def test_sealed_bars_are_refused_outside_a_final_test():
+def _archive_with_one_panel(tmp_path, monkeypatch, symbol="BTCUSDT", clock="1h"):
+    """A real parquet panel on disk, straddling the seal, in a temp archive.
+
+    These tests used to open the WORKSTATION's BTCUSDT panel. That is a 9.7 GB
+    archive nobody else has: on the GitHub runner `load` raised
+    FileNotFoundError from the existence check that runs BEFORE the holdout
+    gate, so the two tests guarding the sealed door failed for a reason that
+    had nothing to do with the door -- and the first server-side gate run went
+    red on them. A test about the seal must not need the archive to say so.
+    """
+    import numpy as np
+    import polars as pl
+
+    from orc import config
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    d = tmp_path / f"panel_{clock}"
+    d.mkdir(parents=True, exist_ok=True)
+    step = np.timedelta64(1, "m" if clock == "1m" else "h")
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - 240 * np.timedelta64(1, "h")
+    ts = (start + np.arange(480) * step).astype("datetime64[ms]")
+    px = 100.0 + np.arange(ts.size) * 0.01
+    pl.DataFrame({"ts": ts, "open": px, "high": px + 1.0, "low": px - 1.0,
+                  "close": px, "volume": np.ones(ts.size)}
+                 ).write_parquet(d / f"{symbol}.parquet")
+    return d
+
+
+def test_sealed_bars_are_refused_outside_a_final_test(tmp_path, monkeypatch):
     """The counter used to record how many times someone filled in the form,
     not how many times the sealed period was read."""
     from orc.facts import panel as panel_mod
 
+    _archive_with_one_panel(tmp_path, monkeypatch)
     assert not holdout.sealed_reads_permitted()
     with pytest.raises(holdout.HoldoutViolation, match="no final test is open"):
         panel_mod.load("BTCUSDT", "1h", development_only=False)
@@ -821,12 +850,13 @@ def test_a_non_finite_funding_rate_cannot_make_a_path_immortal():
                  funding_rate=fr)
 
 
-def test_a_final_test_can_ask_for_the_sealed_span_alone():
+def test_a_final_test_can_ask_for_the_sealed_span_alone(tmp_path, monkeypatch):
     """The gated door originally offered only the two spans concatenated --
     64.6 % of a BTCUSDT full panel is development history -- so the one
     irreversible measurement would be taken mostly in-sample."""
     from orc.facts import panel as panel_mod
 
+    _archive_with_one_panel(tmp_path, monkeypatch)
     assert not holdout.sealed_reads_permitted()
     with pytest.raises(holdout.HoldoutViolation, match="no final test is open"):
         panel_mod.load("BTCUSDT", "1h", sealed_only=True)
@@ -2303,6 +2333,26 @@ def test_a_deleted_test_needs_a_sentence_in_the_message():
     assert guard.has_marker("fix\n\nWEAKENS-TESTS: test_b measured nothing\n", "tests")
 
 
+def test_renaming_a_test_is_not_deleting_it():
+    """The count decides; the names only describe.
+
+    This case is why: renaming test_the_commit_message_gate_is_installed_as_a_hook
+    to test_the_installer_wires_both_halves_of_the_gate would have been refused
+    as a deleted test, in a commit that deleted nothing. A gate that cries wolf
+    is a gate people learn to bypass with --no-verify, which costs more than
+    the case it was trying to catch.
+    """
+    from orc import guard
+
+    before = "def test_old_name():\n    assert 1\n\n\ndef test_b():\n    assert 2\n"
+    after = "def test_new_name():\n    assert 1\n\n\ndef test_b():\n    assert 2\n"
+    assert guard.test_weakening("tests/test_x.py", before, after) == []
+
+    # and one fewer test is still one fewer, whatever the survivors are called
+    fewer = "def test_renamed_and_alone():\n    assert 1\n"
+    assert guard.test_weakening("tests/test_x.py", before, fewer)
+
+
 def test_a_test_that_no_longer_runs_is_a_weakening():
     """A skip is not a pass.  It is the cheapest way to make a suite green and
     it leaves the count of tests unchanged, so counting alone cannot see it."""
@@ -2395,18 +2445,33 @@ def test_the_change_budget_does_not_count_generated_files():
     assert "over the budget" in guard.over_budget(big)
 
 
-def test_the_commit_message_gate_is_installed_as_a_hook():
+def test_the_installer_wires_both_halves_of_the_gate(tmp_path, monkeypatch):
     """A gate that is not wired to anything is a document.
+
+    This asserts the INSTALLER, not this checkout. The first version asserted
+    that .git/hooks/commit-msg exists here, which is true on the workstation
+    and false in every fresh clone and on every CI runner -- so it took the
+    first server-side gate run red for a fact about one machine. Whether the
+    hooks are installed on THIS machine is a question for health.py, which is
+    what that screen is for.
 
     The marker checks CANNOT live in pre-commit: at that point
     .git/COMMIT_EDITMSG still holds the previous commit's text, so a marker
     read there answers about the wrong commit.
     """
-    from orc import config
+    import sys
 
-    hook = config.ORC_ROOT / ".git" / "hooks" / "commit-msg"
-    assert hook.exists(), "run: python scripts/precommit.py --install"
-    assert "--message" in hook.read_text(encoding="utf-8")
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import precommit
+
+    (tmp_path / ".git" / "hooks").mkdir(parents=True)
+    monkeypatch.setattr(precommit, "ROOT", tmp_path)
+    assert precommit.main(["--install"]) == 0
+
+    pre = (tmp_path / ".git" / "hooks" / "pre-commit").read_text(encoding="utf-8")
+    msg = (tmp_path / ".git" / "hooks" / "commit-msg").read_text(encoding="utf-8")
+    assert "precommit.py" in pre and "--message" not in pre
+    assert "precommit.py" in msg and '--message "$1"' in msg
 
 
 # --------------------------------------------------------------------------
