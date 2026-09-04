@@ -109,7 +109,13 @@ def worker_state() -> list[tuple[str, str, str]]:
         out.append((WARN, f"{x['workflowName']} #{x['databaseId']}",
                     f"RUNNING NOW, started {_ago(x['createdAt'])} "
                     f"(a full cycle takes ~40m)"))
-    for wf in ("orc-cycle", "orc-watchdog"):
+    # orc-guard is here because a red one means the LAST PUSH went out on a
+    # check nobody could confirm had run, and because twice on 2026-09-04 it
+    # was pushed and not read: the first red run was a test of mine that only
+    # passes on this workstation, and the same test then failed the cycle's own
+    # gate step and stopped research for two hours. A gate whose verdict is not
+    # on the screen the owner checks is a gate that reports to nobody.
+    for wf in ("orc-cycle", "orc-guard", "orc-watchdog"):
         done = [x for x in runs if x["workflowName"] == wf and x["status"] == "completed"]
         if not done:
             out.append((DIM, wf, "no completed run in the last 6"))
