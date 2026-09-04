@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T00:13:09.302147+00:00",
+  "utc": "2026-09-04T01:02:11.774754+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,16 +7,32 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": "skipped: exit 1: ",
-    "surfaces": "skipped: exit 1: ",
-    "tree_violations": [
+    "propose": [
+      "H0012.json"
+    ],
+    "adversary": [
       {
-        "provider": "codex",
-        "files": [
-          ".github/workflows/orc-cycle.yml"
+        "file": "H0012.json",
+        "verdict": "KILL",
+        "reason": "[claude] I ran the entire proposed 48-cell grid through run_trial in ~40 seconds with zero ledger rows, and five of the six kill clauses are already resolved to 'survives': L(1.0,true) = .570/.484/.000/.800/.724/.933 (clause 1 needs 4 below .05, gets 1), L(1.0,false) = 0.000 on all six (clause 2 can never fire), L(x,true) monotone on all 6 (clause 3), L(0.25,true)>.05 only on ADA (clause 4), and DOGE holds both the largest F(1.0)=3.557 and the 2nd-largest L (clause 5) — so registration buys a pre-determined outcome plus the section-6 right to enumerate 2000 cells next, for a map a zero-row script already draws. Compounding it: the rule shape is H0001's exactly (gate none, TP/SL null, unconditional weekly ladder) with two of its own numeric fields moved, the same criterion-4 defect that killed H0011 one pass earlier, and the 24 include_funding=false cells are pure padding — liquidation_rate 0.000 on every one and tm_q05 affine in leverage to under 2e-3, with funding_frac exactly proportional (3.000000000, 2.000000000). | [codex] This re-litigates the already-closed KT-1 perpetual-long DCA family and merely sweeps the leverage parameter of the same weekly accumulator; section 6 explicitly says an untried numeric axis is not a new rule shape. The liquidation-based kill conditions are concrete, but they do not justify permanently adding 48 rows for a finer grid over a closed mechanism.",
+        "payer_is_structural": true,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 48,
+        "killed_by": "adversary:claude,codex",
+        "reviewed_by": [
+          "claude",
+          "codex"
         ]
       }
     ],
-    "commit": "refused: the commit was refused:\n\n  - the test suite is not green:\nE       AssertionError: assert 'CONTINUE' == 'CLOSE'\nE         \nE         - CLOSE\nE         + CONTINUE\n\ntests\\test_protocol.py:1339: AssertionError\n---------------------------- Captured stdout call -----------------------------\n  H9300 continue  \n=========================== short test summary info ===========================\nFAILED tests/te"
+    "surfaces": "written",
+    "tree_violations": [
+      {
+        "provider": "claude",
+        "files": [
+          "configs/proposed/"
+        ]
+      }
+    ]
   }
 }

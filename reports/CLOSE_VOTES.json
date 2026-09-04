@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T00:13:09.327534+00:00",
+  "utc": "2026-09-04T01:02:11.801992+00:00",
   "providers": [
     "claude",
     "codex"
@@ -14,13 +14,17 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 (include_funding=false, n_contributions=52, stride_days=30)",
-            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 (include_funding=false, n_contributions=52, stride_days=30)",
-            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 (include_funding=false, n_contributions=156, stride_days=7)",
-            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 (include_funding=true, n_contributions=156, stride_days=7)",
-            "1.0 미만인 심볼: ADAUSDT 0.5958112554492814, AVAXUSDT 0.6183911094027328, LTCUSDT 0.6868948254289569, DOGEUSDT 0.8601961484914038, XRPUSDT 0.9227769940078271"
+            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298",
+            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731",
+            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884",
+            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576",
+            "XRPUSDT primary_metric_best (tm_q05) = 0.9227769940078271",
+            "DOGEUSDT primary_metric_best (tm_q05) = 0.8601961484914038",
+            "LTCUSDT primary_metric_best (tm_q05) = 0.6868948254289569",
+            "AVAXUSDT primary_metric_best (tm_q05) = 0.6183911094027328",
+            "ADAUSDT primary_metric_best (tm_q05) = 0.5958112554492814"
           ],
-          "reason": "조항이 지목하는 지표는 tm_q05이고, scales 블록에 따라 그 값은 primary_metric_best다(손익분기 1.0). 조항은 '어떤 (symbol, stride, horizon) 셀도 tm_q05 1.0을 넘지 못할 때'만 성립하는 전칭 부정문인데, ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619, BNBUSDT 1.1261 네 심볼이 이미 1.0을 초과하는 셀을 가지므로 반례가 넷이다. 한 개의 반례만으로도 조항은 성립하지 않으며, 나머지 다섯 심볼(0.5958~0.9228)이 1.0에 못 미치는 것은 조항이 요구하는 조건이 아니다. 순위 지표인 mwrr_q05는 손익분기가 0.0인 수익률이라 이 조항의 판정에 쓰지 않았다. 참고로 kill condition에 없는 사실들 — 네 심볼 모두 shape가 SPIKE이고, ETHUSDT p=0.725 / SOLUSDT p=0.79로 search test가 INDISTINGUISHABLE_FROM_SEARCH이며, PBO는 세 심볼 모두 'fewer than two configurations share a horizon'로 계산 불가, independent_paths_best가 1.02~1.40에 불과하다 — 는 증거의 질을 크게 깎지만, 사전 등록된 조항에 담기지 않은 근거로 닫는 것은 사후 판단이므로 평결은 CONTINUE다."
+          "reason": "조항이 지명한 지표는 tm_q05이며, scales 블록이 이를 primary_metric_best로 명시하고 손익분기는 1.0입니다. 조항은 '어떤 셀도 1.0을 넘지 못하면 폐기'라는 전칭 부정 조건이므로, 1.0을 넘는 셀이 하나라도 있으면 충족되지 않습니다. 실제로 ETHUSDT 3.6056116382051298, BTCUSDT 2.051039115127731, SOLUSDT 1.6619021758095884, BNBUSDT 1.1260625166054576 — 아홉 심볼 중 네 개가 1.0을 초과합니다. 따라서 조항은 충족되지 않았고 평결은 CONTINUE입니다. 랭킹 지표인 mwrr_q05(손익분기 0.0)는 조항이 지명한 지표가 아니므로 판정에 사용하지 않았습니다. 다만 조항 밖의 사실로 기록해 둡니다: search_test는 ETHUSDT p_value 1.0, SOLUSDT p_value 1.0으로 둘 다 INDISTINGUISHABLE_FROM_SEARCH이고, shape_diagnostic은 양의 피크를 가진 네 심볼 모두 SPIKE이며, PBO는 세 심볼 전부 'fewer than two configurations share a horizon'로 계산 불가입니다. 이는 사전 등록된 kill condition에 없는 근거이므로 폐기 사유가 될 수 없지만, 표면이 선택 가능한 정보를 담고 있지 않다는 점은 다음 판단에 남겨 둡니다."
         },
         "codex": {
           "verdict": "CONTINUE",
@@ -28,17 +32,12 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ADAUSDT primary_metric_best (tm_q05): 0.5958112554492814",
-            "AVAXUSDT primary_metric_best (tm_q05): 0.6183911094027328",
             "BNBUSDT primary_metric_best (tm_q05): 1.1260625166054576",
             "BTCUSDT primary_metric_best (tm_q05): 2.051039115127731",
-            "DOGEUSDT primary_metric_best (tm_q05): 0.8601961484914038",
             "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
-            "LTCUSDT primary_metric_best (tm_q05): 0.6868948254289569",
-            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884",
-            "XRPUSDT primary_metric_best (tm_q05): 0.9227769940078271"
+            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
           ],
-          "reason": "The clause closes the family only if no cell has tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Therefore the stated no-cell condition is false and the kill clause is not met."
+          "reason": "The clause is not met because multiple reported cells have the named 5th-percentile terminal multiple above 1.0: BNBUSDT is 1.1260625166054576, BTCUSDT is 2.051039115127731, ETHUSDT is 3.6056116382051298, and SOLUSDT is 1.6619021758095884. Therefore it is false that no cell reaches a value above 1.0."
         }
       },
       "unreachable": {},
