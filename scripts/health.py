@@ -265,6 +265,38 @@ def research_state(tasks: list[dict] | None = None,
     out.append((OK, "cells clearing every check",
                 f"{cleared} of {judged} reported cells. Zero is a normal, "
                 "publishable result here -- FAIL is the product"))
+
+    # Where the run leaves the owner's stop condition. On one screen because
+    # the alternative is three files nobody opens between sessions.
+    tgt = _load("TARGET.json") or {}
+    if tgt:
+        t = tgt.get("target", {})
+        best = tgt.get("best_cagr") or {}
+        near = f", MDD 25% 이내 최고 {near_c['cagr']:+.1%}" if (
+            near_c := tgt.get("best_cagr_within_drawdown")) else ""
+        out.append((OK if tgt.get("state") == "NO_CANDIDATE" else WARN,
+                    "종료 조건",
+                    f"{tgt.get('state')} — 목표 CAGR {t.get('cagr', 0):.0%} / MDD "
+                    f"{t.get('max_drawdown', 0):.0%}; 최고 "
+                    f"{best.get('cagr', float('nan')):+.1%} "
+                    f"(MDD {best.get('max_drawdown', float('nan')):.0%})" + near))
+
+    # A surviving mutation is the one bad state in this whole screen that makes
+    # nothing else look wrong: the suite is green, the code is correct, and a
+    # defect of that shape would not be noticed.
+    mut = _load("MUTATION.json") or {}
+    if mut:
+        n_s = len(mut.get("survived") or [])
+        aged = _ago(mut.get("generated_utc"))
+        out.append((BAD if n_s else OK, "뮤테이션 게이트",
+                    (f"{n_s}개 결함을 테스트가 못 잡음 "
+                     f"({', '.join(mut['survived'][:3])}) — 코드가 아니라 "
+                     "테스트의 구멍입니다" if n_s else
+                     f"{mut.get('killed')}/{mut.get('mutations')} 결함 모두 "
+                     f"테스트가 잡음") + f"; 마지막 실행 {aged}"))
+    else:
+        out.append((WARN, "뮤테이션 게이트",
+                    "한 번도 실행되지 않음 — python scripts/mutation.py"))
     return out
 
 

@@ -1,0 +1,101 @@
+name: orc-guard
+
+# The gate the workstation's git hooks cannot be trusted to have run.
+#
+# scripts/precommit.py enforces the suite and orc/guard.py enforces that the
+# ORACLE is not quietly loosened -- a deleted test, a new skip, a frozen
+# threshold rewritten, the holdout ceiling raised. Both live in local hooks,
+# and a local hook is a request: `git commit --no-verify` skips it, a fresh
+# checkout does not have it installed until someone runs --install, and the
+# GitHub worker has never had one at all. Every push from the 24-hour
+# supervisor therefore reached the remote on the strength of a check nobody
+# could confirm had run.
+#
+# This runs the identical code on the identical commit, on a machine the agent
+# does not control. It cannot block the push -- the commit already exists -- so
+# what it buys is that a bypass is LOUD: a red run on the default branch, in
+# health.py's task list, next to the cycle.
+#
+# It never registers a hypothesis, never opens the holdout, and never writes to
+# the repository. Read-only permissions, and nothing here can add a row to N.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orc-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # The gate reads the diff of the pushed commit against its parent, so it
+      # needs the parent. A shallow clone has neither.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+
+      - name: The suite must be green
+        run: python -m pytest tests -q
+
+      # The commit-msg half, re-run against the commit that was actually
+      # pushed. `git reset --soft HEAD~1` puts that commit's changes back in
+      # the index, which is exactly the state the hook reads, and then the same
+      # function judges the same diff against the same message.
+      - name: Was the oracle loosened without saying so?
+        if: github.event_name == 'push' && github.event.before != ''
+        run: |
+          set -euo pipefail
+          git log -1 --pretty=%B > /tmp/orc_commit_msg.txt
+          echo "--- the message this commit was made with ---"
+          cat /tmp/orc_commit_msg.txt
+          echo "---"
+          git reset --soft HEAD~1
+          python scripts/precommit.py --message /tmp/orc_commit_msg.txt
+
+      # Two caveats, stated here rather than discovered from a red run.
+      #
+      # This runner has no facts/ archive, so the two tests that open a real
+      # panel cannot pass and the harness deselects them from its baseline. It
+      # therefore measures slightly less than the nightly local run, which has
+      # the panels. A SURVIVOR reported here must be reproduced locally with
+      # `python scripts/mutation.py --only <id>` before it is believed.
+      #
+      # And a push of several commits is judged on its tip. The gate is a net
+      # under an unattended agent, not a proof about every commit in history.
+      #
+      # Mutation testing is the only check here that measures the CHECKS: it
+      # breaks the kernel on purpose and asks whether any test notices. Three
+      # of ten deliberate defects passed a green 248-test suite the day it was
+      # written, including deleting the holdout truncation from panel.load.
+      #
+      # Only when the kernel or the tests moved. It costs about four minutes,
+      # and running it on a commit that touched a report would teach everyone
+      # to ignore it.
+      - name: Do the tests actually catch anything?
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^(orc/|tests/|scripts/mutation.py)'; then
+            python scripts/mutation.py
+          else
+            echo "no kernel or test file changed; the mutation gate has nothing new to measure"
+          fi

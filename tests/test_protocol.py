@@ -2519,3 +2519,52 @@ def test_the_code_hash_covers_every_file_that_can_change_a_number(tmp_path):
         "the same code with different line endings hashed differently, so "
         "trials run on this workstation could never dedupe against the "
         "runner's, and every crossing added a fresh copy of one measurement")
+
+
+def test_the_server_side_gate_runs_the_same_checks_as_the_local_hook():
+    """A local hook is a request.
+
+    `git commit --no-verify` skips it, a fresh checkout does not have it until
+    someone runs --install, and the GitHub worker has never had one. Every push
+    from the 24-hour supervisor reached the remote on the strength of a check
+    nobody could confirm had run. This asserts the workflow that re-runs it on
+    a machine the agent does not control still does so.
+    """
+    from orc import config
+
+    wf = config.ORC_ROOT / ".github" / "workflows" / "orc-guard.yml"
+    assert wf.exists(), "the server-side gate is the only one a bypass cannot skip"
+    text = wf.read_text(encoding="utf-8")
+
+    assert "python -m pytest tests -q" in text
+    assert "scripts/precommit.py --message" in text, (
+        "without this the marker rules exist only in a local hook")
+    assert "scripts/mutation.py" in text
+    # It reads the diff of the pushed commit against its parent, and a shallow
+    # clone has no parent.
+    assert "fetch-depth: 2" in text
+    # Read-only: a gate that can write to the repository is a second autonomous
+    # actor, and this one exists to constrain the first.
+    assert "contents: read" in text
+    assert "contents: write" not in text
+
+
+def test_the_owner_screen_carries_the_two_answers_that_are_easiest_to_miss():
+    """health.py is the one screen checked between sessions.
+
+    Both of these are quiet by nature: nothing goes red when a candidate meets
+    the stop condition, and nothing goes red when a deliberate defect walks
+    past the suite. A file each would be a file each that nobody opens.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import health
+
+    src = (Path(__file__).resolve().parent.parent / "scripts" / "health.py")
+    text = src.read_text(encoding="utf-8")
+    assert 'TARGET.json' in text and 'MUTATION.json' in text
+    rows = health.research_state()
+    labels = {label for _, label, _ in rows}
+    assert "종료 조건" in labels
+    assert "뮤테이션 게이트" in labels
