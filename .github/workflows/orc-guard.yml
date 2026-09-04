@@ -56,46 +56,53 @@ jobs:
       - name: The suite must be green
         run: python -m pytest tests -q
 
-      # The commit-msg half, re-run against the commit that was actually
-      # pushed. `git reset --soft HEAD~1` puts that commit's changes back in
-      # the index, which is exactly the state the hook reads, and then the same
-      # function judges the same diff against the same message.
-      - name: Was the oracle loosened without saying so?
-        if: github.event_name == 'push' && github.event.before != ''
-        run: |
-          set -euo pipefail
-          git log -1 --pretty=%B > /tmp/orc_commit_msg.txt
-          echo "--- the message this commit was made with ---"
-          cat /tmp/orc_commit_msg.txt
-          echo "---"
-          git reset --soft HEAD~1
-          python scripts/precommit.py --message /tmp/orc_commit_msg.txt
 
-      # Two caveats, stated here rather than discovered from a red run.
-      #
-      # This runner has no facts/ archive, so the two tests that open a real
-      # panel cannot pass and the harness deselects them from its baseline. It
-      # therefore measures slightly less than the nightly local run, which has
-      # the panels. A SURVIVOR reported here must be reproduced locally with
-      # `python scripts/mutation.py --only <id>` before it is believed.
-      #
-      # And a push of several commits is judged on its tip. The gate is a net
-      # under an unattended agent, not a proof about every commit in history.
-      #
       # Mutation testing is the only check here that measures the CHECKS: it
       # breaks the kernel on purpose and asks whether any test notices. Three
       # of ten deliberate defects passed a green 248-test suite the day it was
       # written, including deleting the holdout truncation from panel.load.
       #
-      # Only when the kernel or the tests moved. It costs about four minutes,
-      # and running it on a commit that touched a report would teach everyone
-      # to ignore it.
+      # UNCONDITIONAL, and that is a correction. It used to run only when
+      # `git diff --name-only HEAD~1 HEAD` named a file under orc/ or tests/,
+      # and run 33845845287 went GREEN in 32 seconds while printing "no kernel
+      # or test file changed" for a commit that changed orc/guard.py and
+      # tests/test_protocol.py. The step above had already done `git reset
+      # --soft HEAD~1`, so HEAD was one commit back and the diff compared the
+      # wrong pair. A green run that quietly measured nothing is the exact
+      # failure this whole gate exists to catch, so the branch that could lie
+      # is gone rather than fixed: on a public repository the four minutes are
+      # unmetered, and `cancel-in-progress` means a burst of pushes costs one
+      # run, not one per commit.
+      #
+      # This runner has no facts/ archive. Every test is now portable enough to
+      # pass without one, so the baseline is expected to be fully green here --
+      # if the harness reports deselections, that is itself worth reading. A
+      # SURVIVOR must still be reproduced locally with
+      # `python scripts/mutation.py --only <id>` before it is believed.
       - name: Do the tests actually catch anything?
         if: github.event_name != 'pull_request'
+        run: python scripts/mutation.py
+
+      # LAST, because it is the only step that moves HEAD. `git reset --soft
+      # HEAD~1` puts the pushed commit's changes back in the index, which is
+      # exactly the state the local hook reads, and then the same function
+      # judges the same diff against the same message. HEAD is restored either
+      # way so that a step added after this one cannot inherit a moved HEAD --
+      # which is how the mutation gate above came to skip itself.
+      #
+      # A push of several commits is judged on its tip. The gate is a net under
+      # an unattended agent, not a proof about every commit in history.
+      - name: Was the oracle loosened without saying so?
+        if: github.event_name == 'push'
         run: |
-          set -euo pipefail
-          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^(orc/|tests/|scripts/mutation.py)'; then
-            python scripts/mutation.py
-          else
-            echo "no kernel or test file changed; the mutation gate has nothing new to measure"
-          fi
+          set -uo pipefail
+          git log -1 --pretty=%B > /tmp/orc_commit_msg.txt
+          echo "--- the message this commit was made with ---"
+          cat /tmp/orc_commit_msg.txt
+          echo "---"
+          tip=$(git rev-parse HEAD)
+          git reset --soft HEAD~1
+          python scripts/precommit.py --message /tmp/orc_commit_msg.txt
+          rc=$?
+          git reset --soft "$tip"
+          exit $rc

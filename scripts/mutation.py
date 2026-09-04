@@ -66,9 +66,17 @@ except (AttributeError, OSError):                                  # pragma: no 
 from orc import config                                             # noqa: E402
 
 # What gets copied. facts/ is 9.7 GB and is pointed at through ORC_FACTS
-# instead; .git/hooks is 4 KB and two tests read it.
-COPIED = ("orc", "tests", "scripts", "configs")
-COPIED_FILES = ("CLAUDE.md", "AGENTS.md", "requirements.txt", "pytest.ini")
+# instead; everything else the suite reads is small enough to duplicate per
+# run: reports/ is 824 KB, .github 24 KB, the ledger 15 MB, .git/hooks 4 KB.
+#
+# The list is this long because every test the copy cannot run is a test that
+# cannot kill a mutation, and the deselection is silent by design -- it has to
+# be, or a checkout-specific test would block the whole harness. Six tests were
+# being dropped for want of .github/, reports/ and the ledger, among them the
+# one guarding the server-side gate itself.
+COPIED = ("orc", "tests", "scripts", "configs", "reports", "ledger", ".github")
+COPIED_FILES = ("CLAUDE.md", "AGENTS.md", "requirements.txt", "pytest.ini",
+                ".gitignore", ".gitattributes", "README.md")
 
 # A mutation is (id, file, exactly this text, replaced by this, why it matters).
 # `old` must appear EXACTLY ONCE in the file: a mutation that matches two
@@ -297,9 +305,6 @@ def make_copy(dest: Path) -> Path:
             shutil.copy2(ROOT / f, dest / f)
     (dest / "reports").mkdir(exist_ok=True)
     (dest / "ledger").mkdir(exist_ok=True)
-    for name in ("FINDINGS.json", "CYCLE_SUMMARY.json", "TARGET.json"):
-        if (config.REPORTS / name).exists():
-            shutil.copy2(config.REPORTS / name, dest / "reports" / name)
     hooks = ROOT / ".git" / "hooks"
     if hooks.exists():
         shutil.copytree(hooks, dest / ".git" / "hooks")

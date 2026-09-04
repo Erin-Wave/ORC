@@ -2605,6 +2605,24 @@ def test_the_server_side_gate_runs_the_same_checks_as_the_local_hook():
     assert "scripts/precommit.py --message" in text, (
         "without this the marker rules exist only in a local hook")
     assert "scripts/mutation.py" in text
+
+    # ORDER, and it is not cosmetic. The message step does `git reset --soft
+    # HEAD~1`, and while it ran BEFORE the mutation step, run 33845845287 went
+    # green in 32 seconds printing "no kernel or test file changed" for a
+    # commit that changed orc/guard.py and tests/test_protocol.py: HEAD was one
+    # commit back, so `git diff HEAD~1 HEAD` compared the wrong pair and the
+    # gate skipped itself while reporting success.
+    assert text.index("scripts/mutation.py") < text.index("git reset --soft"), (
+        "the mutation gate must run before anything moves HEAD")
+    assert 'git reset --soft "$tip"' in text, (
+        "HEAD has to be restored, or a step added later inherits a moved one")
+    # and the mutation gate may not grow a branch again: the one that could
+    # silently be wrong cost more than the four minutes it saved. A one-line
+    # `run:` cannot contain a shell condition, which is the property worth
+    # asserting -- looking for the phrase "git diff --name-only" instead found
+    # the comment explaining why it was removed.
+    assert "        run: python scripts/mutation.py" in text, (
+        "the mutation step must be a single unconditional command")
     # It reads the diff of the pushed commit against its parent, and a shallow
     # clone has no parent.
     assert "fetch-depth: 2" in text
