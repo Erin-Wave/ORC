@@ -20,6 +20,7 @@ affordable precisely because the closed-form evaluator exists.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import numpy as np
@@ -459,12 +460,93 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
 
 
 # --------------------------------------------------------------------------
+# One panel per (symbol, clock) per PROCESS.  The null scorers run on a pool,
+# and a panel on the scorer instance would be pickled once per synthetic path --
+# 199 copies of 39,243 bars to move a single price series.  Loading it in the
+# worker instead costs one read per process and nothing per task.
+_NULL_PANELS: dict[tuple[str, str], object] = {}
+
+
+def _null_panel(symbol: str, clock: str):
+    key = (symbol, clock)
+    if key not in _NULL_PANELS:
+        _NULL_PANELS[key] = panel_mod.load(symbol, clock, development_only=True)
+    return _NULL_PANELS[key]
+
+
+@dataclass(frozen=True)
+class _TrackANullScorer:
+    """The whole Track A grid on one synthetic history, best cell returned.
+
+    Through the same routing a real trial uses.  This used to hand-build an
+    AnalyticSpec and call the closed form for every cell, discarding gate,
+    leverage, take_profit, stop_loss and funding: on H0007 the null for a gated
+    funded DCA was an unconditional unfunded one.
+
+    Scored on mwrr_q05 -- the statistic `write_report` selects the observed best
+    on -- and not on tm_q05, which compared an annualised return against a
+    distribution of terminal multiples and made the p-value a question about
+    units.
+    """
+    configs: tuple
+    symbol: str
+    clock: str
+
+    def __call__(self, close) -> float:
+        from orc.orchestrator.runner import mwrr_q05_on_path
+        p = _null_panel(self.symbol, self.clock)
+        best = -np.inf
+        for cfg in self.configs:
+            v = mwrr_q05_on_path(cfg, p, close)
+            if np.isfinite(v):
+                best = max(best, v)
+        return best
+
+
+@dataclass(frozen=True)
+class _TrackBNullScorer:
+    """The whole Track B grid on one synthetic history, best calmar returned."""
+    configs: tuple
+    symbol: str
+    clock: str
+
+    def __call__(self, close) -> float:
+        from orc.eval.signal import SignalSpec, run_signals
+        from orc.eval.signal_rules import build_signals
+        from orc.kernel import metrics_fc
+
+        p = _null_panel(self.symbol, self.clock)
+        hi, lo = close * 1.0, close * 1.0            # a bootstrap has no wick
+        best = -np.inf
+        for cfg in self.configs:
+            lb = p.bars(cfg.lookback_days)
+            if lb < 2 or lb >= close.size:
+                continue
+            entry, exit_ = build_signals(cfg.rule, p, lb, cfg.enter_rate, cfg.exit_rate)
+            spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
+                              fee_bps=cfg.effective_fee_bps,
+                              slippage_bps=cfg.effective_slippage_bps,
+                              stop_loss=cfg.stop_loss, take_profit=cfg.take_profit,
+                              max_hold_bars=p.bars(cfg.max_hold_days)
+                              if cfg.max_hold_days else None)
+            r = run_signals(close, hi, lo, entry, exit_, spec,
+                            funding_rate=p.funding_rate, symbol=self.symbol)
+            if r["n_trades"]:
+                v = metrics_fc.calmar(r["equity"], metrics_fc.BARS_PER_YEAR["1h"])
+                if np.isfinite(v):
+                    best = max(best, v)
+        return best
+
+
 def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
     """Is the best cell better than the best a search of this width finds in noise?
 
     The grid is re-run in full on each synthetic history, so the null carries
     the same search the real number came from. Anything cheaper understates the
-    null and manufactures significance.
+    null and manufactures significance.  That is what makes this the single
+    most expensive thing the project does -- 199 synthetic histories times the
+    whole grid, measured at 4.77s per path on H0001/BTCUSDT, 31.7 minutes for
+    the two symbols a report covers -- and why best_of_g runs them on a pool.
     """
     from orc.orchestrator.search_test import best_of_g
 
@@ -473,54 +555,12 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
     if len(configs) < 2:
         return {"status": "fewer than two configurations"}
 
-    if h.track == "B":
-        from orc.eval.signal import SignalSpec, run_signals
-        from orc.eval.signal_rules import build_signals
-        from orc.kernel import metrics_fc
-
-        def score(close):
-            hi, lo = close * 1.0, close * 1.0        # a bootstrap has no wick
-            best = -np.inf
-            for cfg in configs:
-                lb = p.bars(cfg.lookback_days)
-                if lb < 2 or lb >= close.size:
-                    continue
-                entry, exit_ = build_signals(cfg.rule, p, lb, cfg.enter_rate, cfg.exit_rate)
-                spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
-                                  fee_bps=cfg.effective_fee_bps,
-                                  slippage_bps=cfg.effective_slippage_bps,
-                                  stop_loss=cfg.stop_loss, take_profit=cfg.take_profit,
-                                  max_hold_bars=p.bars(cfg.max_hold_days) if cfg.max_hold_days else None)
-                r = run_signals(close, hi, lo, entry, exit_, spec,
-                                funding_rate=p.funding_rate, symbol=symbol)
-                if r["n_trades"]:
-                    v = metrics_fc.calmar(r["equity"], metrics_fc.BARS_PER_YEAR["1h"])
-                    if np.isfinite(v):
-                        best = max(best, v)
-            return best
-    else:
-        # Through the same routing a real trial uses.  This branch used to
-        # hand-build an AnalyticSpec and call the closed form for every cell,
-        # discarding gate, leverage, take_profit, stop_loss and funding: on
-        # H0007 the null for a gated funded DCA was an unconditional unfunded
-        # one.  It is now the same shape, which is what makes the p-value mean
-        # anything -- and it is why this is slow: 199 synthetic histories times
-        # the whole grid, at roughly half a second per path-dependent cell.
-        # Scored on the SAME statistic the observed value carries.  `write_report`
-        # passes surfaces[sym]["best_value"], which ranking_metric ranks on
-        # mwrr_q05, and this null used to score tm_q05: an annualised return
-        # compared against a distribution of terminal multiples, two different
-        # units, so the p-value was not a p-value.  Track B was already
-        # consistent (calmar on both sides); this is Track A catching up.
-        from orc.orchestrator.runner import mwrr_q05_on_path
-
-        def score(close):
-            best = -np.inf
-            for cfg in configs:
-                v = mwrr_q05_on_path(cfg, p, close)
-                if np.isfinite(v):
-                    best = max(best, v)
-            return best
+    # A scorer OBJECT rather than a closure, because best_of_g runs these on a
+    # process pool and a closure cannot be pickled.  Neither holds the panel:
+    # it is re-loaded once per worker process from _null_panel, which keeps the
+    # per-task pickle to one price series instead of the whole panel.
+    score = (_TrackBNullScorer(tuple(configs), symbol, "1h") if h.track == "B"
+             else _TrackANullScorer(tuple(configs), symbol, "1h"))
 
     return best_of_g(observed_best, score, p, len(configs))
 

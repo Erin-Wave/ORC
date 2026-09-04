@@ -26,6 +26,11 @@ That is what makes this expensive and what makes it worth anything.
 """
 from __future__ import annotations
 
+import os
+import pickle
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+
 import numpy as np
 
 from orc.kernel.inference import best_of_g_pvalue, synthetic_prices
@@ -43,6 +48,59 @@ N_SYNTHETIC_PATHS = 199
 ALPHA = 0.05
 
 
+def n_workers(n_tasks: int) -> int:
+    """How many processes to spread the null over.
+
+    The synthetic paths are independent by construction -- that is what makes
+    the null a null -- so this is the one genuinely embarrassing parallelism in
+    the project, and it sits on the single most expensive thing it does.
+    Measured on H0001/BTCUSDT: 4.77s for one path over the grid, 15.8 minutes
+    for 199, 31.7 for the two symbols a report covers.  That was the research
+    cycle: a 24-core workstation running one core.
+
+    ORC_WORKERS overrides, because the GitHub runner has far fewer cores than
+    the workstation and a pool wider than the machine is slower, not faster.
+    """
+    env = os.environ.get("ORC_WORKERS", "").strip()
+    if env:
+        try:
+            n = int(env)
+        except ValueError:
+            n = 0
+        if n > 0:
+            return max(1, min(n, n_tasks))
+    return max(1, min(os.cpu_count() or 1, n_tasks))
+
+
+def _safe_score(score_grid, close) -> float:
+    """One synthetic path, scored, with a failure reported as nan.
+
+    A path the grid cannot express is information about the grid and must not
+    take the run down -- the serial loop caught this inline, and a pool has to
+    catch it INSIDE the worker or the exception surfaces when the result is
+    consumed and kills the whole null.
+    """
+    try:
+        v = float(score_grid(close))
+    except Exception:                                              # noqa: BLE001
+        return float("nan")
+    return v if np.isfinite(v) else float("nan")
+
+
+def _is_picklable(obj) -> bool:
+    """Can this scorer cross a process boundary?
+
+    The scorers in surface.py are objects precisely so that they can.  A plain
+    closure -- what a test or a one-off analysis naturally writes -- cannot, and
+    must quietly fall back to the serial path rather than raising.
+    """
+    try:
+        pickle.dumps(obj)
+        return True
+    except Exception:                                              # noqa: BLE001
+        return False
+
+
 def best_of_g(observed_best: float, score_grid, panel, n_configs: int,
               seed: int = 20260902,
               n_paths: int = N_SYNTHETIC_PATHS,
@@ -56,14 +114,21 @@ def best_of_g(observed_best: float, score_grid, panel, n_configs: int,
     rng = np.random.default_rng(seed)
     synth = synthetic_prices(panel.close, block, n_paths, rng)
 
-    nulls = []
-    for i in range(n_paths):
-        try:
-            v = score_grid(synth[i])
-        except Exception:                                          # noqa: BLE001
-            continue
-        if np.isfinite(v):
-            nulls.append(float(v))
+    # Every path is drawn up front from one seeded generator and the results are
+    # consumed IN ORDER, so the pool changes how long this takes and nothing
+    # about what it answers: the same seed gives the same nulls, serial or not.
+    paths = [synth[i] for i in range(n_paths)]
+    workers = n_workers(len(paths))
+    scored: list[float] = []
+    if workers > 1 and _is_picklable(score_grid):
+        chunk = max(1, len(paths) // (workers * 4))
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            scored = list(pool.map(partial(_safe_score, score_grid), paths,
+                                   chunksize=chunk))
+    else:
+        scored = [_safe_score(score_grid, close) for close in paths]
+
+    nulls = [v for v in scored if np.isfinite(v)]
 
     if len(nulls) < n_paths // 2:
         return {"status": f"only {len(nulls)} of {n_paths} synthetic searches scored; "

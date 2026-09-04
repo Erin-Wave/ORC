@@ -8,6 +8,7 @@ convention is not a protocol once the loop runs unattended.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -1570,3 +1571,123 @@ def test_an_ordinal_already_in_the_log_is_never_written_twice(tmp_path,
     with pytest.raises(holdout.HoldoutViolation, match="already recorded"):
         holdout.open_final_test({"cfg": "a"}, "because")
     assert tok.exists(), "the token was spent on a refused opening"
+
+
+# Module level, and not closures: these cross a process boundary in the pool
+# tests below, which is the whole point of them.
+class _SumScorer:
+    """Deterministic in the path, so serial and pooled must agree exactly."""
+
+    def __init__(self, k: float):
+        self.k = k
+
+    def __eq__(self, other):
+        return isinstance(other, _SumScorer) and other.k == self.k
+
+    def __call__(self, close):
+        import numpy as np
+        return float(np.mean(close) * self.k)
+
+
+class _EveryThirdRaises:
+    """One path in three cannot be scored, the way a real grid meets a path it
+    cannot express."""
+
+    def __call__(self, close):
+        import numpy as np
+        if int(abs(np.sum(close))) % 3 == 0:
+            raise ValueError("this path cannot be expressed")
+        return float(np.mean(close))
+
+
+# ---------------------------------------------------------------------------
+# The pool.  The search test is the most expensive thing the project does and
+# it was running on one core of twenty-four: 4.77s per synthetic path over the
+# H0001/BTCUSDT grid, 15.8 minutes for 199 paths, 31.7 for the two symbols a
+# report covers -- which was the whole research cycle.
+# ---------------------------------------------------------------------------
+def test_the_null_scorers_can_cross_a_process_boundary():
+    """A closure cannot be pickled, so the null scorers are objects.  If either
+    goes back to being a closure the pool silently falls back to serial and the
+    cycle quietly costs half an hour again -- silently, because the fallback is
+    deliberate and correct for every OTHER caller."""
+    import pickle
+
+    from orc.orchestrator.search_test import _is_picklable
+    from orc.orchestrator.surface import _TrackANullScorer, _TrackBNullScorer
+
+    for cls in (_TrackANullScorer, _TrackBNullScorer):
+        s = cls(configs=(), symbol="BTCUSDT", clock="1h")
+        assert _is_picklable(s), f"{cls.__name__} cannot reach a worker"
+        assert pickle.loads(pickle.dumps(s)) == s
+
+    # And a closure still falls back rather than raising.
+    def closure(close):
+        return 0.0
+
+    assert not _is_picklable(closure)
+
+
+def test_the_pool_changes_the_wall_clock_and_not_the_answer(monkeypatch):
+    """Every synthetic path is drawn up front from one seeded generator and the
+    results are consumed in order, so serial and pooled must agree exactly --
+    not approximately.  Measured on the real grid at 48 paths: 229.9s serial,
+    24.1s pooled, 9.55x, and every field of the verdict identical."""
+    import numpy as np
+
+    from orc.orchestrator import search_test as st
+
+    class _Panel:
+        close = np.exp(np.cumsum(
+            np.random.default_rng(7).normal(0, 0.01, 4096))) * 100.0
+
+    scorer = _SumScorer(0.25)
+
+    monkeypatch.setenv("ORC_WORKERS", "1")
+    serial = st.best_of_g(1.0, scorer, _Panel(), 8, n_paths=24)
+    monkeypatch.setenv("ORC_WORKERS", "4")
+    pooled = st.best_of_g(1.0, scorer, _Panel(), 8, n_paths=24)
+
+    assert serial == pooled
+    assert serial["n_null"] == 24
+
+
+def test_a_path_the_grid_cannot_express_does_not_kill_the_null(monkeypatch):
+    """The serial loop caught a failing path inline.  A pool has to catch it
+    INSIDE the worker, or the exception surfaces where the result is consumed
+    and takes the whole null with it -- turning one unscoreable path into no
+    p-value at all."""
+    import numpy as np
+
+    from orc.orchestrator import search_test as st
+
+    class _Panel:
+        close = np.exp(np.cumsum(
+            np.random.default_rng(11).normal(0, 0.01, 2048))) * 100.0
+
+    monkeypatch.setenv("ORC_WORKERS", "4")
+    pooled = st.best_of_g(1.0, _EveryThirdRaises(), _Panel(), 4, n_paths=24)
+    assert pooled["status"] == "ok", "one unscoreable path took the whole null"
+    assert 0 < pooled["n_null"] < 24, "nothing was dropped, so nothing raised"
+
+    # The count is not written down here, because a number this test guessed
+    # would be a number it is asserting about itself.  What must be true is
+    # that the pool drops exactly the paths the serial loop drops.
+    monkeypatch.setenv("ORC_WORKERS", "1")
+    serial = st.best_of_g(1.0, _EveryThirdRaises(), _Panel(), 4, n_paths=24)
+    assert serial == pooled
+
+
+def test_the_worker_count_is_bounded_by_the_work_and_overridable(monkeypatch):
+    """A pool wider than the machine is slower, and the GitHub runner has far
+    fewer cores than the workstation."""
+    from orc.orchestrator import search_test as st
+
+    monkeypatch.delenv("ORC_WORKERS", raising=False)
+    assert st.n_workers(4) <= 4, "more workers than tasks"
+    assert st.n_workers(10_000) <= (os.cpu_count() or 1)
+
+    monkeypatch.setenv("ORC_WORKERS", "3")
+    assert st.n_workers(199) == 3
+    monkeypatch.setenv("ORC_WORKERS", "nonsense")
+    assert st.n_workers(199) >= 1
