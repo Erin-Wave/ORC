@@ -1,0 +1,11 @@
+{
+  "hypothesis_id": "H0019",
+  "family": "cci_mtf_regime_pullback",
+  "closed_utc": "2026-09-04T21:58:30.379981+00:00",
+  "closed_by": "close_vote:claude,codex",
+  "clause": "4. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols.",
+  "unevaluable_clauses": [],
+  "reason": "[claude] clause: 4. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols. -- Clause 4 is met on 8 of 9 symbols against a threshold of 5. Every symbol except BTCUSDT records shape 'SPIKE' at its best cell -- ADA, AVAX, BNB, DOGE, ETH, LTC, SOL and XRP -- and BTCUSDT's diagnostic is 'unmeasurable' only because its peak calmar is -0.10242194712616623, so it cannot rescue the count either way. Two of those spikes have negative neighbour means (DOGEUSDT plateau_ratio -2.43005571202126 with neighbour_mean -0.24856161273425764; LTCUSDT plateau_ratio -0.3532701801136425 with neighbour_mean -0.08082800714485129), i.e. the cell beside the peak loses money. The clause was pre-registered word-for-word from H0017 precisely to fire on this, and it says the conditional reading peaks at a corner of the level axis rather than tracking a payer. The other four clauses survive: clause 1 is cleared by cell (L=120, f=48) at C > 0 on 7 of 9, clause 2 by n_liquidations_best = 0 everywhere, clause 3 by only LTCUSDT's 19.0 trades falling under the 20 floor, and clause 5 by only XRPUSDT selecting filter_level 60. Clause 4 alone closes the family, and by its own text it does so 'whatever clause 1 says'. | [codex] clause: 4. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols. -- Eight of the nine symbols have a recorded best-cell shape of SPIKE, exceeding the closure threshold of 5. BTCUSDT's shape is unmeasurable, but that does not make the clause unevaluable because the eight recorded SPIKE results already establish that the clause is met.",
+  "postmortem": "POSTMORTEM_H0019.md",
+  "postmortem_utc": "2026-09-04T22:33:44.726088+00:00"
+}
