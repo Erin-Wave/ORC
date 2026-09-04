@@ -1,27 +1,27 @@
 {
-  "run_id": "715ea48a44be",
-  "started_utc": "2026-09-04T12:07:08.220565+00:00",
-  "finished_utc": "2026-09-04T12:28:16.402460+00:00",
+  "run_id": "324595c30eb4",
+  "started_utc": "2026-09-04T17:29:05.325324+00:00",
+  "finished_utc": "2026-09-04T17:52:54.710937+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
   "hypotheses_run": [
-    "H0017"
+    "H0019"
   ],
-  "trials_before": 6848,
-  "trials_after": 6938,
-  "trials_added": 90,
+  "trials_before": 6938,
+  "trials_after": 7010,
+  "trials_added": 72,
   "results": [
     {
-      "hypothesis_id": "H0017",
-      "family": "cci_forced_flow_duel",
-      "run_id": "715ea48a44be",
-      "configurations": 90,
-      "evaluated": 90,
-      "new_trials": 90,
+      "hypothesis_id": "H0019",
+      "family": "cci_mtf_regime_pullback",
+      "run_id": "324595c30eb4",
+      "configurations": 72,
+      "evaluated": 72,
+      "new_trials": 72,
       "skipped": 0,
       "skip_reasons": {},
-      "ledger_total_trials": 6938
+      "ledger_total_trials": 7010
     }
   ]
 }

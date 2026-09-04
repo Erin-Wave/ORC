@@ -13,12 +13,12 @@
     "symbol": "DOGEUSDT"
   },
   "best_cagr_within_drawdown": {
-    "cagr": 0.2764460131612052,
-    "max_drawdown": 0.24834431555465974,
-    "calmar": 1.1131561942288966,
-    "hypothesis_id": "H0006",
-    "symbol": "BTCUSDT"
+    "cagr": 0.38772475172530485,
+    "max_drawdown": 0.24562658359168854,
+    "calmar": 1.5785129852631496,
+    "hypothesis_id": "H0019",
+    "symbol": "AVAXUSDT"
   },
-  "rows_considered": 5382,
-  "headline": "목표(CAGR 100% / MDD 25%)를 만족하는 셀 없음, 트랙B 5382행 기준"
+  "rows_considered": 5454,
+  "headline": "목표(CAGR 100% / MDD 25%)를 만족하는 셀 없음, 트랙B 5454행 기준"
 }

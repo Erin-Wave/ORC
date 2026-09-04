@@ -65,10 +65,7 @@
     },
     {
       "passed": false,
-      "failed": [
-        "walk_forward",
-        "regime"
-      ],
+      "failed": [],
       "unmeasured": [
         "execution"
       ],
@@ -76,8 +73,8 @@
         {
           "check": "cost",
           "multiplier": 2.0,
-          "base": 3.0062933780642465,
-          "stressed": 2.294254986055207,
+          "base": 1.5785129852631496,
+          "stressed": 1.4255113516004765,
           "passed": true
         },
         {
@@ -85,17 +82,17 @@
           "n_blocks": 4,
           "train_blocks": 2,
           "chosen": {
-            "symbol": "DOGEUSDT",
-            "rule": "cci_breakout",
+            "symbol": "AVAXUSDT",
+            "rule": "cci_mtf",
             "lookback_days": 5.0,
             "enter_rate": 0.00015,
             "exit_rate": 5e-05,
-            "timeframe_hours": 2.0,
+            "timeframe_hours": 4.0,
             "enter_level": 100.0,
             "exit_level": 50.0,
-            "filter_timeframe_hours": null,
-            "filter_lookback_days": null,
-            "filter_level": 100.0,
+            "filter_timeframe_hours": 48.0,
+            "filter_lookback_days": 20.0,
+            "filter_level": 80.0,
             "capital": 10000.0,
             "leverage": 1.0,
             "stop_loss": 0.25,
@@ -106,17 +103,17 @@
             "slippage_bps": 1.0,
             "cost_multiplier": 1.0
           },
-          "in_sample": 79.34058935505315,
-          "out_of_sample": 1.8558648005754366,
-          "retention": 0.02339111437993418,
-          "passed": false
+          "in_sample": 2.26699030738819,
+          "out_of_sample": 1.798561707103853,
+          "retention": 0.7933698266120883,
+          "passed": true
         },
         {
           "check": "regime",
           "window_bars": 720,
-          "rising": 15.505190786641142,
-          "falling": -0.21976532353936376,
-          "passed": false
+          "rising": 0.4967334177367875,
+          "falling": 0.3220926854998157,
+          "passed": true
         },
         {
           "check": "execution",
@@ -124,12 +121,12 @@
           "reason": "no minute panel here; certification has to happen locally"
         }
       ],
-      "hypothesis_id": "H0017",
-      "symbol": "DOGEUSDT",
+      "hypothesis_id": "H0019",
+      "symbol": "AVAXUSDT",
       "metric": "calmar",
       "config": {
-        "rule": "cci_breakout",
-        "timeframe_hours": 2.0
+        "filter_level": 80.0,
+        "filter_timeframe_hours": 48.0
       }
     }
   ]
