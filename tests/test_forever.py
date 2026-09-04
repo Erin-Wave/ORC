@@ -856,3 +856,96 @@ def test_standing_down_drops_the_lock_and_claims_nothing_else(monkeypatch):
     calls.clear()
     assert forever.stand_down(None, "x") == 0
     assert calls == ["release"]
+
+
+# --------------------------------------------------------------------------
+# watch.py — "지금 무엇이 도는가"가 아니라 "연구가 어디까지 왔는가"
+# --------------------------------------------------------------------------
+def test_the_stage_screen_pads_by_display_width_not_character_count():
+    """`f"{name:9s}"`는 글자를 세고 터미널은 칸을 센다.
+
+    이 화면의 첫 판이 그것으로 어긋났다: 단계 이름이 전부 한글이라 파이썬은
+    9글자로 맞췄고 터미널은 18칸으로 그렸다. 표가 어긋난 화면은 읽히지 않고,
+    읽히지 않는 화면은 없는 것과 같다."""
+    import watch
+
+    assert watch._pad("검증", 12) == "검증" + " " * 8, \
+        "한글 한 글자는 두 칸이다"
+    assert watch._pad("abc", 12) == "abc" + " " * 9
+
+    # ①와 ·는 East Asian **Ambiguous**여서 폭이 글꼴과 터미널 설정에 따라
+    # 달라진다. 여기서는 좁은 쪽으로 센다 -- 넓게 세고 좁게 그려지는 쪽이
+    # 열을 어긋나게 만들고, 이 화면에서는 어느 쪽이든 안전하기 때문이다:
+    # 단계 번호는 패딩을 거치지 않고, 여섯 줄이 모두 같은 문자 종류로
+    # 시작하므로 그 뒤의 열은 어차피 나란히 선다.
+    assert watch._pad("①", 4) == "①" + " " * 3
+    assert watch._pad("·", 4) == "·" + " " * 3
+    # 이미 폭을 넘긴 문자열을 잘라내지는 않는다: 잘린 숫자는 틀린 숫자다.
+    assert watch._pad("아주아주 긴 이름", 4).startswith("아주아주")
+
+
+def test_the_stage_screen_only_names_actions_the_loop_can_actually_answer():
+    """ACTION_STAGE는 next_action()이 돌려주는 이름으로 단계를 찾는다.
+
+    오타 하나면 '지금 여기' 표시가 영원히 뜨지 않고, 화면은 조용히 틀린 채로
+    계속 그려진다 -- 아무것도 실패하지 않으므로 아무도 알아채지 못한다."""
+    import watch
+    from orc import runstate
+
+    known = set(runstate.ZERO_N_WORK) | {"cycle", "reason", "rest",
+                                         "blocked", "done"}
+    unknown = set(watch.ACTION_STAGE) - known
+    assert not unknown, f"next_action은 이 이름을 돌려주지 않는다: {unknown}"
+
+    # kernel_review는 일부러 빠져 있다: 연구의 한 단계가 아니라 평가기를 읽는
+    # 도구 점검이고, 그것을 ⑤ 검증으로 세면 진도가 나간 것처럼 보인다.
+    assert "kernel_review" not in watch.ACTION_STAGE
+    assert len(watch.STAGES) == 6
+    assert max(watch.ACTION_STAGE.values()) < len(watch.STAGES)
+
+
+def test_a_progress_number_that_could_not_be_read_is_not_printed_as_zero():
+    """읽을 수 없었던 값과 정말로 0인 값은 화면에서 달라야 한다.
+
+    running_scripts()가 빈 리스트와 None을 구분하는 것과 같은 이유다: '0건
+    수집'은 스카우트가 아무것도 못 찾았다는 연구 결과이고, 파일을 못 읽은
+    것은 화면의 고장이다. 둘이 같은 모양으로 인쇄되면 고장이 결과로 읽힌다."""
+    import watch
+
+    assert watch._n(None) == "?"
+    assert watch._n(0) == "0"
+    assert watch._n(7010) == "7,010"
+
+
+def test_the_stage_screen_renders_without_touching_the_research():
+    """화면 하나가 원장이나 리포트를 쓰면 그것은 화면이 아니다."""
+    import watch
+
+    p = watch.progress()
+    for key in ("scouted", "proposed", "killed", "registered", "trials",
+                "queued", "closed", "open_families", "next_cycle_utc",
+                "next_reasoning_utc"):
+        assert key in p, key
+    assert p["proposed"] == p["killed"] + p["registered"], \
+        "제안은 기각되었거나 등록되었거나 둘 중 하나다"
+
+    snap = {"progress": p, "next": {"action": "cycle", "why": ""}}
+    lines = watch.render_progress(snap)
+    assert any("◀ 지금 여기" in ln for ln in lines), \
+        "cycle은 ④ 백테스트이므로 현재 단계가 표시되어야 한다"
+    for _, name, _ in watch.STAGES:
+        assert any(name in ln for ln in lines), name
+
+    # 단계 밖의 액션은 단계를 차지하지 않고, 그 사실을 말한다.
+    snap["next"]["action"] = "kernel_review"
+    lines = watch.render_progress(snap)
+    assert not any("◀ 지금 여기" in ln for ln in lines)
+    assert any("여섯 단계 밖" in ln for ln in lines)
+
+    # 진행 상황을 읽지 못한 화면은 0을 그리지 않고, 죽지도 않는다: 이 화면이
+    # 죽으면 감독자가 살아 있는지도 함께 보이지 않게 된다.
+    for blank in ({}, None):
+        lines = watch.render_progress({"progress": blank,
+                                       "next": {"action": "cycle", "why": ""}})
+        assert any("알 수 없음" in ln for ln in lines)
+    assert watch.render_progress({"next": {"action": "cycle", "why": ""}})

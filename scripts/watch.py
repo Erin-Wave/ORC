@@ -3,8 +3,16 @@
 `health.py`는 "고장났나"에 답하고 `briefing.py`는 "무엇을 알아냈나"에 답한다.
 둘 다 답하지 않는 질문이 남는다 — **지금 이 초에 기계가 무엇을 하고 있나.**
 
-그래서 이 파일은 다른 어떤 화면보다 좁고 구체적이다:
+그리고 셋 다 답하지 않는 질문이 하나 더 있었다 — **그게 연구의 어디쯤인가.**
+`duty_cycle`은 "쉬지 않는가"에 답하지만 "나아가는가"에는 답하지 못한다.
+2026-09-05 아침이 정확히 그 차이였다: 듀티 사이클 12.4 %가 전부 이미 답이 나온
+셀의 재측정이었고 새 질문은 하나도 등록되지 않았다. 바쁜 화면과 나아가는 연구는
+같은 것이 아니고, 앞의 것만 보이는 화면은 뒤의 것을 감춘다.
 
+  연구 단계    헌법 9절이 서술하는 여섯 단계, 각 단계까지 실제로 온 거리,
+               그리고 next_action()이 지금 어느 단계에 서 있는지.
+  앞으로        대기 중인 백테스트, 다음 정기 사이클, 다음 가설 심사.
+  목표까지      reports/TARGET.json이 말하는 종료 조건과의 거리.
   실행 중      ORC 트리 안의 파이썬 프로세스를 실제 명령줄까지 보여준다.
                "supervisor가 살아 있다"와 "지금 뭔가를 계산하고 있다"는
                다른 사실이고, 감독자는 낮잠(IDLE_SLEEP_S) 중에도 살아 있다.
@@ -25,6 +33,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 import subprocess
 import sys
 import time
@@ -220,6 +229,118 @@ def strays(procs: list[dict] | None, sup: dict) -> list[dict]:
             and p["pid"] != holder]
 
 
+# 연구가 실제로 지나는 여섯 단계
+# --------------------------------------------------------------------------
+# 헌법 9절과 9b절이 서술하는 순서를 그대로 옮긴 것이고, 새로 만든 분류가
+# 아니다.  각 단계에 붙은 문장은 그 단계가 무엇을 하는지를 이 저장소를 처음
+# 보는 사람이 읽을 수 있게 쓴 것이며, 옆의 숫자는 전부 파일에서 세어온다.
+#
+# next_action()이 답하는 액션을 단계로 되짚는 표가 함께 있는 이유는, "지금
+# 무엇을 하고 있나"와 "그게 연구의 어디쯤인가"가 다른 질문이기 때문이다.
+# 앞의 것에는 이미 답이 있었고 뒤의 것에는 없었다.
+STAGES = (
+    ("①", "후보 찾기",
+     "누가 구조적으로 계속 돈을 내는지 밖에서 찾아옵니다"),
+    ("②", "가설 제안",
+     "그 후보를 반증 가능한 규칙과 사망 조건으로 바꿉니다"),
+    ("③", "반론 심사",
+     "등록 전에 모델 둘이 그 가설을 죽여봅니다"),
+    ("④", "백테스트",
+     "심사를 통과한 규칙만 과거 데이터에 전부 돌립니다"),
+    ("⑤", "검증",
+     "우연인지 진짜인지 거릅니다 (PBO·서치테스트·분봉 재현)"),
+    ("⑥", "판정·종결",
+     "미리 써둔 사망 조건과 대조하고 부검서를 남깁니다"),
+)
+
+# 액션 이름 -> 그 액션이 속한 단계 번호(0-based).  여기 없는 액션은 연구의
+# 한 단계가 아니라 도구를 점검하는 일이므로 단계를 차지하지 않는다.
+ACTION_STAGE = {
+    "scout": 0,
+    "reason": 2,          # 제안과 심사가 한 패스 안에서 함께 일어난다
+    "cycle": 3,
+    "robustness": 4,
+    "execution_realism": 4,
+    "survivorship": 4,
+}
+
+
+def _count(path: Path, pattern: str = "*.json") -> int:
+    try:
+        return len(list(path.glob(pattern)))
+    except OSError:                                                # pragma: no cover
+        return 0
+
+
+def progress() -> dict:
+    """연구가 지금까지 어디까지 왔고 다음에 무엇을 할 것인가.
+
+    duty_cycle이 "쉬지 않는가"에 답하는 것과 달리 이쪽은 "진도가 나갔는가"에
+    답한다. 둘은 다른 질문이고, 2026-09-05 아침이 그 차이였다: 듀티 사이클
+    12.4 %가 전부 execution_realism 재측정이었고 새 질문은 하나도 등록되지
+    않았다. 바쁜 화면과 나아가는 연구는 같은 것이 아니다.
+
+    아무것도 계산하지 않는다.  세는 것뿐이고, 읽을 수 없는 값은 None으로 두어
+    "0건"과 "모른다"가 같은 모양으로 인쇄되지 않게 한다.
+    """
+    reports = config.REPORTS
+    killed = _count(config.CONFIGS / "killed")
+    registered = _count(config.REGISTRY)
+    closed = _count(config.CONFIGS / "closed")
+    queued = _count(config.QUEUE)
+
+    try:
+        scouted = sum(1 for line in
+                      (reports / "SCOUT.jsonl").read_text(encoding="utf-8")
+                      .splitlines() if line.strip())
+    except OSError:
+        scouted = None
+
+    try:
+        from orc.ledger.trials import Ledger
+        with Ledger() as led:
+            trials = led.total_trials()
+    except Exception:                                              # noqa: BLE001
+        trials = None
+
+    # 분봉 재현 백로그.  forever.py가 고르는 것과 같은 목록을 같은 함수로
+    # 읽는다 -- 화면이 자기만의 계산을 하면 감독자가 실제로 할 일과 갈라진다.
+    backlog = done_pairs = None
+    try:
+        sys.path.insert(0, str(config.ORC_ROOT / "scripts"))
+        import forever
+        pending = forever.track_b_backlog()
+        backlog = len(pending)
+        every = json.loads((reports / "EXECUTION_REALISM.json")
+                           .read_text(encoding="utf-8")).get("results") or []
+        from orc.ledger.trials import code_hash
+        done_pairs = len({(x.get("hypothesis_id"), x.get("symbol")) for x in every
+                          if x.get("code_hash") == code_hash()})
+    except Exception:                                              # noqa: BLE001
+        pass
+
+    try:
+        target = json.loads((reports / "TARGET.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        target = None
+
+    return {
+        "scouted": scouted,
+        "proposed": killed + registered,
+        "killed": killed,
+        "registered": registered,
+        "trials": trials,
+        "queued": queued,
+        "closed": closed,
+        "open_families": max(registered - closed, 0),
+        "minute_backlog": backlog,
+        "minute_done": done_pairs,
+        "target": target,
+        "next_cycle_utc": runstate.next_worker_slot().isoformat(),
+        "next_reasoning_utc": runstate.next_reasoning_slot().isoformat(),
+    }
+
+
 def snapshot(hours: int = DEFAULT_HOURS) -> dict:
     procs = running_scripts()
     sup = runstate.supervisor()
@@ -234,15 +355,105 @@ def snapshot(hours: int = DEFAULT_HOURS) -> dict:
         "processes": procs,
         "strays": strays(procs, sup),
         "next": {"action": action, "why": why},
+        "progress": progress(),
         "duty": duty_cycle(hours),
         "recent": recent,
         "live_runs": live_runs(),
     }
 
 
+def _n(v, unit: str = "") -> str:
+    """읽을 수 없었던 값을 0으로 인쇄하지 않는다."""
+    return "?" if v is None else f"{v:,}{unit}"
+
+
+def _pad(text: str, width: int) -> str:
+    """표시 폭 기준으로 채운다.
+
+    `f"{name:9s}"`는 글자를 세고 터미널은 칸을 센다. 한글과 ①은 두 칸을
+    차지하므로 파이썬의 패딩은 한글이 섞인 표를 반드시 어긋나게 만든다 --
+    이 화면의 첫 판이 정확히 그렇게 나왔다.
+    """
+    w = sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1
+            for c in text)
+    return text + " " * max(0, width - w)
+
+
+def render_progress(snap: dict) -> list[str]:
+    """연구의 어느 단계이고, 지금까지 얼마나 왔고, 다음에 무엇을 하는가.
+
+    진행 상황을 읽지 못했으면 그렇게 말한다. 이 파일의 나머지가 빈 목록과
+    None을 구분하는 것과 같은 이유이고, 여기서는 한 가지가 더 걸려 있다:
+    화면이 통째로 죽으면 감독자가 살아 있는지도 못 본다.
+    """
+    p = snap.get("progress")
+    if not p:
+        return ["연구 진행", "  알 수 없음 — 진행 상황을 읽지 못했습니다"]
+    here = ACTION_STAGE.get(snap["next"]["action"])
+
+    L = ["연구는 이 여섯 단계를 돕니다"]
+    counts = (
+        f"{_n(p['scouted'])}건 수집",
+        f"{_n(p['proposed'])}건 제안",
+        f"기각 {_n(p['killed'])} · 통과 {_n(p['registered'])}",
+        f"{_n(p['trials'])}회 실행 · 대기 {_n(p['queued'])}건",
+        (f"분봉 {_n(p['minute_done'])}쌍 완료 · {_n(p['minute_backlog'])}쌍 남음"
+         if p["minute_backlog"] is not None else "분봉 재현 ?"),
+        f"{_n(p['closed'])}개 종결 · {_n(p['open_families'])}개 진행 중",
+    )
+    for i, ((num, name, what), tally) in enumerate(zip(STAGES, counts)):
+        mark = "   ◀ 지금 여기" if i == here else ""
+        L.append(f"  {num} {_pad(name, 12)}{_pad(tally, 30)}{mark}".rstrip())
+        L.append(f"       {what}")
+    if here is None:
+        L.append(f"     지금은 여섯 단계 밖의 일을 합니다 — {snap['next']['action']}")
+
+    L.append("")
+    L.append("앞으로")
+    if p["queued"]:
+        L.append(f"  대기 중 백테스트  {p['queued']}건 — 심사를 통과한 질문이 "
+                 "차례를 기다립니다")
+    else:
+        L.append("  대기 중 백테스트  없음 — 심사를 통과한 새 질문이 아직 "
+                 "없다는 뜻이고, 지금 속도를 정하는 것은 계산이 아니라 이쪽입니다")
+    L.append(f"  다음 정기 사이클  {runstate.kst(p['next_cycle_utc'])} "
+             f"({runstate.until(p['next_cycle_utc'])})")
+    L.append(f"  다음 가설 심사    {runstate.kst(p['next_reasoning_utc'])} "
+             f"({runstate.until(p['next_reasoning_utc'])})")
+
+    t = p.get("target")
+    if t:
+        tgt = t.get("target") or {}
+        within = t.get("best_cagr_within_drawdown") or {}
+        best = t.get("best_cagr") or {}
+        goal = float(tgt.get("cagr") or 1.0)
+        L.append("")
+        L.append("목표까지")
+        L.append(f"  목표   연 {goal:.0%} 수익을 최대손실 "
+                 f"{float(tgt.get('max_drawdown') or 0.25):.0%} 이내로")
+        if within:
+            got = float(within.get("cagr") or 0.0)
+            width = 40
+            filled = max(0, min(width, int(round(got / goal * width))))
+            L.append(f"  현재   {'▓' * filled}{'░' * (width - filled)}  "
+                     f"{got:.1%}")
+            L.append(f"         손실 {float(within.get('max_drawdown') or 0):.1%} "
+                     f"이내에서 가장 좋은 것: {within.get('symbol')} "
+                     f"({within.get('hypothesis_id')})")
+        if best:
+            L.append(f"  참고   손실을 무시하면 연 "
+                     f"{float(best.get('cagr') or 0):.1%}까지 있지만 그때 "
+                     f"최대손실이 {float(best.get('max_drawdown') or 0):.1%}입니다")
+        L.append(f"  판정   {t.get('state')} — {t.get('headline', '')}")
+    return L
+
+
 def render(snap: dict) -> list[str]:
     now = datetime.now(KST)
     L = [f"ORC watch   {now:%Y-%m-%d %H:%M:%S} KST   ({snap['utc'][11:19]}Z)", ""]
+
+    L += render_progress(snap)
+    L.append("")
 
     L.append("지금")
     sup = snap["supervisor"]
