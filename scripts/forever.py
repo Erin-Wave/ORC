@@ -238,45 +238,28 @@ def source_fingerprint(root: Path | None = None) -> str:
     return h.hexdigest()[:16]
 
 
-TASK_NAME = "ORC Forever"
-
-
-def trigger_task(name: str = TASK_NAME) -> str:
-    """Ask the scheduler to start a supervisor NOW.
-
-    Standing down on a source change (see SOURCE_WATCHED) would otherwise
-    leave the loop down until the hourly trigger -- up to an hour of nothing,
-    which is worse than the stale code it replaced. The scheduler stays the
-    single owner of starting a supervisor; this only moves its next start
-    forward. A failure is not fatal: the hourly trigger is the fallback and the
-    supervisor row on health.py goes BAD in the meantime, which is the truth.
-    """
-    try:
-        r = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
-             f"Start-ScheduledTask -TaskName '{name}'"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=60)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"could not trigger {name}: {type(exc).__name__}"
-    if r.returncode == 0:
-        return f"triggered {name}"
-    return (f"trigger failed ({(r.stderr or '').strip()[:120]}); "
-            "the hourly trigger is the fallback")
-
-
 def stand_down(stop_beat, reason: str) -> int:
-    """Hand the slot over cleanly, in this order, and the order is the point.
+    """Stop beating, drop the lock, exit. The watchdog trigger does the rest.
 
-    Stop beating, drop the lock, THEN ask the scheduler. A new instance that
-    finds a fresh heartbeat exits with 3, and the loop would be down until the
-    hourly trigger -- which is the very gap this function exists to close.
+    The first version called `Start-ScheduledTask` on the way out and logged
+    "triggered ORC Forever". It did not work, measured twice on 2026-09-04:
+    under IgnoreNew the task reported LastTaskResult 0 and nothing started, and
+    under Queue nothing started for twenty-five minutes either. A start
+    requested from INSIDE the running instance of that task does not produce a
+    successor. Logging "triggered" for that is the kind of unchecked claim
+    section 10 of the constitution is about, so the call is gone.
+
+    What replaces it is a number: the task's periodic trigger is five minutes
+    (schedule.FOREVER_WATCHDOG_MINUTES), which is the recovery window for a
+    supervisor that stopped for any reason at all. Dropping the lock is what
+    makes the next firing succeed rather than be refused.
     """
     log(f"=== standing down: {reason} ===")
     if stop_beat is not None:
         stop_beat.set()
     release_lock()
-    log(trigger_task())
+    log("lock released; the watchdog trigger starts the successor within "
+        "5 minutes")
     return 0
 
 

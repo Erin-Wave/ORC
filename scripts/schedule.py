@@ -90,27 +90,33 @@ TASKS = {
 #                             lock, so the hourly trigger is a no-op on a
 #                             healthy supervisor and the restart on a dead one.
 #
-# MultipleInstances is QUEUE for the supervisor, and it was IgnoreNew.
+# MultipleInstances stays IgnoreNew, and the RECOVERY WINDOW is the trigger
+# interval above -- not a self-trigger.
 #
-# forever.py stands down when its own source changes -- otherwise a resident
-# supervisor runs yesterday's code until someone notices -- and on the way out
-# it asks the scheduler to start the new one. Under IgnoreNew that request is
-# SILENTLY DROPPED, because the process making it is itself the running
-# instance of that task: on 2026-09-04 the handover logged "triggered ORC
-# Forever", the task reported LastTaskResult 0, and nothing started. The loop
-# was down until the next hourly trigger, which is the gap the handover exists
-# to close.
+# forever.py stands down when its own source changes, otherwise a resident
+# supervisor runs yesterday's code until someone notices. The first attempt at
+# a handover had it ask the scheduler to start the successor on the way out.
+# That does not work, measured twice on 2026-09-04: under IgnoreNew at 19:21
+# the task reported LastTaskResult 0 and nothing started, and under Queue at
+# 21:04 nothing started for twenty-five minutes either. A start requested from
+# INSIDE the running instance of that task does not produce a successor, and I
+# cannot explain the scheduler's rule well enough to build on it.
 #
-# Queue starts the queued instance the moment the current one exits, which is
-# exactly the handover. It cannot produce two live supervisors: forever.py's
-# lock refuses a second one, and the queued copy only begins after the first
-# has gone.
+# So the recovery window is the periodic trigger, which demonstrably works, and
+# it is five minutes rather than sixty. That covers every way the supervisor can
+# stop -- a source change, a crash, a kill, the machine sleeping -- with one
+# number, and while a supervisor is alive each firing is refused with
+# 0x800710E0, which health.py now reads correctly as the healthy case.
 #
 # The reasoning task's four daily slots stay registered on purpose: they are the
 # fallback for a supervisor that cannot start at all, which is the state this
 # session was spent recovering from.  A double fire is harmless because the
 # evidence gate makes whichever runs second skip.
-FOREVER_WATCHDOG_MINUTES = 60
+# Five, not sixty. This is the recovery window for a supervisor that has
+# stopped for ANY reason, and on 2026-09-04 sixty minutes of it was the gap
+# between a stand-down and the loop coming back. A firing while one is alive is
+# refused and costs nothing.
+FOREVER_WATCHDOG_MINUTES = 5
 
 # Hours a task may run before Task Scheduler kills it.  Zero means no ceiling,
 # and only the supervisor gets it: three hours is right for a reasoning pass,
@@ -284,8 +290,7 @@ def install() -> int:
             f'-Argument \'"{target}"\' -WorkingDirectory "{ROOT}"; '
             f'$ts = @({trigs}); '
             f'$s = New-ScheduledTaskSettingsSet -StartWhenAvailable '
-            f'-WakeToRun -MultipleInstances '
-            f'{"Queue" if name == FOREVER_TASK else "IgnoreNew"} '
+            f'-WakeToRun -MultipleInstances IgnoreNew '
             f'-ExecutionTimeLimit (New-TimeSpan -Hours {hours}) '
             f'-RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 15); '
             f'$p = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" '

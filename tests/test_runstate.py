@@ -929,27 +929,33 @@ def test_a_filler_with_a_backlog_is_due_whatever_its_clock_says(
     assert runstate.next_action()[0] == "rest"
 
 
-def test_the_supervisor_task_queues_a_handover_instead_of_dropping_it():
-    """forever.py stands down when its source changes and asks the scheduler
-    to start the new one. Under MultipleInstances IgnoreNew that request is
-    SILENTLY DROPPED -- the process making it is itself the running instance of
-    that task. On 2026-09-04 the handover logged "triggered ORC Forever", the
-    task reported LastTaskResult 0, and nothing started: the loop was down
-    until the next hourly trigger, which is the gap the handover exists to
-    close.
+def test_the_recovery_window_is_five_minutes_not_sixty():
+    """A supervisor can stop for four reasons -- a source change, a crash, a
+    kill, the machine sleeping -- and the periodic trigger is what brings it
+    back for all four. It was sixty minutes, and on 2026-09-04 that was the gap
+    between a stand-down and the loop existing again.
 
-    Queue cannot produce two live supervisors: forever.py's lock refuses a
-    second one, and the queued copy only begins after the first has exited.
+    Not a self-trigger: `Start-ScheduledTask` called from inside the running
+    instance did not start a successor under either instance policy, measured
+    twice. One number covers every case and needs no explanation of the
+    scheduler's rules.
     """
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
     import schedule
 
+    assert schedule.FOREVER_WATCHDOG_MINUTES <= 5, (
+        "this is the recovery window for a supervisor that has stopped")
     src = (Path(__file__).resolve().parent.parent / "scripts" / "schedule.py"
            ).read_text(encoding="utf-8")
-    assert '"Queue" if name == FOREVER_TASK else "IgnoreNew"' in src, (
-        "the supervisor queues; the other tasks must not")
-    assert schedule.FOREVER_TASK == "ORC Forever"
-    # and the reason has to travel with it, or the next session sets it back
-    assert "SILENTLY DROPPED" in src
+    assert "MultipleInstances IgnoreNew" in src, (
+        "a firing while one is alive must be refused, not queued up")
+    # and the reason has to travel with the number, or the next session raises
+    # it back to an hour
+    assert "LastTaskResult 0" in src
+
+    import forever
+    assert not hasattr(forever, "trigger_task"), (
+        "stand_down must not claim a trigger the scheduler ignores; the "
+        "docstring may explain why, which is why this asks for the FUNCTION")
