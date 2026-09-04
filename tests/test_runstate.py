@@ -884,14 +884,25 @@ def test_unknown_is_not_the_same_as_nothing(monkeypatch):
     assert "떠 있지 않음" in text
 
 
-def test_a_filler_with_a_backlog_is_due_whatever_its_clock_says(monkeypatch):
+def test_a_filler_with_a_backlog_is_due_whatever_its_clock_says(
+        tmp_path, monkeypatch):
     """A floor stops the SAME work repeating. The next backlog item is not the
     same work, and treating it as such made the loop do one 23-second job and
-    rest 19 minutes -- seventeen times over."""
+    rest 19 minutes -- seventeen times over.
+
+    The queue is pinned EMPTY. The first version of this test read the real
+    configs/queue/, where H0017 was waiting, and on the runner -- where
+    GITHUB_ACTIONS is set and the queue branch fires -- next_action answered
+    `cycle`. It passed here and failed there, and the suite gates the research
+    cycle: run 33862085374 skipped its Research step because of this test.
+    """
     import findings
 
-    from orc import runstate, target
+    from orc import config, runstate, target
 
+    empty = tmp_path / "queue"
+    empty.mkdir()
+    monkeypatch.setattr(config, "QUEUE", empty)
     monkeypatch.setattr(findings, "blocking", lambda: [])
     monkeypatch.setattr(target, "state",
                         lambda *a, **k: {"state": target.NO_CANDIDATE,

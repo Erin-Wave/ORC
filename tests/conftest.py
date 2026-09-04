@@ -1,4 +1,4 @@
-"""ORC | What the suite is never allowed to reach.
+"""ORC | What the suite is never allowed to reach, and what must not reach it.
 
 On 2026-09-04 the adversary veto and the close vote moved from `llm.ask_json`
 to `llm.ask_json_many`, so that two providers are asked at once instead of the
@@ -26,6 +26,23 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+
+@pytest.fixture(autouse=True)
+def no_ambient_runner_environment(monkeypatch):
+    """GITHUB_ACTIONS must not decide what a test measures.
+
+    `runstate.next_action()` reads it: on a runner a non-empty queue makes the
+    answer `cycle`, because the runner is the machine that collects the queue.
+    A test that called next_action() therefore passed here and failed there --
+    and the suite is the gate on the research cycle, so it stopped research for
+    the second time in one day.
+
+    Unset by default. A test that wants the runner's behaviour says so with
+    monkeypatch.setenv, which is per-test and visible in the test.
+    """
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    yield
 
 
 @pytest.fixture(autouse=True)

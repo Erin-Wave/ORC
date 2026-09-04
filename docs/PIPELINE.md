@@ -87,8 +87,13 @@
 
 1. **이 변경이 (B)의 테스트 게이트를 통과할 수 있나?** 이 기계에만 있는 것
    (`.git/hooks`, `facts/` 9.7 GB, Windows 예약 작업, 전역 git 신원)을
-   단정하는 테스트는 러너에서 실패하고 **연구를 멈춘다.**
-   확인: `ORC_FACTS=<빈 디렉터리> python -m pytest tests -q`
+   단정하는 테스트는 러너에서 실패하고 **연구를 멈춘다.** 하루에 두 번 그랬다:
+   `.git/hooks` 를 단정한 테스트(오전)와 `next_action()` 을 호출하면서
+   `GITHUB_ACTIONS` 와 실제 큐 내용에 의존한 테스트(오후, run 33862085374).
+   러너의 조건을 그대로 흉내내서 돌려라 —
+   `ORC_FACTS=<빈 디렉터리> GITHUB_ACTIONS=true python -m pytest tests -q`
+   그리고 `GITHUB_ACTIONS` 는 이제 `tests/conftest.py` 가 모든 테스트에서
+   해제한다: 러너에서만 켜지는 환경 변수가 테스트의 답을 정하면 안 된다.
 2. **HEAD·인덱스·작업 트리를 건드리나?** 건드리면 그 스텝은 **마지막**이어야
    하고 원상복구해야 한다. 뒤에 오는 스텝은 조용히 다른 커밋을 보게 된다.
 3. **`git config merge.*`를 쓰려 하나?** 정의는 `commit_results.py`에만 있다.
