@@ -234,6 +234,48 @@ def source_fingerprint(root: Path | None = None) -> str:
     return h.hexdigest()[:16]
 
 
+TASK_NAME = "ORC Forever"
+
+
+def trigger_task(name: str = TASK_NAME) -> str:
+    """Ask the scheduler to start a supervisor NOW.
+
+    Standing down on a source change (see SOURCE_WATCHED) would otherwise
+    leave the loop down until the hourly trigger -- up to an hour of nothing,
+    which is worse than the stale code it replaced. The scheduler stays the
+    single owner of starting a supervisor; this only moves its next start
+    forward. A failure is not fatal: the hourly trigger is the fallback and the
+    supervisor row on health.py goes BAD in the meantime, which is the truth.
+    """
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             f"Start-ScheduledTask -TaskName '{name}'"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"could not trigger {name}: {type(exc).__name__}"
+    if r.returncode == 0:
+        return f"triggered {name}"
+    return (f"trigger failed ({(r.stderr or '').strip()[:120]}); "
+            "the hourly trigger is the fallback")
+
+
+def stand_down(stop_beat, reason: str) -> int:
+    """Hand the slot over cleanly, in this order, and the order is the point.
+
+    Stop beating, drop the lock, THEN ask the scheduler. A new instance that
+    finds a fresh heartbeat exits with 3, and the loop would be down until the
+    hourly trigger -- which is the very gap this function exists to close.
+    """
+    log(f"=== standing down: {reason} ===")
+    if stop_beat is not None:
+        stop_beat.set()
+    release_lock()
+    log(trigger_task())
+    return 0
+
+
 def claim_lock() -> bool:
     """True if this process now owns the supervisor slot.
 
@@ -610,11 +652,12 @@ def main(argv: list[str]) -> int:
             # restarts itself is a second way in for a bug.
             now_hash = source_fingerprint()
             if now_hash != started_with and not dry:
-                log(f"=== source changed ({started_with} -> {now_hash}); "
-                    "standing down so the next trigger starts the new code ===")
                 runstate.record_activity(
                     "restart", f"source changed {started_with} -> {now_hash}")
-                return 0
+                return stand_down(
+                    stop_beat,
+                    f"source changed ({started_with} -> {now_hash}); the new "
+                    "code takes over")
             try:
                 did, nap = tick(dry_run=dry, skip=skip)
                 if did == "done" and not dry:

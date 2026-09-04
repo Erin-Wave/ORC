@@ -815,3 +815,52 @@ def test_the_supervisor_notices_that_it_is_running_yesterdays_code(tmp_path):
     # the files it watches are the ones that decide what it does next
     assert "orc/runstate.py" in forever.SOURCE_WATCHED
     assert "scripts/forever.py" in forever.SOURCE_WATCHED
+
+
+def test_standing_down_hands_the_slot_over_in_the_right_order(monkeypatch):
+    """Stop beating, drop the lock, THEN ask the scheduler.
+
+    A new instance that finds a fresh heartbeat exits with 3, and the loop
+    would then be down until the hourly trigger -- which is the very gap
+    standing down was supposed to close. The order IS the fix.
+    """
+    import threading
+
+    import forever
+
+    calls = []
+    monkeypatch.setattr(forever, "release_lock", lambda: calls.append("release"))
+    monkeypatch.setattr(forever, "trigger_task",
+                        lambda *a, **k: calls.append("trigger") or "triggered")
+    monkeypatch.setattr(forever, "log", lambda *a, **k: None)
+
+    beat = threading.Event()
+    assert forever.stand_down(beat, "source changed") == 0
+    assert beat.is_set(), "the heartbeat must stop before the lock is dropped"
+    assert calls == ["release", "trigger"], calls
+
+    # no heartbeat to stop is not an error: --dry-run has none
+    calls.clear()
+    assert forever.stand_down(None, "x") == 0
+    assert calls == ["release", "trigger"]
+
+
+def test_a_failed_trigger_is_reported_and_not_fatal(monkeypatch):
+    """The hourly trigger is the fallback, and health.py's supervisor row goes
+    BAD in the meantime -- which is the truth, so it must not be swallowed."""
+    import forever
+
+    class R:
+        returncode = 1
+        stdout = ""
+        stderr = "Access is denied"
+
+    monkeypatch.setattr(forever.subprocess, "run", lambda *a, **k: R())
+    note = forever.trigger_task("ORC Forever")
+    assert "trigger failed" in note and "fallback" in note
+
+    def _boom(*a, **k):
+        raise OSError("no scheduler here")
+
+    monkeypatch.setattr(forever.subprocess, "run", _boom)
+    assert "could not trigger" in forever.trigger_task()
