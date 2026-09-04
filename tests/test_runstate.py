@@ -657,3 +657,116 @@ def test_the_supervisor_marks_the_actions_it_starts():
            ).read_text(encoding="utf-8")
     assert 'os.environ.get("ORC_SUPERVISED")' in mut
     assert "record_activity" in mut
+
+
+# --------------------------------------------------------------------------
+# a change that crosses subsystems arrives with a map
+# --------------------------------------------------------------------------
+def test_a_cross_subsystem_change_is_refused_without_a_note():
+    """Four fixes to one area on 2026-09-04, each 'edit, discover a
+    consequence, edit again', and the change budget passed every time. Size
+    was never the problem: reading the path first was."""
+    from orc import guard
+
+    both = ["orc/runstate.py", "scripts/forever.py"]
+    assert guard.crossed_subsystems(both) == ["orc/", "scripts/"]
+    assert guard.needs_a_design_note(both, "fix things")
+
+    # three ways to satisfy it, because the point is having read the path and
+    # not having produced a file
+    assert guard.needs_a_design_note(both, "fix\n\nsee docs/PIPELINE.md") is None
+    assert guard.needs_a_design_note(both + ["docs/NEW.md"], "fix") is None
+    assert guard.needs_a_design_note(
+        both, "fix\n\nNO-DESIGN-NOTE: one line, one idea") is None
+
+
+def test_code_and_its_own_test_are_one_change():
+    """tests/ is not a crossing. A rule that fires on every honest commit
+    becomes ceremony, then noise, then --no-verify."""
+    from orc import guard
+
+    assert guard.needs_a_design_note(
+        ["orc/eval/signal_rules.py", "tests/test_kernel.py"], "add a rule") is None
+    assert guard.needs_a_design_note(["scripts/health.py"], "one file") is None
+    assert guard.needs_a_design_note([], "nothing") is None
+
+
+def test_a_design_note_is_not_charged_against_the_change_budget():
+    """Charging for the note would be a rule that discourages the behaviour it
+    demands."""
+    from orc import guard
+
+    rows = [(400, 0, "docs/PIPELINE.md"), (10, 2, "orc/target.py")]
+    assert guard.budget(rows) == (1, 12, ["orc/target.py"])
+    assert guard.over_budget(rows) is None
+
+
+def test_the_map_exists_and_names_what_a_change_must_preserve():
+    """A map that can be deleted without anything failing is a map that will
+    be. It carries the invariants, and one of them (I9) was found by drawing
+    it -- the cycle branch had no failure cooldown and could hot-loop."""
+    from orc import config
+
+    m = (config.ORC_ROOT / "docs" / "PIPELINE.md").read_text(encoding="utf-8")
+    for inv in ("I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9"):
+        assert f"| {inv} |" in m, f"{inv} is not in the invariant table"
+    assert "commit_results.py" in m and "next_action" in m
+    assert "확인 목록" in m, "the checklist to run before editing is the point"
+
+
+def test_a_failed_cycle_does_not_become_a_hot_loop(tmp_path, monkeypatch):
+    """FAILURE_COOLDOWN_MIN is applied inside the ZERO_N_WORK loop, and the
+    cycle branch returns before it. A daily_cycle.py that dies BEFORE
+    intake_queue() drains the queue would be retried every 30 seconds for the
+    whole five-hour window while zero-N work never got a turn.
+
+    docs/PIPELINE.md section 3: found by drawing the pipeline, not by meeting
+    this in production.
+    """
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    import findings
+
+    from orc import config, runstate, target
+
+    monkeypatch.setattr(findings, "blocking", lambda: [])
+    monkeypatch.setattr(target, "state",
+                        lambda *a, **k: {"state": target.NO_CANDIDATE,
+                                         "headline": "none", "candidates": []})
+    q = tmp_path / "queue"
+    q.mkdir()
+    (q / "H9999.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(config, "QUEUE", q)
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+
+    log = tmp_path / "activity.jsonl"
+    monkeypatch.setattr(runstate, "ACTIVITY_LOG", log)
+    skip = {"reason", "scout", "kernel_review"}
+
+    # with nothing recorded, the queue is collected
+    assert runstate.next_action(skip=skip)[0] == "cycle"
+
+    # a cycle that FAILED two minutes ago is not retried immediately
+    now = datetime.now(timezone.utc)
+    log.write_text(json.dumps({
+        "utc": (now - timedelta(minutes=2)).isoformat(),
+        "action": "cycle", "detail": "exit 1: the panel download failed",
+        "ok": False}) + chr(10), encoding="utf-8")
+    assert runstate.next_action(skip=skip)[0] != "cycle", (
+        "a failing cycle would be retried every WORKED_SLEEP_S for the window")
+
+    # once the cooldown is past, it is tried again
+    log.write_text(json.dumps({
+        "utc": (now - timedelta(minutes=runstate.FAILURE_COOLDOWN_MIN + 1)
+                ).isoformat(),
+        "action": "cycle", "detail": "exit 1", "ok": False}) + chr(10),
+        encoding="utf-8")
+    assert runstate.next_action(skip=skip)[0] == "cycle"
+
+    # and a cycle that SUCCEEDED does not block the next one at all
+    log.write_text(json.dumps({
+        "utc": (now - timedelta(minutes=1)).isoformat(),
+        "action": "cycle", "detail": "exit 0", "ok": True}) + chr(10),
+        encoding="utf-8")
+    assert runstate.next_action(skip=skip)[0] == "cycle"

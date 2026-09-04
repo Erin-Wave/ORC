@@ -338,13 +338,31 @@ green.** None of those was caught by a model thinking harder about it.
 | the tests are themselves tested, daily | `scripts/mutation.py` |
 | `DONE` is a measurement, not a sentence | `orc/target.py`, `runstate.next_action()` |
 | N may only grow | `pre-commit` hook + append-only ledger |
+| a change crossing two of `orc/` `scripts/` `.github/` arrives with a map | `commit-msg` hook + `docs/` |
 
 Each refusal has exactly one way through: a marker line in the commit message
 (`WEAKENS-TESTS:`, `MOVES-A-FROZEN-THRESHOLD:`, `TOUCHES-THE-HOLDOUT:`,
-`BUDGET-OVERRIDE:`). **That is a declaration, not an approval.** It converts a
+`BUDGET-OVERRIDE:`, `NO-DESIGN-NOTE:`). **That is a declaration, not an approval.** It converts a
 silent edit into a sentence in the permanent history that `git log --grep`
 finds — the same device `Hypothesis.verify()` uses. It does not ask anyone's
 permission, and `--no-verify` still exists. What is removed is the quiet path.
+
+**Read the path before touching it.** On 2026-09-04 this area was fixed four
+times in one day and every fix was *edit, discover a consequence, edit again*:
+a test asserting `.git/hooks` stopped research for two hours because nobody had
+noticed the suite gates the cycle; a `git reset --soft` in one step made the
+next step compare the wrong commits and report success; the merge policy turned
+out to exist twice. **Not one of them was too large** — the change budget passed
+every time. What was missing was the map.
+
+So a change that crosses two of `orc/`, `scripts/` and `.github/` is refused
+until there is a note under `docs/`, named in the commit message.
+`docs/PIPELINE.md` is that map for the loop — the stages, the invariants each
+change must preserve, and a seven-item checklist to run before editing the
+path. Updating it is the normal case; a new file is for a new subsystem.
+`tests/` deliberately does not count as a crossing: code and its test are one
+change, and a rule that fires on every honest commit becomes ceremony and then
+noise.
 
 **Asked, because no hook can check it.** Still rules:
 
@@ -360,6 +378,9 @@ permission, and `--no-verify` still exists. What is removed is the quiet path.
    described as complete.
 7. Report what changed, what ran, and **what is still untested** — the last one
    is the part that gets dropped and it is the part that matters.
+8. After pushing, read the `orc-guard` run before saying it is done. Twice on
+   2026-09-04 it was pushed and not read, and the second time the same defect
+   went on to block the research cycle.
 
 **Not an autonomous decision at all.** These need the owner, and no marker
 substitutes:

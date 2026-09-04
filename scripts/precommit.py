@@ -54,8 +54,11 @@ from orc import guard                                              # noqa: E402
 # Where a new file may appear without being announced. Anything else -- a new
 # top-level file above all -- has to be deliberate, because that is where a tool
 # writing into the tree lands.
+# docs/ is here deliberately, added 2026-09-04 with the first note in it. The
+# check refused the commit that created it, which is the check working: a new
+# top-level directory is exactly where a tool writing into the tree lands.
 EXPECTED_DIRS = ("orc/", "scripts/", "tests/", "configs/", "reports/",
-                 "ledger/", ".github/")
+                 "ledger/", "docs/", ".github/")
 
 ALLOWED_TOP_LEVEL = {
     "CLAUDE.md", "AGENTS.md", "README.md", "MANUAL_SETUP.md", "LICENSE",
@@ -241,6 +244,11 @@ def check_message(message: str) -> list[str]:
         problems.append("\n      ".join(hold)
                         + f"\n    If this is deliberate, say so with "
                           f"`{guard.MARKERS['holdout']}`.")
+
+    paths = [path for _, path in rows]
+    note = guard.needs_a_design_note(paths, message)
+    if note:
+        problems.append(note + f"  ({guard.MARKERS['design']} <why>)")
 
     over = guard.over_budget(numstat())
     if over and not guard.has_marker(message, "budget"):

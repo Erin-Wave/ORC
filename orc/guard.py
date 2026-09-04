@@ -78,7 +78,28 @@ FROZEN_CONSTANTS = (
 # work. Reports and the ledger are excluded because they are generated.
 MAX_FILES = 12
 MAX_LOC = 600
-GENERATED_PREFIXES = ("reports/", "ledger/", "facts/", "dist/")
+# Not counted against the budget. reports/, ledger/, facts/ and dist/ are
+# generated; docs/ is exempt because a design note is the thing the rule below
+# wants MORE of, and charging for it would be a rule that discourages the
+# behaviour it demands.
+GENERATED_PREFIXES = ("reports/", "ledger/", "facts/", "dist/", "docs/")
+
+# --------------------------------------------------------------------------
+# A change that crosses subsystems starts with a note, not with an edit
+# --------------------------------------------------------------------------
+# 2026-09-04: four fixes to one area in one day, each of them "edit, discover a
+# consequence, edit again". None was too large -- the budget above passed every
+# time. What was missing was reading the path end to end BEFORE touching it: a
+# test asserting .git/hooks stopped research for two hours because nobody had
+# noticed that the suite gates the cycle, and a `git reset --soft` in one step
+# made the NEXT step compare the wrong commits and report success.
+#
+# These three are the boundaries the surprises lived across. tests/ is
+# deliberately NOT one of them: code and its test are one change, and counting
+# them as two would make this fire on every honest commit, which is how a rule
+# becomes ceremony and then noise.
+SUBSYSTEMS = ("orc/", "scripts/", ".github/")
+DESIGN_NOTES = "docs/"
 
 # The one way through each refusal. A marker is a sentence in the permanent
 # record, not a flag on a command line, so it survives the session that wrote
@@ -88,6 +109,7 @@ MARKERS = {
     "threshold": "MOVES-A-FROZEN-THRESHOLD:",
     "budget": "BUDGET-OVERRIDE:",
     "holdout": "TOUCHES-THE-HOLDOUT:",
+    "design": "NO-DESIGN-NOTE:",
 }
 
 # Both of these read the SYNTAX TREE and not the text, and the first version of
@@ -241,6 +263,38 @@ def over_budget(numstat) -> str | None:
             f"{MAX_FILES} files / {MAX_LOC} lines. A large autonomous diff is "
             "the one nobody reviews. Split it, or say why it has to be one "
             "commit.")
+
+
+def crossed_subsystems(paths) -> list[str]:
+    """Which of the three boundaries this commit touches."""
+    return sorted({sub for sub in SUBSYSTEMS
+                   for p in paths if p.startswith(sub)})
+
+
+def has_design_note(paths, message: str) -> bool:
+    """Is there a map for this change, or a sentence saying why there is none?
+
+    Three ways to satisfy it, and updating an existing note is the common one:
+    the point is to have read the path end to end, not to produce a new file.
+    """
+    if any(p.startswith(DESIGN_NOTES) and p.endswith(".md") for p in paths):
+        return True
+    if DESIGN_NOTES in (message or "") and ".md" in (message or ""):
+        return True
+    return has_marker(message, "design")
+
+
+def needs_a_design_note(paths, message: str) -> str | None:
+    crossed = crossed_subsystems(paths)
+    if len(crossed) < 2 or has_design_note(paths, message):
+        return None
+    return (f"this commit crosses {len(crossed)} subsystems "
+            f"({', '.join(crossed)}) with no design note. Four fixes to one "
+            "area on 2026-09-04 were each 'edit, discover a consequence, edit "
+            "again', and none of them was too large -- what was missing was "
+            f"reading the path first. Write or update a note under "
+            f"{DESIGN_NOTES} and name it in the message (docs/PIPELINE.md is "
+            "the map for the loop), or say why this one does not need one.")
 
 
 def holdout_regression(before: str | None, after: str | None) -> list[str]:

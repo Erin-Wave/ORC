@@ -1049,7 +1049,19 @@ def next_action(now: datetime | None = None,
         # once is the concurrent ledger write that once lost 112 trials and 39
         # minutes. One machine collects the queue, and it is the one whose
         # whole job is to.
-        if os.environ.get("GITHUB_ACTIONS") and "cycle" not in skip:
+        # A failed cycle may not become a hot loop. FAILURE_COOLDOWN_MIN is
+        # applied inside the ZERO_N_WORK loop below, and this branch returns
+        # before it -- so a daily_cycle.py that dies BEFORE intake_queue()
+        # drains the queue (a panel download that fails, a crash) would be
+        # retried every WORKED_SLEEP_S for the whole window while zero-N work
+        # never got a turn. Found by drawing the pipeline rather than by
+        # meeting it: docs/PIPELINE.md section 3.
+        tried = last_activity_at("cycle", ok_only=False)
+        ok_at = last_activity_at("cycle")
+        cooling = (tried is not None
+                   and (now - tried) < timedelta(minutes=FAILURE_COOLDOWN_MIN)
+                   and (ok_at is None or ok_at < tried))
+        if os.environ.get("GITHUB_ACTIONS") and "cycle" not in skip and not cooling:
             return "cycle", (
                 f"큐에 등록된 질문 {len(queued)}개({', '.join(queued)}) — "
                 "이 러너가 패널을 들고 있으니 워크플로 디스패치를 기다리지 않고 "
