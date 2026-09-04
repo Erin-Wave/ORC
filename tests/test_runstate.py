@@ -959,3 +959,54 @@ def test_the_recovery_window_is_five_minutes_not_sixty():
     assert not hasattr(forever, "trigger_task"), (
         "stand_down must not claim a trigger the scheduler ignores; the "
         "docstring may explain why, which is why this asks for the FUNCTION")
+
+
+def test_the_cycle_row_answers_whether_research_happened():
+    """잡의 결론은 그 질문에 답하지 않는다.
+
+    orc-cycle 은 Research 스텝을 처음 몇 분에 끝내고 "keep working for the
+    rest of the window" 가 잡을 다섯 시간 붙잡는다. 그래서 방금 90행을
+    착지시킨 런조차 다섯 시간 동안 in_progress 이고, "마지막 완료 런의 결론"은
+    그동안 낡은 것을 가리킨다 -- 2026-09-04 22:20 에 그 줄은 연구가 정상으로
+    돌아온 뒤에도 세 시간 전 실패를 BAD 로 띄웠다. 소유자가 그걸 보고
+    "이거 왜 BAD 뜸" 이라고 물었고, 그 질문이 옳았다.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import health
+
+    run = {"databaseId": 1, "createdAt": "2026-09-04T12:06:36Z",
+           "status": "in_progress", "workflowName": "orc-cycle"}
+
+    def row(concl, status="completed"):
+        return health.research_row(
+            run, [{"name": "Research cycle", "status": status,
+                   "conclusion": concl}])
+
+    assert row("success")[0] == health.OK
+    assert "평가를 끝냈습니다" in row("success")[2]
+
+    for bad in ("failure", "cancelled"):
+        sev, _, note = row(bad)
+        assert sev == health.BAD and "--log-failed" in note
+
+    sev, _, note = row("skipped")
+    assert sev == health.BAD
+    assert "건너뛰었습니다" in note, "게이트가 막은 것은 알아야 한다"
+
+    sev, _, note = row(None, status="in_progress")
+    assert sev == health.WARN and "평가 중" in note
+
+    # 알 수 없음은 통과가 아니다
+    assert health.research_row(run, None)[0] == health.WARN
+    # 아직 시작하지 않은 런에는 스텝이 없고, 그것은 결함이 아니다
+    sev, _, note = health.research_row(run, [])
+    assert sev == health.WARN and "아직 시작하지 않았습니다" in note
+    assert health.research_row(None, None)[0] == health.DIM
+
+    # 그리고 잡 결론 줄에서 orc-cycle 은 빠져 있어야 한다 -- 다시 넣으면
+    # 다섯 시간짜리 창 때문에 낡은 실패가 BAD 로 남는다
+    src = (Path(__file__).resolve().parent.parent / "scripts" / "health.py"
+           ).read_text(encoding="utf-8")
+    assert 'for wf in ("orc-guard", "orc-watchdog"):' in src

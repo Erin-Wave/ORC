@@ -97,6 +97,61 @@ def _load(name: str):
 RUNS_QUERIED = 40
 
 
+# 사이클 잡의 결론은 "연구가 됐나"에 답하지 않는다.
+#
+# orc-cycle 은 Research 스텝을 처음 몇 분에 끝내고, 그 다음 "keep working for
+# the rest of the window" 스텝이 잡을 다섯 시간 붙잡는다. 그래서 방금 성공해서
+# 90행을 착지시킨 런조차 다섯 시간 동안 in_progress 이고, "마지막 완료 런의
+# 결론"은 그동안 계속 낡은 것을 가리킨다 -- 2026-09-04 에 그 줄은 연구가
+# 정상으로 돌아온 뒤에도 세 시간 전 실패를 BAD 로 띄웠다.
+#
+# 그래서 이 줄은 최신 런의 **Research 스텝**을 읽는다. 그것이 "지금 연구가
+# 되고 있나"라는 질문 자체다.
+CYCLE_STEP = "Research cycle"
+
+
+def run_steps(run_id) -> list[dict] | None:
+    """한 런의 스텝 목록. None 이면 물어볼 수 없었다."""
+    try:
+        r = subprocess.run(["gh", "run", "view", str(run_id), "--json", "jobs"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=45, cwd=config.ORC_ROOT)
+        if r.returncode != 0:
+            return None
+        jobs = json.loads(r.stdout).get("jobs") or []
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+    return [st for j in jobs for st in (j.get("steps") or [])]
+
+
+def research_row(run: dict | None, steps: list[dict] | None) -> tuple[str, str, str]:
+    """최신 사이클이 실제로 연구를 했는지, 한 줄로."""
+    if run is None:
+        return (DIM, "cycle -> 연구", "최근 런이 없습니다")
+    rid, when = run.get("databaseId"), _ago(run.get("createdAt"))
+    if steps is None:
+        return (WARN, "cycle -> 연구", f"#{rid} 의 스텝을 읽을 수 없었습니다")
+    step = next((st for st in steps if st.get("name") == CYCLE_STEP), None)
+    if step is None:
+        # 아직 시작하지 않은 런에는 스텝이 없다. 그것은 결함이 아니라 순번을
+        # 기다리는 것이고, 위의 live 줄이 이미 그렇게 말한다.
+        return (WARN, "cycle -> 연구",
+                f"#{rid} 는 아직 시작하지 않았습니다 ({when})")
+    status, concl = step.get("status"), step.get("conclusion")
+    if concl == "success":
+        return (OK, "cycle -> 연구", f"#{rid} 가 {when} 평가를 끝냈습니다")
+    if concl == "skipped":
+        return (BAD, "cycle -> 연구",
+                f"#{rid} 는 평가를 건너뛰었습니다 — 앞 스텝(테스트 게이트 또는 "
+                f"패널 내려받기)이 막았습니다  -> gh run view {rid} --log-failed")
+    if concl in ("failure", "cancelled"):
+        return (BAD, "cycle -> 연구",
+                f"#{rid} 의 평가가 {concl} — gh run view {rid} --log-failed")
+    if status in ("in_progress", "queued", "pending", None):
+        return (WARN, "cycle -> 연구", f"#{rid} 가 지금 평가 중입니다 ({when} 시작)")
+    return (WARN, "cycle -> 연구", f"#{rid}: {status}/{concl}")
+
+
 def worker_state() -> list[tuple[str, str, str]]:
     """The cloud half, from the GitHub CLI.  Its cron is nominal: scheduled runs
     on a public repository are routinely delayed two to four hours, so 'next' is
@@ -117,16 +172,30 @@ def worker_state() -> list[tuple[str, str, str]]:
     out = []
     live = [x for x in runs if x["status"] not in ("completed",)]
     for x in live:
+        # 상태 단어를 그대로 쓴다. 전부 "RUNNING NOW" 로 찍으면 동시성 그룹
+        # 뒤에서 줄 서 있는 pending 런이 돌고 있는 것처럼 읽힌다.
+        what = {"in_progress": "실행 중", "queued": "대기 중(동시성 그룹)",
+                "pending": "대기 중(동시성 그룹)"}.get(x["status"], x["status"])
         out.append((WARN, f"{x['workflowName']} #{x['databaseId']}",
-                    f"RUNNING NOW, started {_ago(x['createdAt'])} "
-                    f"(a full cycle takes ~40m)"))
+                    f"{what} ({_ago(x['createdAt'])})"))
+
+    # 사이클이 연구를 했는지는 잡의 결론이 아니라 Research 스텝이 답한다.
+    # 시작한 런 중 가장 최신. 대기 중인 런은 아직 연구에 대해 말할 것이 없고,
+    # 그것을 고르면 이 줄이 "스텝이 없습니다"라는 쓸모없는 경고가 된다.
+    newest_cycle = next((x for x in runs if x["workflowName"] == "orc-cycle"
+                         and x["status"] not in ("queued", "pending")), None)
+    out.append(research_row(
+        newest_cycle,
+        run_steps(newest_cycle["databaseId"]) if newest_cycle else None))
     # orc-guard is here because a red one means the LAST PUSH went out on a
     # check nobody could confirm had run, and because twice on 2026-09-04 it
     # was pushed and not read: the first red run was a test of mine that only
     # passes on this workstation, and the same test then failed the cycle's own
     # gate step and stopped research for two hours. A gate whose verdict is not
     # on the screen the owner checks is a gate that reports to nobody.
-    for wf in ("orc-cycle", "orc-guard", "orc-watchdog"):
+    # orc-cycle 은 위의 research_row 가 답한다. 여기서 그 잡의 결론을 또 찍으면
+    # 다섯 시간짜리 창 때문에 낡은 실패가 BAD 로 남아 있게 된다.
+    for wf in ("orc-guard", "orc-watchdog"):
         done = [x for x in runs if x["workflowName"] == wf and x["status"] == "completed"]
         if not done:
             out.append((DIM, wf,
