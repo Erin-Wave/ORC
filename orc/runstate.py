@@ -967,6 +967,29 @@ def next_action(now: datetime | None = None,
 
     queued = [p.stem for p in sorted(config.QUEUE.glob("*.json"))] \
         if config.QUEUE.exists() else []
+    # The owner's stop condition, ahead of the queue and ahead of the next
+    # question.  A cell that already meets it changes what is useful: another
+    # registration would only raise the multiple-testing bar the candidate
+    # itself has to clear, while the checks that would confirm or kill it cost
+    # zero ledger rows.  Read from the ledger rather than from
+    # reports/TARGET.json on purpose -- a decision to stop the project must not
+    # be able to rest on a report a failed cycle left stale.
+    try:
+        from orc import target as target_mod
+        tgt = target_mod.state()
+    except Exception:                                              # noqa: BLE001
+        tgt = None
+    if tgt is not None and tgt["state"] == target_mod.COMPLETE:
+        return "done", tgt["headline"]
+    if tgt is not None and tgt["state"] == target_mod.CANDIDATE_UNVERIFIED:
+        for check, action in (("robustness", "robustness"),
+                              ("execution", "execution_realism")):
+            if action in skip:
+                continue
+            if any(check in c["unmeasured"] for c in tgt["candidates"]):
+                return action, (f"목표 수치를 만족하는 후보가 있는데 {check} "
+                                f"검증이 비어 있습니다 — {tgt['headline']}")
+
     if queued:
         # The worker evaluates on GitHub, so the workstation is free.  Fall
         # through to zero-N work rather than waiting on it.

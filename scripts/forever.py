@@ -402,6 +402,14 @@ def tick(dry_run: bool = False, skip: set[str] | None = None) -> tuple[str, int]
     log(f"next: {action} -- {why}")
     if dry_run:
         return action, 0
+    if action == "done":
+        # The owner's stop condition is met and verified.  A supervisor that
+        # kept proposing after that would spend N on questions whose answers no
+        # longer change anything, so this is the one answer that ends the loop
+        # rather than pacing it.  main() turns the zero sleep into an exit.
+        runstate.record_activity(action, why)
+        log(f"STOP: {why}")
+        return action, 0
     if action == "blocked":
         runstate.record_activity(action, why)
         return action, BLOCKED_SLEEP_S
@@ -476,7 +484,15 @@ def main(argv: list[str]) -> int:
     try:
         while True:
             try:
-                _, nap = tick(dry_run=dry, skip=skip)
+                did, nap = tick(dry_run=dry, skip=skip)
+                if did == "done" and not dry:
+                    # The one action that ends the supervisor.  Everything else
+                    # it can decide is a reason to keep going; this is the
+                    # owner's stop condition being met and verified, and a loop
+                    # that carried on past it would spend N on questions whose
+                    # answers no longer change anything.
+                    log("=== stop condition met; supervisor standing down ===")
+                    return 0
             except KeyboardInterrupt:
                 raise
             except Exception as exc:                               # noqa: BLE001

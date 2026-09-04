@@ -782,3 +782,270 @@ def test_a_duplicated_or_unordered_bar_is_refused_as_a_clock():
     off = hours[:8] + [hours[8].replace(minute=30)] + hours[9:]
     with pytest.raises(ValueError, match="whole multiple"):
         panel_mod._assert_bar_index_is_a_clock(_frame(off), "TESTUSDT", "1h")
+
+
+# --------------------------------------------------------------------------
+# CCI and the timeframe it is read on
+#
+# Track B's first families read the funding series, which is published on its
+# own schedule and cannot be read early by accident.  A price indicator can:
+# every one of these tests exists because a higher-timeframe reading is exactly
+# the kind of thing that is trivially computed one candle too soon, and a
+# 4-hour candle read at 01:00 is a backtest that knows how its own hour ends.
+# --------------------------------------------------------------------------
+def _cci_panel(close, high=None, low=None, rate=None, clock="1h"):
+    """A minimal Panel over a given path, on a clean hourly grid from midnight."""
+    from orc.facts.panel import Panel
+
+    close = np.asarray(close, dtype=np.float64)
+    n = close.size
+    fr = np.zeros(n) if rate is None else np.asarray(rate, dtype=np.float64)
+    step = np.timedelta64(1, "m" if clock == "1m" else "h")
+    return Panel(symbol="BTCUSDT", clock=clock,
+                 ts=np.datetime64("2021-01-01T00:00") + np.arange(n) * step,
+                 open=close,
+                 high=close if high is None else np.asarray(high, dtype=np.float64),
+                 low=close if low is None else np.asarray(low, dtype=np.float64),
+                 close=close, volume=np.ones(n), funding_rate=fr,
+                 funding_settled=np.zeros(n, dtype=bool) if rate is None else fr != 0.0,
+                 holdout_state="development", panel_hash="ph")
+
+
+def _cci_walk(n, seed=11):
+    rng = np.random.default_rng(seed)
+    close = 100.0 * np.exp(np.cumsum(rng.normal(0.0, 0.004, n)))
+    return close, close * 1.003, close * 0.997
+
+
+def test_cci_is_the_textbook_definition():
+    """(TP - SMA(TP)) / (0.015 * mean absolute deviation), and nothing else.
+
+    Pinned against a window computed by hand because the two easy substitutions
+    -- a standard deviation for the mean absolute deviation, or a deviation
+    about the series mean rather than the window's -- both produce a plausible
+    oscillator with the same shape and a different scale, and every level a
+    hypothesis pre-registers is in the units this constant sets.
+    """
+    from orc.eval.signal_rules import _CCI_K, cci
+
+    n, period = 60, 20
+    close, high, low = _cci_walk(n)
+    ts = np.datetime64("2021-01-01") + np.arange(n) * np.timedelta64(1, "h")
+    v = cci(ts, high, low, close, period, timeframe_hours=1.0, clock="1h")
+
+    tp = (high + low + close) / 3.0
+    i = 45
+    w = tp[i - period + 1:i + 1]
+    ref = (tp[i] - w.mean()) / (_CCI_K * np.abs(w - w.mean()).mean())
+    assert v[i] == pytest.approx(ref)
+    assert np.isnan(v[:period - 1]).all(), "a partial window is not a reading"
+    assert np.isfinite(v[period - 1:]).all()
+
+
+def test_a_four_hour_reading_is_not_available_until_its_candle_closes():
+    """The whole no-lookahead argument for a higher timeframe.
+
+    The 00:00-04:00 candle is knowable at the close of the 03:00 bar and not
+    one bar earlier.  If the reading moved at 01:00 it would be carrying the
+    high, low and close of an hour that had not happened yet -- and it would
+    look like a working strategy, because it is one, for someone who can see
+    three hours ahead.
+    """
+    from orc.eval.signal_rules import cci
+
+    n = 400
+    close, high, low = _cci_walk(n, seed=3)
+    ts = np.datetime64("2021-01-01T00:00") + np.arange(n) * np.timedelta64(1, "h")
+    v = cci(ts, high, low, close, period_bars=5, timeframe_hours=4.0, clock="1h")
+
+    hour = (np.arange(n) % 4)
+    moved = np.flatnonzero(np.diff(np.nan_to_num(v, nan=-1e18)) != 0.0) + 1
+    assert moved.size > 10, "a constant reading would pass this test vacuously"
+    assert set(hour[moved]) == {3}, (
+        "the reading may only change on the bar that CLOSES a 4h candle")
+
+
+def test_a_cci_signal_cannot_see_past_its_own_bar():
+    """Two histories, identical up to bar k and wild after it, same signals up to k."""
+    from orc.eval.signal_rules import build_signals
+    from orc.orchestrator.spec import SignalTrialConfig
+
+    n, k = 800, 500
+    close, high, low = _cci_walk(n, seed=5)
+    other = close.copy()
+    other[k:] *= np.exp(np.cumsum(np.full(n - k, 0.05)))     # a different future
+    cfg = SignalTrialConfig(symbol="BTCUSDT", rule="cci_reversion",
+                            lookback_days=1.0, timeframe_hours=4.0,
+                            enter_level=100.0, exit_level=20.0)
+
+    a = build_signals(cfg, _cci_panel(close, high, low))
+    b = build_signals(cfg, _cci_panel(other, high, low))
+    assert np.array_equal(a[0][:k], b[0][:k])
+    assert np.array_equal(a[1][:k], b[1][:k])
+    assert not np.array_equal(a[0][k:], b[0][k:]), "the futures must actually differ"
+
+
+def test_a_flat_window_reads_as_nothing_rather_than_as_the_largest_extreme():
+    """Mean absolute deviation of zero is a division by zero, not an extreme.
+
+    A dead altcoin printing the same price for a day is the case: the numerator
+    is zero too, so the honest answer is that there is no reading.  Returning
+    +-inf would put the rule at maximum conviction on a series that did not
+    move, and returning 0.0 would report a perfectly neutral market, which is a
+    decision rather than the absence of one.
+    """
+    from orc.eval.signal_rules import cci, cci_reversion
+
+    n = 200
+    close = np.full(n, 100.0)
+    ts = np.datetime64("2021-01-01") + np.arange(n) * np.timedelta64(1, "h")
+    v = cci(ts, close, close, close, period_bars=10, timeframe_hours=1.0, clock="1h")
+    assert np.isnan(v).all()
+
+    entry, exit_ = cci_reversion(v, enter_level=100.0, exit_level=20.0)
+    assert not entry.any(), "no reading is not a reason to hold a position"
+    assert exit_.all(), "an unreadable indicator must not keep one open either"
+
+
+def test_reversion_and_breakout_take_opposite_sides_of_one_reading():
+    """The pair is the test.  Nothing but the side may differ between them."""
+    from orc.eval.signal_rules import cci_breakout, cci_reversion
+
+    rng = np.random.default_rng(19)
+    v = rng.normal(0.0, 120.0, 5_000)
+    fade, ride = (cci_reversion(v, 100.0, 20.0), cci_breakout(v, 100.0, 20.0))
+    assert np.array_equal(fade[0], -ride[0])
+    assert np.array_equal(fade[1], ride[1])
+    assert (fade[0] != 0).any() and (fade[0] == 0).any()
+
+
+def test_cci_levels_that_would_flip_every_bar_are_refused():
+    from orc.eval.signal_rules import cci_breakout, cci_reversion
+
+    v = np.zeros(50)
+    for fn in (cci_reversion, cci_breakout):
+        with pytest.raises(ValueError, match="enter_level"):
+            fn(v, enter_level=50.0, exit_level=80.0)
+
+
+def test_the_multi_timeframe_filter_must_be_the_slower_of_the_two():
+    """Reversed, it is a different rule wearing this one's pre-registration."""
+    from orc.eval.signal_rules import build_signals, cci_mtf
+    from orc.orchestrator.spec import SignalTrialConfig
+
+    close, high, low = _cci_walk(600, seed=8)
+    p = _cci_panel(close, high, low)
+    base = dict(symbol="BTCUSDT", rule="cci_mtf", lookback_days=1.0,
+                enter_level=100.0, exit_level=0.0, filter_level=100.0)
+
+    with pytest.raises(ValueError, match="filter_timeframe_hours"):
+        build_signals(SignalTrialConfig(timeframe_hours=4.0, **base), p)
+    with pytest.raises(ValueError, match="must be above"):
+        build_signals(SignalTrialConfig(timeframe_hours=4.0,
+                                        filter_timeframe_hours=1.0, **base), p)
+    with pytest.raises(ValueError, match="filter_level"):
+        cci_mtf(np.zeros(10), np.zeros(10), enter_level=100.0, exit_level=0.0,
+                filter_level=0.0)
+
+
+def test_the_multi_timeframe_rule_only_takes_the_side_its_filter_permits():
+    from orc.eval.signal_rules import cci_mtf
+    from orc.eval.signal import FLAT, LONG, SHORT
+
+    base = np.array([-200.0, -200.0, 200.0, 200.0, -200.0])
+    filt = np.array([+150.0, -150.0, +150.0, -150.0, 0.0])
+    entry, _ = cci_mtf(base, filt, enter_level=100.0, exit_level=0.0,
+                       filter_level=100.0)
+    # oversold inside an uptrend is the only long; overbought inside a
+    # downtrend the only short; no trend permits nothing at all.
+    assert list(entry) == [LONG, FLAT, FLAT, SHORT, FLAT]
+
+
+def test_build_signals_reads_the_configuration_rather_than_its_defaults():
+    """The guard on the defect the dispatch refactor was for.
+
+    `build_signals` used to take (rule, panel, lookback, enter_rate, exit_rate)
+    and had five call sites, each unpacking those five by hand.  A rule reading
+    a NEW field would have been handed the dataclass default by four of them
+    while the fifth honoured the grid, and the visible result is a robustness
+    check or an execution-realism run reporting a number for a configuration it
+    never evaluated.  So the config goes in whole, and this test fails if any
+    field it carries stops reaching the rule.
+    """
+    from orc.eval.signal_rules import build_signals
+    from orc.orchestrator.spec import SignalTrialConfig
+
+    close, high, low = _cci_walk(1_200, seed=13)
+    p = _cci_panel(close, high, low)
+    base = dict(symbol="BTCUSDT", rule="cci_reversion", lookback_days=1.0,
+                timeframe_hours=1.0, enter_level=100.0, exit_level=20.0)
+
+    ref = build_signals(SignalTrialConfig(**base), p)
+    for field, value in (("timeframe_hours", 4.0), ("enter_level", 250.0),
+                         ("exit_level", 80.0), ("lookback_days", 5.0)):
+        other = build_signals(SignalTrialConfig(**{**base, field: value}), p)
+        assert not (np.array_equal(ref[0], other[0])
+                    and np.array_equal(ref[1], other[1])), (
+            f"{field} changed and the signals did not; the rule is not reading it")
+
+
+def test_the_null_scores_a_price_rule_on_the_synthetic_path():
+    """A price rule handed the real panel is a null for a strategy nobody ran.
+
+    The search test bootstraps a history and re-runs the whole grid on it.  For
+    a carry rule the panel's funding series is the input and the bootstrap does
+    not touch it, so the signals are identical by design; for a CCI rule the
+    input IS the bootstrapped path, and reading the panel's own close instead
+    would compare the observed best against a null that had seen the real
+    prices all along.  Track A carries the same override on `build_gate` and
+    the same footnote on why.
+    """
+    from orc.eval.signal_rules import build_signals
+    from orc.orchestrator.spec import SignalTrialConfig
+
+    close, high, low = _cci_walk(1_200, seed=17)
+    other, _, _ = _cci_walk(1_200, seed=23)
+    p = _cci_panel(close, high, low)
+    cfg = SignalTrialConfig(symbol="BTCUSDT", rule="cci_reversion",
+                            lookback_days=1.0, timeframe_hours=4.0,
+                            enter_level=100.0, exit_level=20.0)
+
+    real = build_signals(cfg, p)
+    null = build_signals(cfg, p, close=other)
+    assert not np.array_equal(real[0], null[0])
+    # and the bootstrap has no wick: high and low default to the path itself
+    assert np.array_equal(null[0], build_signals(cfg, p, close=other,
+                                                 high=other, low=other)[0])
+
+
+def test_a_higher_timeframe_reading_does_not_depend_on_the_execution_clock():
+    """The same 4h candle on 1h bars and on 1m bars, to the last decimal.
+
+    This is what makes `execution_realism` able to say anything: it re-runs one
+    cell on minute bars, and if the signal itself changed with the clock, the
+    drift it measures would be a mixture of two effects with no way to separate
+    them.  Aggregating from the epoch rather than from the panel's first bar is
+    what buys this.
+    """
+    from orc.eval.signal_rules import cci
+
+    hours = 96
+    rng = np.random.default_rng(29)
+    minute = 100.0 * np.exp(np.cumsum(rng.normal(0.0, 0.0004, hours * 60)))
+    ts_m = np.datetime64("2021-01-01T00:00") + np.arange(minute.size) * np.timedelta64(1, "m")
+    # the hourly panel the same minutes would build
+    block = minute.reshape(hours, 60)
+    ts_h = np.datetime64("2021-01-01T00:00") + np.arange(hours) * np.timedelta64(1, "h")
+    hi_h, lo_h, cl_h = block.max(1), block.min(1), block[:, -1]
+
+    on_minutes = cci(ts_m, minute, minute, minute, period_bars=6,
+                     timeframe_hours=4.0, clock="1m")
+    on_hours = cci(ts_h, hi_h, lo_h, cl_h, period_bars=6,
+                   timeframe_hours=4.0, clock="1h")
+    # compare where both exist: the hourly bar at 03:00 and the minute bar at
+    # 03:59 are the same instant, and the reading must be the same number.
+    last_minute_of_hour = np.arange(59, minute.size, 60)
+    a, b = on_minutes[last_minute_of_hour], on_hours
+    both = np.isfinite(a) & np.isfinite(b)
+    assert both.sum() > 10
+    np.testing.assert_allclose(a[both], b[both], rtol=1e-12, atol=1e-9)

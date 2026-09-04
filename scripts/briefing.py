@@ -432,6 +432,38 @@ def build() -> str:
                  "'어디서 깨지는지의 지도'이고, `FAIL`은 발표 가능한 결과입니다.")
     L.append("")
 
+    # ── 종료 조건 ─────────────────────────────────────────────────────────
+    # 소유자가 정한 정지 조건이고, 이 브리핑에서 가장 먼저 확인하고 싶은 것.
+    # 사이클이 써 둔 reports/TARGET.json 만 읽는다 -- 이 파일의 원칙대로
+    # 원장을 직접 뒤지지 않는다.
+    tgt = _load("TARGET.json")
+    if tgt:
+        t = tgt.get("target", {})
+        L.append("## 연구 종료 조건까지의 거리")
+        L.append("")
+        L.append(f"- 종료 조건: **CAGR {t.get('cagr', 0):.0%} 이상, "
+                 f"MDD {t.get('max_drawdown', 0):.0%} 이하**를 만족하는 규칙이 "
+                 f"여러 차례 검증을 통과할 때 (Calmar "
+                 f"{(t.get('cagr', 0) / max(t.get('max_drawdown', 1), 1e-9)):.0f} "
+                 "이상에 해당). 이것은 정지 조건이지 개별 결과를 재는 잣대가 "
+                 "아닙니다 — 실패한 가족은 여전히 실패로 발표됩니다.")
+        L.append(f"- 현재 상태: **{tgt.get('state')}** — {tgt.get('headline')}")
+        best = tgt.get("best_cagr")
+        if best:
+            L.append(f"- 지금까지 최고 CAGR: **{best['cagr']:+.1%}** "
+                     f"(MDD {best['max_drawdown']:.1%}, {best['hypothesis_id']} "
+                     f"{best['symbol']}) — 목표는 두 조건을 **동시에** 요구합니다.")
+        near = tgt.get("best_cagr_within_drawdown")
+        if near:
+            L.append(f"- MDD {t.get('max_drawdown', 0):.0%} 이내에서 최고 CAGR: "
+                     f"**{near['cagr']:+.1%}** (MDD {near['max_drawdown']:.1%}, "
+                     f"{near['hypothesis_id']} {near['symbol']})")
+        for c in tgt.get("candidates", []):
+            missing = ", ".join(c["failed"] + c["unmeasured"]) or "없음"
+            L.append(f"- 후보 {c['hypothesis_id']} `{c.get('family')}` — "
+                     f"심볼 {len(c['symbols'])}개, 남은 검증: {missing}")
+        L.append("")
+
     # ── 지금까지 ──────────────────────────────────────────────────────────
     L.append("## 지금까지 무엇을 확립했는가")
     L.append("")

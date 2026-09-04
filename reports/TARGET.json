@@ -1,0 +1,24 @@
+{
+  "state": "NO_CANDIDATE",
+  "target": {
+    "cagr": 1.0,
+    "max_drawdown": 0.25
+  },
+  "candidates": [],
+  "best_cagr": {
+    "cagr": 0.9338815525304167,
+    "max_drawdown": 0.6667165174873233,
+    "calmar": 1.400717588413689,
+    "hypothesis_id": "H0006",
+    "symbol": "SOLUSDT"
+  },
+  "best_cagr_within_drawdown": {
+    "cagr": 0.2764460131612052,
+    "max_drawdown": 0.24834431555465974,
+    "calmar": 1.1131561942288966,
+    "hypothesis_id": "H0006",
+    "symbol": "BTCUSDT"
+  },
+  "rows_considered": 5292,
+  "headline": "목표(CAGR 100% / MDD 25%)를 만족하는 셀 없음, 트랙B 5292행 기준"
+}

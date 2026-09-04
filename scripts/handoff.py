@@ -112,6 +112,33 @@ def write_handoff() -> Path:
              f"{config.HOLDOUT_START} onward is sealed** and physically absent. "
              "Do not propose anything that needs it.")
     L.append("")
+    L.append("## The owner's standing instruction")
+    L.append("")
+    L.append("**When this project ends.** A rule that reaches a CAGR of "
+             f"**{config.TARGET_CAGR:.0%}** at a maximum drawdown of "
+             f"**{config.TARGET_MAX_DRAWDOWN:.0%}** or less, and survives "
+             "verification several times over, ends the research. It is a STOP "
+             "condition, not a bar any single result is judged against: a "
+             "family that fails still publishes its failure. Do not weaken a "
+             "kill condition to get closer to it and do not argue for a "
+             "proposal on the grounds that it might reach it. What it does "
+             "change: a shape with no plausible path to a Calmar of "
+             f"{config.TARGET_CAGR / config.TARGET_MAX_DRAWDOWN:.0f} is not "
+             "what the remaining N should be spent on.")
+    L.append("")
+    L.append("**What is being researched next.** Track B, CCI on the 4-hour "
+             "candle and across timeframes, as a long/short position signal -- "
+             "`cci_reversion`, `cci_breakout`, `cci_mtf`. One payer read three "
+             "ways, and say so rather than counting three mechanisms: a "
+             "position past maintenance margin is closed by the exchange with "
+             "an immediate-or-cancel order and a clearance fee, choosing "
+             "neither its price nor its timing. Continuation while that flow "
+             "runs and relaxation once it is exhausted are the two halves the "
+             "family splits on, and they cannot both be right at one horizon. "
+             "The liquidation stream itself is not in this archive, so every "
+             "claim here is a PARTIAL test and must say which part it cannot "
+             "see.")
+    L.append("")
     L.append("## Established results -- do not re-litigate these")
     L.append("")
     L.append("- **KT-1**: a long perpetual DCA pays a median funding bill of "
@@ -153,6 +180,18 @@ def write_handoff() -> Path:
              "exist in the code cannot be proposed -- if your idea needs a new "
              "signal generator, say so in the claim and it will be written "
              "first, rather than registering a grid that cannot run.")
+    L.append("")
+    L.append("The carry rules read the funding series and use `enter_rate` / "
+             "`exit_rate`, per SETTLEMENT and not annualised. The `cci_` rules "
+             "read PRICE and use `enter_level` / `exit_level` in the units the "
+             "literature quotes (+-100 the band, +-200 the extreme), with "
+             "`enter_level` above `exit_level`. `lookback_days` is the CCI "
+             "period as a DURATION, so one value means the same window on "
+             "every timeframe, and `timeframe_hours` is the candle it is read "
+             "on, aggregated from the execution clock -- 4.0 with clock "
+             "`\"1h\"` is the 4-hour candle traded on the hourly bar. "
+             "`cci_mtf` also needs `filter_timeframe_hours` (strictly slower "
+             "than `timeframe_hours`) and a positive `filter_level`.")
     L.append("")
     L.append("## What counts as a finding")
     L.append("")

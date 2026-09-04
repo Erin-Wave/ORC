@@ -15,6 +15,16 @@ import polars as pl
 
 from orc import config, holdout
 
+# What `holdout_state` on a Panel and on every ledger row can say.  Named here
+# because the ledger stores the string and code elsewhere has to select on it:
+# `orc.target` asks for development rows only, and a stop condition that could
+# be satisfied by a sealed measurement would be circular in the one place it
+# must not be.  A literal in two files is a rename away from silently matching
+# nothing, which reads as "no rows meet the target" -- the safe-looking answer.
+DEVELOPMENT = "DEVELOPMENT"
+SEALED_ONLY = "SEALED_ONLY"
+SEALED_INCLUDED = "SEALED_INCLUDED"
+
 # A stride expressed in bars only means a duration if the grid is continuous.
 MAX_MISSING_BAR_FRACTION = 0.005
 
@@ -158,13 +168,13 @@ def load(
         # Refuses unless a final test is open. This used to be a docstring.
         holdout.note_sealed_read(f"{symbol}/{clock} sealed")
         df = holdout.sealed_slice(df)
-        state = "SEALED_ONLY"
+        state = SEALED_ONLY
     elif development_only:
         df = holdout.development_slice(df)
-        state = "DEVELOPMENT"
+        state = DEVELOPMENT
     else:
         holdout.note_sealed_read(f"{symbol}/{clock} full")
-        state = "SEALED_INCLUDED"
+        state = SEALED_INCLUDED
     if df.height == 0:
         raise ValueError(
             f"{symbol}: no bars left in the {state} span")

@@ -55,8 +55,7 @@ MAX_RELATIVE_DRIFT = 0.10
 
 def run_on(cfg: SignalTrialConfig, clock: str) -> dict:
     p = panel_mod.load(cfg.symbol, clock, development_only=True)
-    lookback = p.bars(cfg.lookback_days)
-    entry, exit_ = build_signals(cfg.rule, p, lookback, cfg.enter_rate, cfg.exit_rate)
+    entry, exit_ = build_signals(cfg, p)
     spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
                       fee_bps=cfg.effective_fee_bps,
                       slippage_bps=cfg.effective_slippage_bps,

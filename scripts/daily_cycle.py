@@ -240,6 +240,17 @@ def run_cycle(only: list[str] | None = None, rerun_all: bool = False,
     except Exception as exc:                                      # noqa: BLE001
         print(f"  briefing failed: {type(exc).__name__}: {exc}")
 
+    # Where the run leaves the owner's stop condition.  Written by the cycle
+    # so that status, briefing and the notifier keep reading reports/ and only
+    # reports/, which is the property that keeps a convenience command from
+    # becoming a way to hunt the ledger for a maximum.
+    try:
+        from orc import target as target_mod
+        target_mod.write_report()
+        print("written: reports/TARGET.json")
+    except Exception as exc:                                      # noqa: BLE001
+        print(f"  target check failed: {type(exc).__name__}: {exc}")
+
     news = notify.collect()
     (config.REPORTS / "NEWS.json").write_text(
         json.dumps({"generated_utc": summary["finished_utc"],

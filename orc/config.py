@@ -44,6 +44,31 @@ FUNDING_HOURS = (0, 8, 16)   # UTC settlement hours
 COST_STRESS_MULTIPLIERS = (1.0, 2.0, 3.0)
 
 # --------------------------------------------------------------------------
+# When this project is finished
+# --------------------------------------------------------------------------
+# The owner's stop condition, set on 2026-09-04: research ends when a rule that
+# has survived verification several times over -- the list is in orc/target.py,
+# not a feeling -- reaches a CAGR of 100 % at a maximum drawdown of 25 % or
+# less.  Both halves or neither: a CAGR without its drawdown is exactly the
+# number this project exists not to be fooled by.
+#
+# Frozen with the measurement that proves it was frozen early.  On the day it
+# was written the ledger held 6,848 trials, 5,292 of them Track B, and NOT ONE
+# met it.  The best CAGR ever recorded was 0.9339 at a drawdown of 0.6667
+# (H0006 SOLUSDT, in a family that is already closed); the best Calmar was
+# 1.4007; and among the 65 rows that did hold drawdown at or under 25 %, the
+# best CAGR was 0.2764.  The pair implies a Calmar of at least 4.0, which is
+# 2.9x the largest this project has ever produced.
+#
+# It is a STOP condition and not a threshold any result is judged against.
+# Nothing here changes how a cell is measured, what disqualifies it, or what
+# gets published: a family that fails still publishes its failure, and a map of
+# where rules break is still the deliverable.  What this decides is only when
+# the loop has no further question worth asking.
+TARGET_CAGR = 1.00
+TARGET_MAX_DRAWDOWN = 0.25
+
+# --------------------------------------------------------------------------
 # What one hypothesis is allowed to cost
 # --------------------------------------------------------------------------
 # Every configuration a registered hypothesis enumerates enters the append-only

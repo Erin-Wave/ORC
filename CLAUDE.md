@@ -22,6 +22,23 @@ The two tracks share this document, the sealed holdout, the ledger and its `N`.
 They differ only in what a position is, and therefore in which metrics are
 defined — see section 4.
 
+**When this ends.** The research stops when a rule reaches a **CAGR of 100 % at
+a maximum drawdown of 25 % or less** and survives verification several times
+over — the checks that count are listed in `orc/target.py`, not left to
+judgement on the day. `python -m orc.target` prints how far away that is and
+`reports/TARGET.json` carries the same answer for every reader.
+
+This is a **stop condition, not a bar any single result is judged against.**
+Nothing about how a cell is measured changes: a family that fails still
+publishes its failure, `FAIL` is still a publishable result, and the map is
+still the deliverable. What it decides is only when there is no further
+question worth spending `N` on. It was set by the owner on 2026-09-04, and the
+constants in `orc/config.py` carry the measurement showing that nothing in the
+6,848 trials recorded by then came near it — best CAGR 0.9339 at a drawdown of
+0.6667, best Calmar 1.4007, and the pair demands a Calmar of at least 4.0.
+Never widen it, and never argue for a hypothesis on the grounds that it might
+reach it.
+
 ---
 
 ## 1. Clean room — absolute
@@ -154,6 +171,34 @@ The parameter space is enumerated exhaustively, never sampled. Consequently:
 | KT-2 martingale | liquidation rate hits **100 % at 2× and above** on the current development window | leverage above 1× is closed for averaging-down |
 | KT-3 survivorship | 1018 symbols ever traded, 481 in the local archive, 266 delisted. Median terminal multiple **0.680 survivors vs 0.642 delisted**, a gap of **0.038** against a threshold of **0.20 frozen before results were seen**, on 32 usable survivors and 28 usable delisted (10 required per group) | **LOCAL_UNIVERSE_ACCEPTABLE** (2026-09-04). The local archive does not flatter a result by 0.20 in median terminal multiple, so the survivorship objection no longer blocks an alt-basket hypothesis on its own. It says nothing about any other objection to one. |
 
+## 7b. The open family — CCI, on the 4-hour candle and across timeframes
+
+Set by the owner on 2026-09-04 as what Track B researches next, and the
+evaluator now speaks it: `cci_reversion`, `cci_breakout` and `cci_mtf`, with
+`timeframe_hours` and `filter_timeframe_hours` on `SignalTrialConfig`. The
+indicator is read on candles aggregated from the execution clock rather than
+from a second set of panel files, so the same 4-hour signal can be re-run
+against minute fills and the drift that `execution_realism` measures is
+attributable to execution alone.
+
+**It is one payer read three ways, and a proposal must say so** rather than
+counting three mechanisms — section 6 is explicit that a tree re-arranging one
+idea is narrower than its hypothesis count suggests. The payer is the one the
+scout notebook already found: a Binance USD-M position past maintenance margin
+is closed by the exchange with an immediate-or-cancel order and a clearance
+fee. It chooses neither its price nor its timing. That line's observable is the
+sentence the family splits on — "asymmetric continuation and elevated volume,
+followed by relaxation once the compulsory buy flow is exhausted". Continuation
+is `cci_breakout`; relaxation is `cci_reversion`; they cannot both be right at
+one horizon, and that disagreement is the test neither shape is alone.
+
+**And it is a partial test, which every claim in the family must state.** The
+liquidation stream itself is not in this archive. A displaced price is evidence
+of forced flow, not a measurement of it, and ordinary aggressive trading
+displaces price too. CCI is the observable this project can reach, not the
+mechanism, and a report that forgets the difference is claiming something it
+did not measure.
+
 ## 8. Commands
 
 ```bash
@@ -173,6 +218,7 @@ python scripts/scout.py --list                  # the mechanisms it collected
 python scripts/schedule.py                      # do the local tasks point HERE?
 python scripts/schedule.py --repair             # after the checkout moves
 python scripts/schedule.py --install            # register all three tasks
+python -m orc.target                            # 종료 조건까지 얼마나 남았나
 python -m orc.runstate                          # the durable loop verdict
 python -m orc.runstate --next                   # the most useful thing to do now
 python -m orc.runstate --due                    # may a reasoning pass run now?

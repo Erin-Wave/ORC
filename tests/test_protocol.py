@@ -2055,3 +2055,217 @@ def test_the_ledger_merge_leaves_nothing_behind(tmp_path):
     # And what it wrote is still a ledger, not a checkpointed corpse.
     with Ledger(out) as led:
         assert led.total_trials() == total
+
+
+# --------------------------------------------------------------------------
+# the owner's stop condition
+#
+# Set on 2026-09-04: CAGR 100 % at a drawdown of 25 % or less, verified several
+# times over, ends the project.  Every test here exists because a stop
+# condition is worth exactly as much as its resistance to being met by
+# accident -- by a sealed measurement, by a check that never ran, or by two
+# different cells on two symbols counted as one result confirmed twice.
+# --------------------------------------------------------------------------
+def _signal_row(**kw):
+    from orc.facts.panel import DEVELOPMENT
+    base = dict(run_id="r1", family="cci_reversion", symbol="BTCUSDT",
+                evaluator="signal",
+                cfg={"symbol": "BTCUSDT", "rule": "cci_reversion",
+                     "enter_level": 150.0},
+                metrics={"cagr": 1.5, "max_drawdown": 0.10, "calmar": 15.0},
+                n_starts=1, panel_hash="ph", code="ch",
+                holdout_state=DEVELOPMENT, hypothesis_id="H0099")
+    base.update(kw)
+    return base
+
+
+def _target_ledger(tmp_path, rows):
+    from orc.ledger.trials import Ledger
+    db = tmp_path / "target.sqlite"
+    with Ledger(db) as led:
+        for r in rows:
+            led.record(**r)
+    return Ledger(db)
+
+
+def test_the_stop_condition_needs_both_halves():
+    """A CAGR without its drawdown is the number this project exists not to be
+    fooled by: the best Track B cell ever recorded compounds at 93 % a year and
+    gives back two thirds of the account on the way there."""
+    from orc import target
+
+    assert target.meets({"cagr": 1.2, "max_drawdown": 0.20})
+    assert not target.meets({"cagr": 3.0, "max_drawdown": 0.60})
+    assert not target.meets({"cagr": 0.5, "max_drawdown": 0.05})
+    assert not target.meets({"cagr": float("nan"), "max_drawdown": 0.10})
+    assert not target.meets({"cagr": 2.0})
+    assert not target.meets({})
+
+
+def test_the_stop_condition_ignores_sealed_rows(tmp_path):
+    """A final test writes into the same table.  A stop condition that could be
+    satisfied by the holdout measurement it is supposed to PRECEDE would be
+    circular in the one place it must not be."""
+    from orc import target
+    from orc.facts.panel import SEALED_ONLY
+
+    with _target_ledger(tmp_path, [_signal_row(holdout_state=SEALED_ONLY)]) as led:
+        st = target.state(led)
+    assert st["state"] == target.NO_CANDIDATE
+    assert st["rows_considered"] == 0
+
+
+def test_a_candidate_is_not_verified_by_checks_that_never_ran(tmp_path, monkeypatch):
+    """Unmeasured is not passed.  It is the easiest possible way to clear a
+    check, and `verdict.disqualifiers` already makes the same distinction about
+    a PBO nobody computed."""
+    from orc import config, target
+
+    monkeypatch.setattr(config, "REPORTS", tmp_path / "reports")
+    rows = [_signal_row(symbol=s, cfg={"symbol": s, "rule": "cci_reversion",
+                                       "enter_level": 150.0})
+            for s in ("BTCUSDT", "ETHUSDT", "SOLUSDT")]
+    with _target_ledger(tmp_path, rows) as led:
+        st = target.state(led)
+
+    assert st["state"] == target.CANDIDATE_UNVERIFIED
+    cand = st["candidates"][0]
+    assert cand["checks"]["symbols"] == "pass"          # three symbols, one cell
+    assert set(cand["unmeasured"]) == {"not_disqualified", "robustness",
+                                       "execution", "holdout"}
+    assert not cand["verified"]
+
+
+def test_one_symbol_is_one_experiment(tmp_path, monkeypatch):
+    """Section 4: a signal rule's independent paths come from symbols and
+    non-overlapping blocks, never from bar count.  One curve meeting the target
+    is a claim about that symbol."""
+    from orc import config, target
+
+    monkeypatch.setattr(config, "REPORTS", tmp_path / "reports")
+    with _target_ledger(tmp_path, [_signal_row()]) as led:
+        cand = target.candidates(led)[0]
+    assert cand["checks"]["symbols"] == "fail"
+    assert "symbols" in cand["failed"]
+
+
+def test_two_different_cells_are_not_one_result_confirmed_twice(tmp_path, monkeypatch):
+    """Grouped by parameters with the symbol removed.  Counting cells that met
+    the target under DIFFERENT settings as agreement is how a search over nine
+    symbols manufactures a confirmation it never found."""
+    from orc import config, target
+
+    monkeypatch.setattr(config, "REPORTS", tmp_path / "reports")
+    rows = [_signal_row(symbol=s, cfg={"symbol": s, "rule": "cci_reversion",
+                                       "enter_level": lvl})
+            for s, lvl in (("BTCUSDT", 150.0), ("ETHUSDT", 200.0),
+                           ("SOLUSDT", 250.0))]
+    with _target_ledger(tmp_path, rows) as led:
+        cands = target.candidates(led)
+    assert len(cands) == 3
+    assert all(c["checks"]["symbols"] == "fail" for c in cands)
+
+
+def test_a_failed_robustness_gate_is_not_an_unmeasured_one(tmp_path, monkeypatch):
+    """The two are reported apart because they mean opposite things: one is
+    work still to do, the other is the candidate being wrong."""
+    import json
+
+    from orc import config, target
+
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    monkeypatch.setattr(config, "REPORTS", reports)
+    (reports / "ROBUSTNESS.json").write_text(json.dumps({"results": [
+        {"hypothesis_id": "H0099", "symbol": s, "passed": s != "SOLUSDT"}
+        for s in ("BTCUSDT", "ETHUSDT", "SOLUSDT")]}), encoding="utf-8")
+
+    rows = [_signal_row(symbol=s, cfg={"symbol": s, "rule": "cci_reversion",
+                                       "enter_level": 150.0})
+            for s in ("BTCUSDT", "ETHUSDT", "SOLUSDT")]
+    with _target_ledger(tmp_path, rows) as led:
+        cand = target.candidates(led)[0]
+    assert cand["checks"]["robustness"] == "fail"
+    assert "robustness" in cand["failed"]
+
+    # and one symbol left unchecked is unmeasured, not a pass
+    (reports / "ROBUSTNESS.json").write_text(json.dumps({"results": [
+        {"hypothesis_id": "H0099", "symbol": "BTCUSDT", "passed": True}]}),
+        encoding="utf-8")
+    with _target_ledger(tmp_path, rows) as led:
+        cand = target.candidates(led)[0]
+    assert cand["checks"]["robustness"] is None
+
+
+def test_the_loop_stops_when_the_target_is_verified(monkeypatch):
+    """`forever.py` asks `next_action` what to do, so this is where a met stop
+    condition has to appear or it changes nothing about what the machine does."""
+    import findings
+
+    from orc import runstate, target
+
+    # An open high-severity finding stops research ahead of everything else,
+    # which is correct and would make this test a hostage to the repository's
+    # current state.
+    monkeypatch.setattr(findings, "blocking", lambda: [])
+    monkeypatch.setattr(target, "state",
+                        lambda *a, **k: {"state": target.COMPLETE,
+                                         "headline": "다 되었습니다",
+                                         "candidates": []})
+    action, why = runstate.next_action()
+    assert action == "done"
+    assert "다 되었습니다" in why
+
+
+def test_an_unverified_candidate_outranks_the_next_question(monkeypatch):
+    """Registering another hypothesis while a candidate sits unverified raises
+    the multiple-testing bar that candidate itself has to clear, and the checks
+    that would settle it cost zero ledger rows."""
+    import findings
+
+    from orc import runstate, target
+
+    monkeypatch.setattr(findings, "blocking", lambda: [])
+    monkeypatch.setattr(target, "state",
+                        lambda *a, **k: {
+                            "state": target.CANDIDATE_UNVERIFIED,
+                            "headline": "후보 1개",
+                            "candidates": [{"unmeasured": ["execution"],
+                                            "failed": []}]})
+    action, _ = runstate.next_action()
+    assert action == "execution_realism"
+    # and a supervisor that cannot run it is told the next best thing rather
+    # than being handed the one action it has already declined.
+    action, _ = runstate.next_action(skip={"execution_realism"})
+    assert action != "execution_realism"
+
+
+def test_the_proposer_prompt_speaks_the_vocabulary_the_code_has():
+    """A capability the proposer has never heard of does not exist.
+
+    `scripts/handoff.py` generates its field list from the dataclass, so it
+    cannot drift.  `scripts/reasoning_prompt.txt` is hand-written prose and
+    the local pass reads it verbatim: when CCI and the multi-timeframe fields
+    were added, a prompt still listing two carry rules would have made the new
+    kernel unreachable, and the failure is silent -- the model proposes what it
+    was told exists and every proposal is valid.
+    """
+    from dataclasses import fields
+
+    from orc import config
+    from orc.eval.signal_rules import RULES
+    from orc.orchestrator.spec import SignalTrialConfig
+
+    text = (config.ORC_ROOT / "scripts" / "reasoning_prompt.txt").read_text(
+        encoding="utf-8")
+    line = next(ln for ln in text.splitlines() if "`rule` must be one of:" in ln)
+    listed = {r.strip() for r in line.split(":", 1)[1].split(",") if r.strip()}
+    assert listed == set(RULES), (
+        f"the prompt offers {sorted(listed)} and the code has {sorted(RULES)}")
+
+    for f in fields(SignalTrialConfig):
+        if f.name == "symbol":
+            continue
+        assert f.name in text, (
+            f"{f.name} is a field of SignalTrialConfig that the proposer has "
+            "never been told about")

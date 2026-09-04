@@ -92,6 +92,29 @@ class SignalTrialConfig:
     lookback_days: float = 21.0
     enter_rate: float = 0.00015          # per settlement, not annualised
     exit_rate: float = 0.00005
+    # --- the indicator rules -------------------------------------------
+    # The candle the indicator is read on, in hours, aggregated from the
+    # execution clock rather than from a separate panel.  4.0 with clock "1h"
+    # is the 4-hour candle traded on the hourly bar; 1.0 is the base clock
+    # itself.  Keeping this a property of the SIGNAL and not of the panel is
+    # what lets `execution_realism` re-run the identical 4h signal against
+    # minute fills -- a second set of panel files could not, because the
+    # signal would change with the clock and the drift would be unattributable.
+    timeframe_hours: float = 1.0
+    # CCI levels, in the units the literature quotes: +-100 is the band
+    # Lambert's 0.015 was chosen to produce, +-200 the extreme.  `enter_level`
+    # must exceed `exit_level`, which is the rule's hysteresis and is
+    # pre-registered like any other parameter.
+    enter_level: float = 100.0
+    exit_level: float = 0.0
+    # The slower timeframe of a multi-timeframe rule, and the level at which it
+    # permits a side.  None means single-timeframe, which is what every rule
+    # but cci_mtf is.  `filter_lookback_days` defaults to `lookback_days`, so
+    # the two readings cover the same span of TIME at different resolutions
+    # unless a hypothesis deliberately says otherwise.
+    filter_timeframe_hours: float | None = None
+    filter_lookback_days: float | None = None
+    filter_level: float = 100.0
     capital: float = 10_000.0
     leverage: float = 1.0
     stop_loss: float | None = None       # fraction of margin

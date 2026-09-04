@@ -26,7 +26,7 @@ from orc.eval.analytic import AnalyticSpec, evaluate, lump_sum_reference
 from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak,
                                simulate)
 from orc.eval.signal import SignalSpec, run_signals
-from orc.eval.signal_rules import build_signals
+from orc.eval.signal_rules import FUNDING_RULES, build_signals
 from orc.facts import panel as panel_mod
 from orc.facts.panel import Panel
 from orc.kernel import metrics_fc
@@ -218,14 +218,23 @@ def run_signal_trial(cfg: "SignalTrialConfig", p: Panel | None = None) -> TrialO
     """Track B: one equity curve per symbol, judged on fixed-capital ratios."""
     p = p or panel_mod.load(cfg.symbol, cfg.clock, development_only=True)
     if not p.has_funding():
-        raise UnsupportedConfig("no funding history; a carry rule has nothing to read")
+        # Both kinds of rule are refused, for two different reasons.  A carry
+        # rule has nothing to read.  A price rule reads price and would run
+        # perfectly well -- on a position whose funding bill the evaluator
+        # would charge at zero, which is not a cheaper version of the trade but
+        # a different one: KT-1 measured that bill at 36 % of capital over
+        # three years on the paying side.
+        why = ("a carry rule has nothing to read" if cfg.rule in FUNDING_RULES
+               else "a position would be charged no funding at all, which is "
+                    "not a conservative error")
+        raise UnsupportedConfig(f"no funding history; {why}")
 
     lookback = p.bars(cfg.lookback_days)
     if lookback < 2 or lookback >= len(p):
         raise UnsupportedConfig(
             f"lookback_exceeds_history ({lookback} bars of {len(p)})")
 
-    entry, exit_ = build_signals(cfg.rule, p, lookback, cfg.enter_rate, cfg.exit_rate)
+    entry, exit_ = build_signals(cfg, p)
     spec = SignalSpec(
         capital=cfg.capital, leverage=cfg.leverage,
         fee_bps=cfg.effective_fee_bps, slippage_bps=cfg.effective_slippage_bps,

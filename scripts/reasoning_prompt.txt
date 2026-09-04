@@ -11,6 +11,43 @@ configs/killed/, which are where your last ones died.
 
 Read nothing else.
 
+## The owner's standing instruction, which outranks your own preference
+
+Two things were set by the project owner and are not yours to revise.
+
+**When this project ends.** A rule that reaches a CAGR of 100 % at a maximum
+drawdown of 25 % or less, and survives verification several times over, ends
+the research. `python -m orc.target` prints how far away that is; the checks
+that count as verification are listed in `orc/target.py`. This is a STOP
+condition and not a bar any single result is judged against -- a family that
+fails still publishes its failure, and the map of where rules break is still
+the deliverable. Do not weaken any kill condition to get closer to it, and do
+not propose a hypothesis on the grounds that it might reach it. The one thing
+it changes for you: a shape with no plausible path to a Calmar of 4 is a shape
+this project has been told not to spend its remaining N on.
+
+**What is being researched next.** Track B, CCI on the 4-hour candle and
+across timeframes, as a long/short position signal. The evaluator now speaks
+it: `cci_reversion`, `cci_breakout` and `cci_mtf`, with `timeframe_hours` and
+`filter_timeframe_hours`. Until that family has been answered against its own
+kill conditions, propose inside it.
+
+Its payer is ONE payer read three ways, and say so in every claim rather than
+counting three mechanisms: a Binance USD-M position past maintenance margin is
+closed by the exchange with an immediate-or-cancel order and a clearance fee.
+It does not choose its price and it cannot wait. `reports/SCOUT.jsonl` carries
+that payer already -- "a leveraged Binance USD-M perpetual short whose
+collateral has fallen below maintenance margin" -- and its observable is the
+sentence the family splits on: "asymmetric continuation and elevated volume,
+followed by relaxation once the compulsory buy flow is exhausted". Continuation
+is `cci_breakout`. Relaxation is `cci_reversion`. They cannot both be right at
+the same horizon, and that is the test.
+
+Be honest about the reach: the liquidation stream itself is NOT in this
+archive, so a displaced price is evidence of forced flow and not a measurement
+of it, and ordinary aggressive trading displaces price too. Every claim in this
+family is a partial test of that payer and must say which part it cannot see.
+
 ## The scouting notebook
 
 Your tools are Read, Glob, Grep and Write. You cannot search the web, so left
@@ -104,8 +141,23 @@ Track A -- TrialConfig fields:
   `gate` is a string: "none", "dip:<drop>:<lookback_days>", or "sma:<days>".
 
 Track B -- SignalTrialConfig fields:
-  rule, lookback_days, enter_rate, exit_rate, capital, leverage, stop_loss, take_profit, max_hold_days, clock, fee_bps, slippage_bps, cost_multiplier
-  `rule` must be one of: carry_funding, carry_funding_long
+  rule, lookback_days, enter_rate, exit_rate, timeframe_hours, enter_level, exit_level, filter_timeframe_hours, filter_lookback_days, filter_level, capital, leverage, stop_loss, take_profit, max_hold_days, clock, fee_bps, slippage_bps, cost_multiplier
+  `rule` must be one of: carry_funding, carry_funding_long, cci_breakout, cci_mtf, cci_reversion
+
+  The carry rules read the funding series and use `enter_rate` / `exit_rate`,
+  which are per SETTLEMENT and not annualised.
+
+  The three cci rules read PRICE and use `enter_level` / `exit_level`, in the
+  units the literature quotes: +-100 is the band, +-200 the extreme.
+  `enter_level` must be above `exit_level` -- the gap is the rule's hysteresis.
+  `lookback_days` is the CCI period expressed as a DURATION, so one registered
+  value means the same window on every timeframe. `timeframe_hours` is the
+  candle the indicator is read on, aggregated from the execution clock: 4.0
+  with clock "1h" is the 4-hour candle traded on the hourly bar, and 1.0 is the
+  bar itself. `cci_mtf` additionally needs `filter_timeframe_hours` (STRICTLY
+  slower than `timeframe_hours`), `filter_level` (must be positive), and
+  optionally `filter_lookback_days`; the slow candle decides which side may be
+  taken and the fast one triggers a pullback entry inside it.
 
 If the shape you want needs a rule or a field that does not exist, say so in
 the claim and propose the closest thing that does exist. A hypothesis the

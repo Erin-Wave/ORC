@@ -22,6 +22,11 @@ green, which is why each needs its own signal rather than a general health check
                 exists on exactly one machine and will never be answered.
   a finding     An open high-severity review finding. A cycle refuses to run on
                 top of one, so it stops the research until it is dispositioned.
+  the target    A cell reaches the owner's stop condition -- CAGR 100 % at a
+                drawdown of 25 % or less -- or, having reached it, finishes its
+                verification. Nothing else in this file can say that the
+                research is over, and the last step before it is over needs a
+                person: only a hand-written token opens the holdout.
   a split vote  Two providers disagree about whether a family's pre-registered
                 kill condition applies. Nothing closes and nothing fails: the
                 family stays open and is re-enumerated every six hours while a
@@ -110,6 +115,21 @@ def collect() -> list[str]:
             news.append(
                 f"{rep['hypothesis_id']} {rep['family']}: {sym} clears every check "
                 f"at {rep['metric']} {s['best_value']:+.4f}  {s['best_config']}")
+
+    # The owner's stop condition, which is the one piece of news that ends the
+    # project rather than informing it.  Read from the report the cycle wrote
+    # so this file keeps its reports-only property; a missing file is silence,
+    # not a clean bill of health, and the stall check above already covers a
+    # cycle that stopped writing.
+    tgt = _load("TARGET.json") or {}
+    if tgt.get("state") == "COMPLETE":
+        news.append(f"ORC 연구 종료 조건 충족: {tgt.get('headline')}. "
+                    "reports/TARGET.json 에 검증 목록이 있습니다")
+    elif tgt.get("state") == "VERIFIED_ON_DEVELOPMENT":
+        news.append(f"ORC: {tgt.get('headline')}. 봉인 홀드아웃은 사람이 "
+                    "토큰 파일을 써야 열립니다 -- 남은 개봉 횟수는 유한합니다")
+    elif tgt.get("state") == "CANDIDATE_UNVERIFIED":
+        news.append(f"ORC: {tgt.get('headline')}")
 
     # Two providers reading one pre-registered sentence differently is a fact
     # about the sentence, and it closes nothing, so without this it would sit in

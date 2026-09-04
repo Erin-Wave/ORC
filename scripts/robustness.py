@@ -118,8 +118,7 @@ def _equity(cfg, panel) -> np.ndarray | None:
     from orc.eval.signal_rules import build_signals
     if not isinstance(cfg, SignalTrialConfig):
         return None
-    lookback = panel.bars(cfg.lookback_days)
-    entry, exit_ = build_signals(cfg.rule, panel, lookback, cfg.enter_rate, cfg.exit_rate)
+    entry, exit_ = build_signals(cfg, panel)
     spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
                       fee_bps=cfg.effective_fee_bps,
                       slippage_bps=cfg.effective_slippage_bps,

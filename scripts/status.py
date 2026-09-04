@@ -62,6 +62,17 @@ def main() -> int:
           f"{summary['final_tests_used']}/{holdout.MAX_FINAL_TESTS} openings used")
     print(f"panels       {summary['panels']}")
 
+    tgt = _load("TARGET.json")
+    if tgt is not None:
+        t = tgt.get("target", {})
+        print(f"target       CAGR >= {t.get('cagr', 0):.0%} at MDD <= "
+              f"{t.get('max_drawdown', 0):.0%}  ->  {tgt.get('state')}")
+        print(f"             {tgt.get('headline', '')}")
+        for c in tgt.get("candidates", []):
+            missing = ", ".join(c["failed"] + c["unmeasured"]) or "none"
+            print(f"             {c['hypothesis_id']} on "
+                  f"{len(c['symbols'])} symbol(s), outstanding: {missing}")
+
     survivors = 0
     for res in summary["results"]:
         rep = _load(f"{res['hypothesis_id']}_SURFACE.json")

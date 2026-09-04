@@ -414,7 +414,7 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
         lookback = p.bars(cfg.lookback_days)
         if lookback < 2 or lookback >= len(p):
             continue
-        entry, exit_ = build_signals(cfg.rule, p, lookback, cfg.enter_rate, cfg.exit_rate)
+        entry, exit_ = build_signals(cfg, p)
         spec = SignalSpec(
             capital=cfg.capital, leverage=cfg.leverage,
             fee_bps=cfg.effective_fee_bps, slippage_bps=cfg.effective_slippage_bps,
@@ -522,7 +522,7 @@ class _TrackBNullScorer:
             lb = p.bars(cfg.lookback_days)
             if lb < 2 or lb >= close.size:
                 continue
-            entry, exit_ = build_signals(cfg.rule, p, lb, cfg.enter_rate, cfg.exit_rate)
+            entry, exit_ = build_signals(cfg, p, close=close, high=hi, low=lo)
             spec = SignalSpec(capital=cfg.capital, leverage=cfg.leverage,
                               fee_bps=cfg.effective_fee_bps,
                               slippage_bps=cfg.effective_slippage_bps,
