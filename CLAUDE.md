@@ -152,7 +152,7 @@ The parameter space is enumerated exhaustively, never sampled. Consequently:
 |---|---|---|
 | KT-1 funding drag | median funding bill **36 % of contributed capital** over a 3-year weekly DCA; 87 % of BTC settlements positive | **perpetual LONG DCA is closed.** Long-side perp accumulation pays a structural tax. Its mirror — collecting funding on the short/carry side — is the open question. |
 | KT-2 martingale | liquidation rate hits **100 % at 2× and above** on the current development window | leverage above 1× is closed for averaging-down |
-| KT-3 survivorship | 986 symbols ever traded, 481 in the local archive, 266 delisted; usable delisted sample still too small | **inconclusive** — no alt-basket hypothesis until it is resolved with a larger sample |
+| KT-3 survivorship | 1018 symbols ever traded, 481 in the local archive, 266 delisted. Median terminal multiple **0.680 survivors vs 0.642 delisted**, a gap of **0.038** against a threshold of **0.20 frozen before results were seen**, on 32 usable survivors and 28 usable delisted (10 required per group) | **LOCAL_UNIVERSE_ACCEPTABLE** (2026-09-04). The local archive does not flatter a result by 0.20 in median terminal multiple, so the survivorship objection no longer blocks an alt-basket hypothesis on its own. It says nothing about any other objection to one. |
 
 ## 8. Commands
 

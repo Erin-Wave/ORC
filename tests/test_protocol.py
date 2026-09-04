@@ -1988,3 +1988,34 @@ def test_the_worker_pool_never_forks():
            / "search_test.py").read_text(encoding="utf-8")
     assert "mp_context=pool_context()" in src, \
         "the pool is back on the platform default, which forks on Linux"
+
+
+def test_the_constitution_agrees_with_the_kill_test_it_quotes():
+    """Section 7 is the table nobody is allowed to re-litigate, so a number in
+    it that has drifted from the run it came from is worse than no number: it
+    is an established result that is not established.
+
+    KT-3 was 'inconclusive -- no alt-basket hypothesis until it is resolved
+    with a larger sample' from the day it was written until 2026-09-04, when
+    the supervisor -- unblocked for the first time in a day -- ran it and it
+    returned a verdict. This checks the table against the report rather than
+    against the sentence that was typed into it.
+    """
+    root = Path(__file__).resolve().parents[1]
+    s = (root / "CLAUDE.md").read_text(encoding="utf-8")
+    kt3 = json.loads((root / "reports" / "KT3_SURVIVORSHIP.json").read_text(
+        encoding="utf-8"))
+
+    row = [ln for ln in s.splitlines() if ln.startswith("| KT-3")]
+    assert len(row) == 1, "section 7 has no single KT-3 row"
+    row = row[0]
+
+    assert kt3["verdict"] in row, "the table does not carry the run's verdict"
+    # The threshold is the one thing that must never move after the fact.
+    assert f'{kt3["threshold_frozen_before_results"]:.2f}' in row
+    for key in ("survivor_median_terminal_multiple",
+                "delisted_median_terminal_multiple", "gap"):
+        assert f'{kt3[key]:.3f}' in row, f"{key} in the table disagrees with the run"
+    for key in ("symbols_ever", "usable_survivors", "usable_delisted",
+                "min_usable_per_group"):
+        assert str(kt3[key]) in row, f"{key} in the table disagrees with the run"
