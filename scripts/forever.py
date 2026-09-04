@@ -191,6 +191,49 @@ def log(msg: str) -> None:
 # ---------------------------------------------------------------------------
 # one supervisor at a time
 # ---------------------------------------------------------------------------
+# What this supervisor is running, so it can notice that it is no longer what
+# is on the disk.
+#
+# A resident supervisor imports orc.runstate ONCE, at start. Every fix to
+# next_action, ZERO_N_WORK or an action's plan is therefore inert in the
+# process that is already running -- and the hourly "ORC Forever" trigger is
+# refused with 0x800710E0 because an instance is already up, so it can stay
+# inert for days while every screen reports a healthy loop. On 2026-09-04 the
+# backlog fix that was supposed to end two-hour idle gaps sat unused for
+# exactly this reason, and the log kept printing `rest` from the old module.
+#
+# So the supervisor watches its own source and stands down when it changes.
+# Standing down is safe by construction: the lock is released, the scheduled
+# task fires hourly, and claim_lock() breaks a stale lock anyway.
+SOURCE_WATCHED = (
+    "scripts/forever.py",
+    "orc/runstate.py",
+    "orc/target.py",
+    "scripts/daily_cycle.py",
+)
+
+
+def source_fingerprint(root: Path | None = None) -> str:
+    """A hash of the files whose content decides what this loop does next.
+
+    Content and not mtime: a checkout, a rebase or a `git stash pop` touches
+    mtimes without changing behaviour, and a supervisor that stood down for
+    that would restart itself on every pull.
+    """
+    import hashlib
+
+    root = Path(root or config.ORC_ROOT)
+    h = hashlib.sha256()
+    for rel in SOURCE_WATCHED:
+        p = root / rel
+        h.update(rel.encode())
+        try:
+            h.update(p.read_bytes().replace(b"\r\n", b"\n"))
+        except OSError:
+            h.update(b"<absent>")
+    return h.hexdigest()[:16]
+
+
 def claim_lock() -> bool:
     """True if this process now owns the supervisor slot.
 
@@ -556,9 +599,22 @@ def main(argv: list[str]) -> int:
         f"budget {config.MAX_REGISTRATIONS_PER_DAY} registrations/24h"
         + (f", until {until_min}m" if deadline else "")
         + (f", skipping {sorted(skip)}" if skip else "") + ") ===")
+    started_with = source_fingerprint()
+    log(f"source fingerprint {started_with}")
     stop_beat = None if dry else start_heartbeat()
     try:
         while True:
+            # Before deciding anything, check that this process is still the
+            # code on the disk. Exit 0 rather than re-exec: the scheduled task
+            # is the thing that owns starting a supervisor, and a process that
+            # restarts itself is a second way in for a bug.
+            now_hash = source_fingerprint()
+            if now_hash != started_with and not dry:
+                log(f"=== source changed ({started_with} -> {now_hash}); "
+                    "standing down so the next trigger starts the new code ===")
+                runstate.record_activity(
+                    "restart", f"source changed {started_with} -> {now_hash}")
+                return 0
             try:
                 did, nap = tick(dry_run=dry, skip=skip)
                 if did == "done" and not dry:

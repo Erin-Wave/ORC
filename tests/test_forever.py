@@ -783,3 +783,35 @@ def test_the_backlog_never_preempts_an_action_that_is_due():
     assert (runstate.ZERO_N_WORK["execution_realism"]
             < runstate.ZERO_N_WORK["scout"]), (
         "a filler with a long floor would leave the gaps it exists to fill")
+
+
+def test_the_supervisor_notices_that_it_is_running_yesterdays_code(tmp_path):
+    """A resident supervisor imports orc.runstate ONCE, at start.
+
+    On 2026-09-04 the backlog fix that was supposed to end two-hour idle gaps
+    was on the disk and inert: pid 27212 kept printing `rest` from the module
+    it had loaded hours earlier, and the hourly trigger that would have
+    restarted it is refused with 0x800710E0 while an instance is up. Every
+    screen reported a healthy loop running code that no longer existed.
+    """
+    import forever
+
+    here = forever.source_fingerprint()
+    assert here == forever.source_fingerprint(), "content, so it must be stable"
+
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "orc").mkdir()
+    (tmp_path / "scripts" / "forever.py").write_bytes(b"a different loop")
+    assert forever.source_fingerprint(tmp_path) != here
+
+    # Content and not mtime: a checkout or a rebase rewrites line endings on
+    # this workstation (core.autocrlf), and standing down for that would mean
+    # restarting on every pull.
+    (tmp_path / "scripts" / "forever.py").write_bytes(b"x" + bytes([13, 10]))
+    crlf = forever.source_fingerprint(tmp_path)
+    (tmp_path / "scripts" / "forever.py").write_bytes(b"x" + bytes([10]))
+    assert forever.source_fingerprint(tmp_path) == crlf
+
+    # the files it watches are the ones that decide what it does next
+    assert "orc/runstate.py" in forever.SOURCE_WATCHED
+    assert "scripts/forever.py" in forever.SOURCE_WATCHED
