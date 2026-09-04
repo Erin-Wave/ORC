@@ -309,3 +309,64 @@ Match the existing code: numpy-first, no backtesting framework, no ML stack,
 no GPU. Comments explain *why* a rule exists, not what a line does. Every
 threshold is a constant at the top of its module with a comment saying it was
 frozen before results were seen.
+
+## 12. What an autonomous step may not decide
+
+Section 10 is about a habit. This is about what happens when the habit fails
+anyway, which it will: the same agent writes the code, writes the test, runs
+it, reads the result and says it is done. That is one party setting the exam,
+marking it, and awarding the grade — and every check in this project is worth
+exactly as much as its resistance to being edited by whoever it is checking.
+Three incidents here are the evidence, not a worry about one: a provider
+running `--sandbox read-only` appended four tests to `tests/test_protocol.py`
+during a reasoning pass; a 193-line file written by a review step was committed
+unread by `git add -A`; and on 2026-09-04 `scripts/mutation.py` deleted the
+holdout truncation from `panel.load` and **the entire 248-test suite stayed
+green.** None of those was caught by a model thinking harder about it.
+
+**Enforced.** These are hooks, tests and refusals, not requests:
+
+| rule | what enforces it |
+|---|---|
+| the suite is green before a commit | `pre-commit` hook |
+| a test may not be deleted, skipped or emptied silently | `commit-msg` hook + `orc/guard.py` |
+| a threshold frozen before results may not be rewritten silently | `commit-msg` hook |
+| `MAX_FINAL_TESTS` may not rise; the opening counter may not fall | `commit-msg` hook + `holdout.openings_used()` |
+| over 12 files / 600 lines in one commit must say why | `commit-msg` hook |
+| a registered claim or grid may not be edited | `Hypothesis.verify()` |
+| a check that did not run is not a check that passed | `verdict.disqualifiers()`, `orc/target.py` |
+| the tests are themselves tested, daily | `scripts/mutation.py` |
+| `DONE` is a measurement, not a sentence | `orc/target.py`, `runstate.next_action()` |
+| N may only grow | `pre-commit` hook + append-only ledger |
+
+Each refusal has exactly one way through: a marker line in the commit message
+(`WEAKENS-TESTS:`, `MOVES-A-FROZEN-THRESHOLD:`, `TOUCHES-THE-HOLDOUT:`,
+`BUDGET-OVERRIDE:`). **That is a declaration, not an approval.** It converts a
+silent edit into a sentence in the permanent history that `git log --grep`
+finds — the same device `Hypothesis.verify()` uses. It does not ask anyone's
+permission, and `--no-verify` still exists. What is removed is the quiet path.
+
+**Asked, because no hook can check it.** Still rules:
+
+1. Never report completion from your own assessment. Quote what ran.
+2. Read the implementation before changing it. Do not speculate about code you
+   have not opened.
+3. Make the smallest change that satisfies the request. No speculative
+   abstraction, no unrelated refactor riding along.
+4. Never weaken, delete, skip or mock a failing test to make a suite green.
+   Fix the code, or say the test was wrong and why.
+5. Existing behaviour is a compatibility requirement unless stated otherwise.
+6. A prototype, a stub, a placeholder or a partial implementation is never
+   described as complete.
+7. Report what changed, what ran, and **what is still untested** — the last one
+   is the part that gets dropped and it is the part that matters.
+
+**Not an autonomous decision at all.** These need the owner, and no marker
+substitutes:
+
+- opening the sealed holdout — it needs a hand-written token file, and there
+  are three openings for the life of the project;
+- moving `TARGET_CAGR` or `TARGET_MAX_DRAWDOWN` — the stop condition was set
+  before any result met it, and that is the only thing that makes it a
+  condition rather than a description;
+- putting any of this in front of real money.

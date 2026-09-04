@@ -1520,6 +1520,18 @@ def test_the_constitution_carries_the_rule_the_guard_enforces():
     assert "Never stage by wildcard" in s
     assert "goes into the findings ledger, not into a" in s
 
+    # Section 12 is the machine half of the same idea, and every marker it
+    # names is a string the commit-msg hook actually compares against. A
+    # constitution that documents a marker the gate does not honour teaches
+    # someone to write a line that does nothing.
+    from orc import guard
+    assert "## 12. What an autonomous step may not decide" in s
+    for token in guard.MARKERS.values():
+        assert token in s, f"{token} is enforced and undocumented"
+    assert "declaration, not an approval" in s, (
+        "the limit of the gate has to be written down beside it: a marker "
+        "records a loosening, it does not ask anyone")
+
 
 def test_health_reports_every_section_without_touching_anything(monkeypatch, capsys):
     """The one screen an owner can check between sessions. It must be readable
