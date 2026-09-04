@@ -1,70 +1,69 @@
 {
-  "utc": "2026-09-04T05:03:36.139420+00:00",
+  "utc": "2026-09-04T12:29:48.615340+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
         "decision": "CONTINUE",
         "family": "unconditional_dca_spot_style"
+      },
+      "H0017": {
+        "decision": "CLOSE",
+        "family": "cci_forced_flow_duel"
       }
     },
     "propose": [
-      "H0017.json",
-      "H0018.json"
+      "H0019.json"
     ],
     "adversary": [
       {
-        "file": "H0017.json",
+        "file": "H0019.json",
         "verdict": "REGISTER",
-        "reason": "[claude] Well posed on every axis I could check in the code: 90 configurations sits under probe_ceiling's 96 for a family with zero ledger rows, all ten fixed/grid keys are real SignalTrialConfig fields with cci_breakout/cci_reversion live in signal_rules.py's dispatch table, _period_bars confirms 120/60/30/15/10 candles, _two_sided's exit on abs(value)<=exit_level makes the 50.0 choice necessary rather than cosmetic, clause 1 is verbatim H0002's bar on the identical nine symbols, and clause 5 is correctly oriented because gross is the price leg with pnl = gross + funding (tests/test_kernel.py:589). The one real defect is that clause 2 is close to unfirable — fade only flips the side, so both rules enter and exit on identical bars and their P&Ls are near-negatives that cannot both clear 11 bps a round trip on a shared symbol, meaning the advertised duel is arithmetically pre-passed; it survives because an unfirable clause 2 can only fail to close the family and leaves clause 1's hard bar untouched, and section 7b prescribes this pairing. | [codex] The forced-liquidation payer is structural and explicitly established as the open family in CLAUDE.md §7b; the 90-cell grid tests the prescribed breakout/reversion disagreement across a plausibly outcome-changing horizon axis, with concrete numerical closure conditions.",
-        "payer_is_structural": true,
-        "kill_condition_is_falsifiable": true,
-        "configurations": 90,
-        "reviewed_by": [
-          "claude",
-          "codex"
-        ]
-      },
-      {
-        "file": "H0018.json",
-        "verdict": "KILL",
-        "reason": "[claude] 제안된 72셀 전부를 개발 패널에서 `run_trial`로(원장 0행) 그대로 돌려보니 filter_level=200 축은 두 번째 필터 강도가 아니라 그냥 스위치 OFF다: 36셀 중 18셀은 `no_trades_fired`로 기록조차 되지 않고, 나머지 18셀은 심볼당 1~3거래뿐이어서 이 제안서가 스스로 못 박은 T>=20 하한에 전부 걸린다 — 즉 이 등록이 N에 추가하는 54행 중 18행은 계산되기도 전에 자신의 kill condition 어디에서도 positive symbol로 셀 수 없는 죽은 행이다(criterion 5, 패딩된 그리드). 그 축을 필요로 하는 유일한 조항인 clause 3은 이미 원장 0행으로 해소되었다(모든 f에서 거래수가 96~100 % 감소, 10 % 이내인 심볼은 0/9) — 영구히 N을 올리지 않고도 얻어지는 진단이므로, filter_level을 실제로 살아 있고 ordinal한 수준(예: 60/80/100/120)으로 바꾼 새 id로 재제안할 것. L=100 팔은 살아 있고 정보량이 있으므로(f=48에서 9심볼 중 6개가 C>0, n>=20, 청산 0) 이 shape 자체는 재제안 가치가 있다. | [codex] Clause 2 is not falsifiable as written: “the best cell” has no frozen selection rule across symbols, and the text leaves an H0017-unavailable result UNMEASURED even though the stated survival condition requires beating H0017, creating an undecidable outcome. The payer is structural and the 4×2 grid is not padded, but this ambiguity must be fixed before permanently spending 72 rows.",
+        "reason": "[claude] orc/eval/signal_rules.py::cci_mtf을 직접 읽어 확인했다 — _two_sided의 파라미터화가 아닌 별개 함수(결합적 진입 + trend_gone/resolved 두 종료 절)이고, 원장에 rule=cci_mtf 행은 0개(N=6,938, H0017이 90행)여서 72셀은 MAX_PROBE_CONFIGURATIONS=96 한도 안이며, 다섯 조항 전부가 서페이스가 실제로 기록하는 값(per-cell calmar grid, best_config.filter_level, shape_diagnostic.shape, independent_paths_best, n_liquidations_best)만 읽고 'best cell' 선택 규칙까지 동결해 H0018을 죽인 미결정성을 제거했으므로 반증 가능하다. 남은 결함 두 가지를 기록해 둔다 — ORIGIN이 인용한 payer는 reports/SCOUT.jsonl 4행이 아니라 5행이고(4행은 claude의 상장폐지 payer, 5행이 codex 2026-09-03T14:36:05Z leveraged-...-short-whose-collateral) 이 오프바이원은 H0018에서 그대로 상속되어 해시될 claim에 영구히 남는다, 그리고 H0018 킬 노트가 이미 원장 0행 실행으로 (L=100, f=48)에서 9심볼 중 6개 C>0·n>=20·청산 0을 기록했으니 '전체 질문을 지는' clause 1은 사실상 선점되어 있고 이 등록이 실제로 사는 정보는 clause 4(filter_level 4수준 축의 SPIKE)와 clause 5(최적 셀이 L=60)다 — 둘 다 미결정이므로 등록 가치는 남는다. | [codex] The forced-liquidation payer is structural, cci_mtf is a genuinely distinct two-resolution rule shape, every closure clause has an explicit numeric threshold, and the revised 4×2 grid contains plausible live contrasts rather than known-dead padding.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
         "configurations": 72,
-        "killed_by": "adversary:claude,codex",
         "reviewed_by": [
           "claude",
           "codex"
         ]
       }
     ],
-    "surfaces": "skipped: exit 1: ",
+    "mechanism": [
+      {
+        "hypothesis_id": "H0019",
+        "payer_exists": true,
+        "confidence": "high",
+        "who": "the holder of a Binance USD-M position whose margin ratio crossed maintenance, closed by the venue's own risk engine — paying an explicit Liquidation Clearance Fee to Binance/the Insurance Fund and market impact to whoever is resting on the book when the IOC sweeps it (in the extreme, to opposing profitable traders via ADL)",
+        "why_they_keep_paying": "The payment is not a decision: Binance's own protocol states that at maintenance breach the system issues an Immediate-or-Cancel order, fills it as far as the book allows, cancels the remainder, and deducts a Liquidation Clearance Fee of notional × rate (BTCUSDT's insurance clearance rate was raised from 0.30 % to 0.60 % on 2021-06-08), with any bankrupt remainder absorbed by the Insurance Fund and then by ADL. They keep doing it because leverage is the product — the venue sells it, the Insurance Fund is capitalised out of these very fees, and the same design (risk-engine close, liquidation fee funding an insurance fund, ADL as last resort) exists on Bybit, OKX, Deribit and on-chain on Hyperliquid, so it is structural to the instrument and not an artefact of one exchange.",
+        "what_would_end_it": "Replacing forced market closure with a mechanism that does not execute against the public book — a timed margin call, an auction, or socialised/portfolio-level netting — or removing leverage from the product. Short of that, only the intensity moves: leverage caps (125x → 20x for new accounts, 2021-07-19, extended 2021-07-27) and per-symbol margin-tier tightening shrink the leveraged base without ending the payment.",
+        "sources": [
+          "https://www.binance.com/en/support/faq/binance-futures-liquidation-protocols-360033525271",
+          "https://www.binance.com/en/support/faq/introduction-to-futures-insurance-funds-360033525371",
+          "https://www.binance.com/en/support/announcement/updates-to-insurance-clearance-fees-of-usd%E2%93%A2-m-futures-contracts-2021-06-08-03cac798a8454f42848f4467a434ba5d",
+          "https://www.binance.com/en/support/announcement/updates-on-rules-of-binance-futures-leverage-for-new-accounts-2021-07-27-d6457e23eb2e42f2b9c3ce44f46f9a6d",
+          "https://www.coindesk.com/markets/2021/07/26/binance-says-its-cutting-leverage-limit-to-20x-a-day-after-ftx-announces-the-same",
+          "https://www.binance.com/en/blog/futures/three-misconceptions-about-liquidations-in-binance-futures-5845477141003990750",
+          "https://www.binance.com/en/futures/trading-rules/perpetual/leverage-margin",
+          "https://www.binance.com/en/support/announcement/updates-on-maintenance-margin-tiers-of-usd%E2%93%A2-m-ftt-perpetual-contracts-2022-11-08-8b633df00b1e4ACf95aDEF3b675A2B81",
+          "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/All-Market-Liquidation-Order-Streams",
+          "https://dev.binance.vision/t/public-liquidation-data-incomplete-in-snapshots-since-april-27-2021/14714",
+          "https://arxiv.org/abs/2607.27070",
+          "https://decentralised.news/bybit-binance-and-okx-the-insurance-fund-transparency-test",
+          "https://eco.com/support/en/articles/15247705-hyperliquid-liquidations-explained-margin-calls-and-insurance-fund"
+        ],
+        "notes": "The payer is real and documented; four things in the evidence cut against this hypothesis' route to it. (1) TRIGGER IS NOT IN THE PANEL. Binance states liquidation 'always occurs at Mark Price', which is index-anchored precisely so that local perp wicks do not liquidate anyone. So a displaced 4-hour perp candle is neither necessary nor sufficient for a maintenance breach — the proposal's caveat that price is 'evidence not measurement' understates it: the trigger variable is a different series than the one CCI reads. (2) THE FOOTPRINT IS ENGINEERED SMALL. 'Smart Liquidation' issues one large IOC intended to reduce the margin deficit *without* fully closing the position, filling as much as the book allows and cancelling the rest — partial and capped by design, which is the opposite of the sustained one-directional flow a 'cascade then relaxation' reading needs. (3) THE ASYMMETRY RUNS AGAINST THE RELAXATION HALF. The forced BUY (liquidated short) is the minority leg: GEV work on BitMEX perp data puts 3.51 % of longs vs 1.89 % of shorts liquidated daily, average leverage ~60x among liquidated accounts. The buy-side flow the reversion reading is built on is the smaller, rarer half of the payer — consistent with cci_reversion having scored 0 of 9 unconditionally in H0017. (4) NOT STATIONARY ACROSS 2019–2024. Inside the development window the fee doubled (0.30 %→0.60 %, 2021-06-08), the leverage cap fell (125x→20x for new accounts, 2021-07-19, widened 2021-07-27), and margin tiers were retuned per symbol (FTT 2022-11-08, BLZ 2023-08-14, TRB). The payer's existence is durable; its size and threshold location are not, so any single pooled estimate mixes regimes. Also: even possessing the feed would not fix the measurement gap — since 2021-04-27 the public !forceOrder stream pushes only the single largest liquidation per symbol per 1000 ms, and Coinglass-style totals are modelled from open interest and assumed leverage rather than engine records. Published cascade research (arXiv 2607.27070) finds forced flow is not reliably identifiable from price alone: the critical-slowing-down signature appears in 5 of 7 BTC cascades and is absent exactly in the news-shock ones. Finally, on who can collect: the explicit Clearance Fee goes to Binance and the Insurance Fund and is capturable by no trader; only the market-impact component is contestable, and liquidation levels are sold as a public heatmap product, so that component is the most crowded part of the payment."
+      }
+    ],
+    "surfaces": "written",
+    "postmortem": [
+      "H0017"
+    ],
     "tree_violations": [
       {
         "provider": "claude",
         "files": [
-          "configs/proposed/",
-          "scripts/mutation.py"
+          "configs/proposed/"
         ]
-      },
-      {
-        "provider": "claude+codex",
-        "files": [
-          "orc/ledger/trials.py",
-          "reports/MUTATION.json",
-          "scripts/mutation.py",
-          "tests/test_protocol.py"
-        ],
-        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
-      },
-      {
-        "provider": "claude+codex",
-        "files": [
-          ".github/workflows/orc-guard.yml",
-          "reports/REASONING_LOG.jsonl",
-          "scripts/health.py"
-        ],
-        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
       }
     ]
   }

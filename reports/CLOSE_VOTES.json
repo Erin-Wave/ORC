@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T05:03:36.165791+00:00",
+  "utc": "2026-09-04T12:29:48.644551+00:00",
   "providers": [
     "claude",
     "codex"
@@ -14,13 +14,13 @@
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 (include_funding=false, n_contributions=52, stride_days=30)",
-            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 (include_funding=false, n_contributions=52, stride_days=30)",
-            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 (include_funding=false, n_contributions=156, stride_days=7)",
-            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 (include_funding=true, n_contributions=156, stride_days=7)",
-            "XRPUSDT 0.9227769940078271, DOGEUSDT 0.8601961484914038, LTCUSDT 0.6868948254289569, AVAXUSDT 0.6183911094027328, ADAUSDT 0.5958112554492814 — all tm_q05, all below 1.0"
+            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 at include_funding=false, n_contributions=52, stride_days=30.0",
+            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 at include_funding=false, n_contributions=52, stride_days=30.0",
+            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 at include_funding=false, n_contributions=156, stride_days=7.0",
+            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 at include_funding=true, n_contributions=156, stride_days=7.0",
+            "below 1.0: XRPUSDT 0.9227769940078271, DOGEUSDT 0.8601961484914038, LTCUSDT 0.6868948254289569, AVAXUSDT 0.6183911094027328, ADAUSDT 0.5958112554492814"
           ],
-          "reason": "조항이 지명한 지표는 tm_q05이며, scales 블록이 그것을 primary_metric_best로 명시한다. 조항은 '어떤 (symbol, stride, horizon) 셀도 1.0을 넘지 못하면 닫는다'는 전칭 부정이므로, 1.0을 넘는 셀이 하나라도 존재하면 충족되지 않는다. ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619, BNBUSDT 1.1261 — 네 심볼에서 보고된 셀의 tm_q05가 1.0을 초과한다. 따라서 조항은 충족되지 않았다. 순위 지표인 mwrr_q05는 ETHUSDT 0.6789, BTCUSDT 0.3616처럼 수익률 스케일(손익분기 0.0)이며 조항이 지명한 지표가 아니므로 판정에 쓰지 않았다. 조항 외의 사실로 기록해 두자면, 이 surface는 결코 강하지 않다: 계산 가능한 네 심볼 모두 shape가 SPIKE이고, ADAUSDT·AVAXUSDT·DOGEUSDT·LTCUSDT·XRPUSDT 다섯 심볼은 peak가 양수가 아니어서 plateau_ratio가 unmeasurable이며, search_test는 ETHUSDT p=0.725, SOLUSDT p=0.79로 둘 다 INDISTINGUISHABLE_FROM_SEARCH이고, PBO는 세 심볼 모두 'fewer than two configurations share a horizon'로 계산되지 않았으며, independent_paths_best는 1.02~1.40에 불과하다. 그러나 이 중 어느 것도 사전 등록된 kill condition의 문장에 들어 있지 않으므로 닫는 근거가 될 수 없다."
+          "reason": "The clause names the 5th-percentile terminal multiple, which the scales block identifies as primary_metric_best (tm_q05), a multiple of contributed capital breaking even at 1.0. It closes the family only if NO cell reaches above 1.0. Four symbols report cells above that threshold: ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619 and BNBUSDT 1.1261. These are the tm_q05 values at cells that were selected by ranking on mwrr_q05, so they are a lower bound on each symbol's best tm_q05 -- the true maximum can only be higher, and the clause is already unmet on the reported values alone. I did not use the mwrr_q05 ranking values (e.g. ETHUSDT 0.6789, BTCUSDT 0.3616), which are annualised returns breaking even at 0.0 and are not the scale the clause names. The clause as written is not met, so the verdict is CONTINUE. That is a verdict about the sentence, not an endorsement of the evidence: the shape diagnostic reads SPIKE on all four symbols above 1.0 (plateau ratios -1.0119, -1.9526, -2.0692, -5.4885), the search test returns INDISTINGUISHABLE_FROM_SEARCH for both symbols where it ran (ETHUSDT p=0.725, SOLUSDT p=0.79), PBO is uncomputable on all three attempted symbols, and independent_paths_best is between 1.02 and 1.40 -- roughly one experiment per symbol. None of that is in the pre-registered kill condition, so none of it can close the family here."
         },
         "codex": {
           "verdict": "CONTINUE",
@@ -33,11 +33,58 @@
             "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
             "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
           ],
-          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Because multiple cells exceed 1.0 on the named terminal-multiple metric, the kill condition is not met."
+          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Because at least one qualifying cell exists, the kill clause is not met."
         }
       },
       "unreachable": {},
       "decision": "CONTINUE"
+    },
+    "H0017": {
+      "family": "cci_forced_flow_duel",
+      "votes": {
+        "claude": {
+          "verdict": "CLOSE",
+          "clause": "3. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols. timeframe_hours carries five ordinal levels precisely so this is answerable: H0006 spent 72 configurations on all-binary axes and was closed with the shape column reading '?' on every symbol.",
+          "clause_met": true,
+          "unevaluable_clauses": [
+            "Clause 4 (COST): the surface carries no re-priced values at COST_STRESS_MULTIPLIER = 2.0 — scripts/robustness.py output is absent from the payload, so no cell can be checked for C > 0 on 5 of 9 at 22 bps. Neither met nor survived.",
+            "Clause 5 (THE COUPON, NOT THE INDICATOR): `gross_collected` (G) is not recorded anywhere in this surface for any symbol or cell, so the funding-leg-versus-price-leg split cannot be computed. Neither met nor survived.",
+            "Clause 1 partially unverifiable in the strict sense: `n_liquidations_best` and `independent_paths_best` (= n_trades on Track B) are reported only for each symbol's OWN best cell, not for the specific cell (cci_breakout, t=2) that clears the 5-of-9 bar; only DOGEUSDT, SOLUSDT and AVAXUSDT confirm n_liquidating_configs = 0 across all 10 configs. This does not change the verdict, since clause 1 was not met on the recorded calmar values regardless."
+          ],
+          "numbers": [
+            "shape of best cell = SPIKE: ADAUSDT (peak 0.07928, plateau_ratio -0.1598), AVAXUSDT (peak 0.80752, plateau_ratio 0.6935), BNBUSDT (peak 0.33060, plateau_ratio 0.3670), BTCUSDT (peak 0.26499, plateau_ratio 0.5149), DOGEUSDT (peak 3.00629, plateau_ratio 0.5136), SOLUSDT (peak 1.16962, plateau_ratio 0.09563), XRPUSDT (peak 0.21802, plateau_ratio 0.04365) — 7 of 9",
+            "not SPIKE: ETHUSDT primary_metric_best -0.03335 and LTCUSDT primary_metric_best -0.34115, both 'the peak is not positive; the ratio has no meaning' (plateau_ratio NaN) — 2 of 9",
+            "clause 1, cci_breakout calmar by timeframe: t=1 positive on 5/9 (AVAX 0.58484, BTC 0.26499, DOGE 2.15884, SOL 0.26946, XRP 0.07676); t=2 positive on 6/9 (AVAX 0.64370, BNB 0.10188, BTC 0.13645, DOGE 3.00629, SOL 0.33647, XRP 0.21802); t=4 positive on 5/9 (ADA 0.07928, AVAX 0.40539, BNB 0.33060, DOGE 0.92944, SOL 1.16962); t=8 positive on 6/9; t=12 positive on 2/9",
+            "clause 2, cci_reversion calmar: negative on 9 of 9 symbols at every one of t = 1, 2, 4, 8, 12 (worst AVAXUSDT -0.88958, best LTCUSDT -0.34115), i.e. 0/9 at every t"
+          ],
+          "reason": "Clause 3 names the recorded shape of each symbol's best cell, and the surface records it explicitly: 'shape': 'SPIKE' on ADAUSDT, AVAXUSDT, BNBUSDT, BTCUSDT, DOGEUSDT, SOLUSDT and XRPUSDT — 7 of the 9 symbols, against a threshold of 5 or more. ETHUSDT and LTCUSDT are the only two that do not read SPIKE, and only because their peaks are negative (-0.03335 and -0.34115), so the ratio is 'unmeasurable' — those two cannot rescue the clause. Unlike H0006, the five ordinal levels of timeframe_hours gave the diagnostic something to compute and it computed SPIKE, with plateau_ratio as low as 0.04365 on XRPUSDT and 0.09563 on SOLUSDT and outright negative (-0.1598) on ADAUSDT: the neighbouring timeframes do not carry the peak. Clause 3 is met, so the family closes. For the record, the clauses that did not close it: clause 1 was survived — cci_breakout at t=2 records calmar > 0 on 6 of 9 symbols (AVAX 0.64370, BNB 0.10188, BTC 0.13645, DOGE 3.00629, SOL 0.33647, XRP 0.21802) with n_liquidations_best = 0 on all nine reported best cells; and clause 2 was survived decisively — cci_reversion reaches calmar > 0 on 0 of 9 symbols at every timeframe, so the opposite rule never also gets paid, which is precisely the duel resolving rather than the indicator reading dispersion. Clauses 4 and 5 could not be checked at all because the payload carries neither cost-stressed values nor gross_collected, and an unrun check is not a check that passed."
+        },
+        "codex": {
+          "verdict": "CLOSE",
+          "clause": "3. SPIKE. Closed if the recorded shape of the best cell is SPIKE on 5 or more of the 9 symbols.",
+          "clause_met": true,
+          "unevaluable_clauses": [
+            "Clause 1 (NO EDGE): the Calmar grids are present, but per-cell liquidation_rate and n_trades are absent, so clause 1's complete bar cannot be checked.",
+            "Clause 2 (NOT FORCED FLOW): it depends on identifying timeframes at which either rule meets clause 1's full bar, which is unevaluable without per-cell liquidation_rate and n_trades.",
+            "Clause 4 (COST): no results from the 2.0 cost-stress repricing are supplied.",
+            "Clause 5 (THE COUPON, NOT THE INDICATOR): gross_collected is absent, and the qualifying clause-1 cells cannot be fully established."
+          ],
+          "numbers": [
+            "ADAUSDT: primary_metric_best = 0.07928141075391804; shape = SPIKE",
+            "AVAXUSDT: primary_metric_best = 0.8075245170932016; shape = SPIKE",
+            "BNBUSDT: primary_metric_best = 0.33060227532563446; shape = SPIKE",
+            "BTCUSDT: primary_metric_best = 0.26498878652183566; shape = SPIKE",
+            "DOGEUSDT: primary_metric_best = 3.0062933780642465; shape = SPIKE",
+            "SOLUSDT: primary_metric_best = 1.1696177093518314; shape = SPIKE",
+            "XRPUSDT: primary_metric_best = 0.21801973642045305; shape = SPIKE",
+            "ETHUSDT: primary_metric_best = -0.03334950817005346; shape unmeasurable because the peak is not positive",
+            "LTCUSDT: primary_metric_best = -0.3411506809081596; shape unmeasurable because the peak is not positive"
+          ],
+          "reason": "Clause 3 is met literally: 7 of the 9 symbols—ADAUSDT, AVAXUSDT, BNBUSDT, BTCUSDT, DOGEUSDT, SOLUSDT, and XRPUSDT—record SPIKE for their best cell, exceeding the threshold of 5. ETHUSDT and LTCUSDT have unevaluable shapes, but that does not undo the seven recorded SPIKE results."
+        }
+      },
+      "unreachable": {},
+      "decision": "CLOSE"
     }
   }
 }
