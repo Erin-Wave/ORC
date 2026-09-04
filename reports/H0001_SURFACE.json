@@ -5,11 +5,11 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-04T17:52:32.890200+00:00",
+  "generated_utc": "2026-09-04T23:18:19.382322+00:00",
   "metric": "mwrr_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 1232,
-  "trials_in_project": 7010,
+  "trials_in_family": 1344,
+  "trials_in_project": 7122,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -83,7 +83,7 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 9736,
@@ -180,7 +180,7 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 4073,
@@ -284,7 +284,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 396,
@@ -340,7 +340,7 @@
           ],
           [
             -0.8996604300550796,
-            -0.5267469997685402,
+            -0.5267469997685399,
             NaN
           ],
           [
@@ -388,7 +388,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 2523,
@@ -444,7 +444,7 @@
           ],
           [
             -0.9254601186472585,
-            -0.3587264751659169,
+            -0.3587264751659198,
             NaN
           ],
           [
@@ -485,7 +485,7 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 5871,
@@ -589,7 +589,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 616,
@@ -686,7 +686,7 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 10264,
@@ -790,7 +790,7 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 4289,
@@ -887,7 +887,7 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 11,
+        "code_revisions": 12,
         "panel_revisions": 4
       },
       "n_starts_best": 10336,

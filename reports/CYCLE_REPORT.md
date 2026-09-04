@@ -1,7 +1,7 @@
 # ORC cycle report
 
-- run `324595c30eb4` finished 2026-09-04T17:52:54.710937+00:00
-- trials in project: **7010** (+72 this cycle)
+- run `f83b0eaf389a` finished 2026-09-04T23:18:41.193619+00:00
+- trials in project: **7122** (+112 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
 
@@ -51,7 +51,7 @@ These are not gaps in the map. Each was closed against its own pre-registered ki
 
 **Kill condition.** Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.
 
-Trials in this family: 1232. Pre-registration hash `16461da7e4b64a49`.
+Trials in this family: 1344. Pre-registration hash `16461da7e4b64a49`.
 
 | symbol | best | shape | neighbour/peak | start offsets | indep. paths | best cell |
 |---|---:|---|---:|---:|---:|---|
