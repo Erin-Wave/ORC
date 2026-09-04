@@ -11,3 +11,4 @@
 {"utc": "2026-09-04T00:24:55.145124+00:00", "gate": "DUE", "why": "마지막 패스(2026-09-04 07:21 KST) 이후 증거가 바뀌었습니다"}
 {"utc": "2026-09-04T00:13:09.302147+00:00", "blocked": [], "registered": [], "killed": [], "held": [], "proposed": [], "unavailable": ["propose", "surfaces"]}
 {"utc": "2026-09-04T01:02:11.774754+00:00", "blocked": [], "registered": [], "killed": ["H0012.json"], "held": [], "proposed": ["H0012.json"], "unavailable": []}
+{"utc": "2026-09-04T01:51:25.694386+00:00", "blocked": [], "registered": [], "killed": ["H0013.json"], "held": [], "proposed": ["H0013.json"], "unavailable": []}

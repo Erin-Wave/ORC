@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T01:02:11.774754+00:00",
+  "utc": "2026-09-04T01:51:25.694386+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -8,13 +8,13 @@
       }
     },
     "propose": [
-      "H0012.json"
+      "H0013.json"
     ],
     "adversary": [
       {
-        "file": "H0012.json",
+        "file": "H0013.json",
         "verdict": "KILL",
-        "reason": "[claude] I ran the entire proposed 48-cell grid through run_trial in ~40 seconds with zero ledger rows, and five of the six kill clauses are already resolved to 'survives': L(1.0,true) = .570/.484/.000/.800/.724/.933 (clause 1 needs 4 below .05, gets 1), L(1.0,false) = 0.000 on all six (clause 2 can never fire), L(x,true) monotone on all 6 (clause 3), L(0.25,true)>.05 only on ADA (clause 4), and DOGE holds both the largest F(1.0)=3.557 and the 2nd-largest L (clause 5) — so registration buys a pre-determined outcome plus the section-6 right to enumerate 2000 cells next, for a map a zero-row script already draws. Compounding it: the rule shape is H0001's exactly (gate none, TP/SL null, unconditional weekly ladder) with two of its own numeric fields moved, the same criterion-4 defect that killed H0011 one pass earlier, and the 24 include_funding=false cells are pure padding — liquidation_rate 0.000 on every one and tm_q05 affine in leverage to under 2e-3, with funding_frac exactly proportional (3.000000000, 2.000000000). | [codex] This re-litigates the already-closed KT-1 perpetual-long DCA family and merely sweeps the leverage parameter of the same weekly accumulator; section 6 explicitly says an untried numeric axis is not a new rule shape. The liquidation-based kill conditions are concrete, but they do not justify permanently adding 48 rows for a finer grid over a closed mechanism.",
+        "reason": "[claude] 제안이 스스로 건 조건 — \"If it carries the other sign it is a long-lookback cousin of closed H0007 and should be killed on those grounds; one grep settles it\" — 이 그대로 성립한다: `orc/eval/simulate.py:271` `gate_below_sma`는 \"Deploy only when price is under the simple average of the PRIOR window\"이고 `out[ok] = close[ok] <= sma[ok]`이므로, `sma:<days>`는 추세 게이트가 아니라 참조점만 trailing peak에서 이동평균으로 바꾼 `dip:`과 동일 부호의 약세 매수 게이트 — 즉 닫힌 H0007의 형태이며, H0009를 죽인 바로 그 re-skin이다. 실제 부호에서는 현금이 상승 구간에 놀고 하락 구간에 배치되므로 \"notional-time을 줄여 비싼 구간을 피한다\"는 메커니즘 주장과 첫 번째 kill clause(게이트가 ruin에 작용하는지)는 코드에 없는 동작을 대상으로 쓰여 있다. | [codex] The implemented `sma:<days>` gate deploys when price is below its prior-window SMA, not above it; by the proposal’s own stated contingency, this makes H0013 a long-lookback re-skin of the closed H0007 weakness-buying family rather than the claimed trend-state withholding rule.",
         "payer_is_structural": true,
         "kill_condition_is_falsifiable": true,
         "configurations": 48,
