@@ -1041,3 +1041,109 @@ def test_a_long_action_is_visible_while_it_is_still_running(monkeypatch):
     assert "모델 응답 대기" in screen
     # forever.py is always up, so it is not evidence and does not get the row.
     assert "▶ 지금     forever.py" not in screen
+
+
+# --------------------------------------------------------------------------
+# the model lane — a socket wait must not hold the workstation still
+# --------------------------------------------------------------------------
+def test_a_model_action_runs_beside_the_loop_instead_of_blocking_it(monkeypatch):
+    """2026-09-05. tick() picked ONE action and blocked on it.
+
+    kernel_review takes 76 minutes and reason 25, and both are a subprocess
+    waiting on a model. For over an hour at a stretch the supervisor held a
+    24-core workstation still while execution_realism had 36 pairs queued,
+    robustness was six hours stale and scout five. Duty cycle that day: 32.7%.
+
+    The owner's words were 실시간으로 1초도 멈추지말라고, and this is the line
+    that was stopping.
+    """
+    import threading
+
+    import forever
+
+    started = threading.Event()
+    release = threading.Event()
+    ran: list[str] = []
+
+    def _slow(action, cmd):
+        ran.append(action)
+        started.set()
+        release.wait(timeout=10)
+
+    monkeypatch.setattr(forever, "_run_action", _slow)
+    monkeypatch.setattr(forever, "plan", lambda a: ["cmd", a])
+    monkeypatch.setattr(forever, "log", lambda *a, **k: None)
+    monkeypatch.setattr(forever.runstate, "record_activity",
+                        lambda *a, **k: None)
+
+    try:
+        monkeypatch.setattr(forever.runstate, "next_action",
+                            lambda skip=None: ("kernel_review", "due"))
+        action, nap = forever.tick()
+        assert action == "kernel_review"
+        assert nap == forever.LANE_BUSY_SLEEP_S, \
+            "the loop slept as if it had done the work itself"
+        assert started.wait(timeout=5), "the lane never started"
+        assert forever.lane_busy() == "kernel_review"
+
+        # The decision must not be offered the action already in flight, or the
+        # supervisor answers `rest` and stands still beside its own work.
+        seen: dict = {}
+
+        def _next(skip=None):
+            seen["skip"] = set(skip or ())
+            return "robustness", "due"
+
+        monkeypatch.setattr(forever.runstate, "next_action", _next)
+        action, nap = forever.tick()
+        assert set(forever.MODEL_ACTIONS) <= seen["skip"]
+        assert action == "robustness"
+        assert nap == forever.WORKED_SLEEP_S, "CPU work must stay inline"
+        assert ran == ["kernel_review", "robustness"], \
+            "the second action did not run while the first was still going"
+    finally:
+        release.set()
+
+    for _ in range(100):
+        if forever.lane_busy() is None:
+            break
+        time.sleep(0.05)
+    assert forever.lane_busy() is None, "the lane never cleared"
+
+
+def test_only_one_model_action_is_ever_in_flight(monkeypatch):
+    """They share a provider, and `reason` is the only action that can spend
+    the registration budget -- two of them reading it independently is how four
+    registrations become six."""
+    import threading
+
+    import forever
+
+    release = threading.Event()
+    monkeypatch.setattr(forever, "_run_action",
+                        lambda a, c: release.wait(timeout=10))
+    monkeypatch.setattr(forever, "log", lambda *a, **k: None)
+    try:
+        assert forever.start_model_lane("scout", ["x"]) is True
+        assert forever.start_model_lane("reason", ["y"]) is False, \
+            "a second model action started beside the first"
+        assert forever.lane_busy() == "scout"
+    finally:
+        release.set()
+    for _ in range(100):
+        if forever.lane_busy() is None:
+            break
+        time.sleep(0.05)
+    assert forever.lane_busy() is None
+
+
+def test_the_two_lanes_do_not_reach_for_git_at_once(monkeypatch):
+    """A commit racing a commit in one checkout is not a merge; it is an index
+    lock error and a lost result."""
+    import forever
+
+    assert forever._GIT_LOCK is not None
+    src = (Path(__file__).resolve().parents[1] / "scripts"
+           / "forever.py").read_text(encoding="utf-8")
+    assert "with _GIT_LOCK:\n        return _land_locked(" in src, \
+        "land() no longer serialises the git work"

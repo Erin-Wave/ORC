@@ -53,6 +53,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -85,6 +86,25 @@ IDLE_SLEEP_S = 300
 BLOCKED_SLEEP_S = 900
 # After real work, so two long actions do not run back to back with no pause.
 WORKED_SLEEP_S = 30
+
+# The model lane
+# --------------------------------------------------------------------------
+# tick() used to pick ONE action and block on it. `kernel_review` takes 76
+# minutes and `reason` 25, and both are a subprocess waiting on a model -- so
+# for over an hour at a stretch the supervisor held a 24-core workstation
+# still while `execution_realism` had 36 pairs queued, `robustness` was six
+# hours stale and `scout` five. Measured duty cycle that day: 32.7%.
+#
+# These three are the ones that wait on a socket rather than on this machine,
+# so they run on their own thread and the tick loop carries on with the work
+# that needs the CPU. ONE at a time, never two: they share a model provider,
+# and `reason` is the only action that can spend the registration budget, so
+# two of them reading it independently is how four registrations become six.
+MODEL_ACTIONS = ("reason", "scout", "kernel_review")
+
+# How long to wait before asking again while the model lane is busy. Short,
+# because the point of the lane is that the CPU work does not queue behind it.
+LANE_BUSY_SLEEP_S = 20
 
 # A single action may not run forever.  The reasoning pass is the long one --
 # eight to ten model calls -- and the rest are minutes.  A hung call must not
@@ -520,6 +540,68 @@ def run(cmd: list[str], timeout_s: int) -> tuple[int, str]:
     return r.returncode, " | ".join(tail)
 
 
+# Two lanes can finish at the same instant and both reach for git. A commit
+# racing a commit in one checkout is not a merge, it is an index lock error and
+# a lost result, so land() is the one place that serialises.
+_GIT_LOCK = threading.Lock()
+
+# The thread currently carrying a model action, and which action it is. Read
+# and written only from the tick loop's thread plus the lane's own exit, and
+# both touch it under _LANE_LOCK.
+_LANE_LOCK = threading.Lock()
+_lane: "dict | None" = None
+
+
+def lane_busy() -> str | None:
+    """Which model action is in flight, or None. The tick loop asks before it
+    lets next_action() consider one."""
+    with _LANE_LOCK:
+        return None if _lane is None else _lane["action"]
+
+
+def _run_action(action: str, cmd: list) -> None:
+    """Execute one action to completion and record it. Used by both lanes."""
+    started = time.monotonic()
+    rc, detail = run(cmd, TIMEOUTS_S.get(action, 3600))
+    took = time.monotonic() - started
+    landed = land(action)
+    done = rc in DONE_EXIT_CODES.get(action, (0,))
+    runstate.record_activity(action, f"exit {rc}: {detail} [{landed}]", took,
+                             ok=done)
+    log(f"{action}: exit {rc} ({'done' if done else 'did not run'}) "
+        f"in {took / 60:.1f}m -- {detail[:220]}")
+    log(f"{action}: {landed}")
+
+
+def start_model_lane(action: str, cmd: list) -> bool:
+    """Run a model action on its own thread. False if the lane is already busy.
+
+    Not a daemon: a model call that is mid-flight when the process is asked to
+    stop has already been paid for, and its verdict is worth the wait.
+    """
+    global _lane
+    with _LANE_LOCK:
+        if _lane is not None:
+            return False
+
+        def _body() -> None:
+            global _lane
+            try:
+                _run_action(action, cmd)
+            except Exception as exc:                               # noqa: BLE001
+                log(f"{action}: LANE FAILED: {type(exc).__name__}: {exc}")
+                runstate.record_activity(action, f"lane failed: {exc}", 0.0,
+                                         ok=False)
+            finally:
+                with _LANE_LOCK:
+                    _lane = None
+
+        t = threading.Thread(target=_body, name=f"orc-lane-{action}")
+        t.start()
+        _lane = {"action": action, "thread": t}
+        return True
+
+
 def land(action: str) -> str:
     """Commit and push what an action produced, by name.
 
@@ -533,6 +615,11 @@ def land(action: str) -> str:
              if (config.ORC_ROOT / p).exists()]
     if not paths:
         return "nothing to commit"
+    with _GIT_LOCK:
+        return _land_locked(action, paths)
+
+
+def _land_locked(action: str, paths: list) -> str:
     subprocess.run(["git", "add", *paths], cwd=config.ORC_ROOT, check=False,
                    capture_output=True)
     staged = subprocess.run(["git", "diff", "--cached", "--quiet", "--", *paths],
@@ -558,8 +645,19 @@ def tick(dry_run: bool = False, skip: set[str] | None = None) -> tuple[str, int]
     # skip goes INTO the decision, not around it.  Declining the answer
     # afterwards would leave this supervisor being told to do the one thing it
     # cannot, once per tick, for its whole budget.
+    # A model action already in flight is not offered again. It goes INTO the
+    # decision rather than being declined after it, for the same reason `skip`
+    # does: a supervisor told once per tick to do the thing it is already doing
+    # would answer `rest` and stand still beside its own running work.
+    busy = lane_busy()
+    if busy is not None:
+        skip = set(skip or ()) | set(MODEL_ACTIONS)
+
     action, why = runstate.next_action(skip=skip)
-    log(f"next: {action} -- {why}")
+    if busy is not None:
+        log(f"next: {action} -- {why}   [lane: {busy} in flight]")
+    else:
+        log(f"next: {action} -- {why}")
     if dry_run:
         return action, 0
     if action == "done":
@@ -586,16 +684,15 @@ def tick(dry_run: bool = False, skip: set[str] | None = None) -> tuple[str, int]
             f"action gets a turn")
         return action, WORKED_SLEEP_S
 
-    started = time.monotonic()
-    rc, detail = run(cmd, TIMEOUTS_S.get(action, 3600))
-    took = time.monotonic() - started
-    landed = land(action)
-    done = rc in DONE_EXIT_CODES.get(action, (0,))
-    runstate.record_activity(action, f"exit {rc}: {detail} [{landed}]", took,
-                             ok=done)
-    log(f"{action}: exit {rc} ({'done' if done else 'did not run'}) "
-        f"in {took / 60:.1f}m -- {detail[:220]}")
-    log(f"{action}: {landed}")
+    # A model action waits on a socket, not on this machine, so it goes to its
+    # own thread and this loop keeps working. Everything else is CPU or disk on
+    # THIS box and stays inline -- running two of those at once would just make
+    # both slower and would put two writers on the same reports.
+    if action in MODEL_ACTIONS and start_model_lane(action, cmd):
+        log(f"{action}: started on the model lane; the loop continues")
+        return action, LANE_BUSY_SLEEP_S
+
+    _run_action(action, cmd)
     return action, WORKED_SLEEP_S
 
 

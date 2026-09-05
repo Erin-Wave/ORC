@@ -485,7 +485,8 @@ def render_progress(snap: dict) -> list[str]:
 
 def render(snap: dict) -> list[str]:
     now = datetime.now(KST)
-    L = [f"ORC watch   {now:%Y-%m-%d %H:%M:%S} KST   ({snap['utc'][11:19]}Z)", ""]
+    L = [f"ORC watch   {now:%Y-%m-%d %H:%M:%S} KST   (= {snap['utc'][11:19]}Z)",
+         "  이 화면의 모든 시각은 KST입니다", ""]
 
     L += render_progress(snap)
     L.append("")
@@ -552,11 +553,11 @@ def render(snap: dict) -> list[str]:
                  f"마지막 작업 종료 후 {d['since_last_min']:.0f}분")
 
     L.append("")
-    L.append("최근")
+    L.append("최근  (KST)")
     for a in snap["recent"]:
         mark = "ok  " if a.get("ok", True) else "FAIL"
         secs = float(a.get("seconds") or 0.0)
-        L.append(f"  {str(a.get('utc'))[11:16]}  {mark} {str(a.get('action')):18s}"
+        L.append(f"  {runstate.kst(a.get('utc'))[11:16]}  {mark} {str(a.get('action')):18s}"
                  f" {secs / 60:5.1f}분  {' '.join(str(a.get('detail', '')).split())[:70]}")
     return L
 
