@@ -23,6 +23,17 @@ BARS_PER_YEAR = {"1h": 24 * 365, "1m": 60 * 24 * 365}
 # undefined rather than as a triumph.
 MIN_DD_FOR_CALMAR = 1e-9
 
+# Below this, annualising is extrapolation rather than measurement, and cagr()
+# returns nan instead of a number.  One year because that is the shortest
+# window containing a full seasonal cycle of the funding and listing calendar,
+# and because the compounding exponent 1/years is already 1.0 there -- above it
+# the exponent shrinks the error, below it the exponent multiplies it.
+#
+# Frozen 2026-09-05, on a ledger whose SHORTEST recorded history was 30,113
+# bars (3.4 years).  So it cannot have been chosen to admit or exclude any
+# result that existed: nothing on record is anywhere near it.
+MIN_YEARS_TO_ANNUALISE = 1.0
+
 
 def is_measurable(equity: np.ndarray) -> bool:
     """Is this curve something a ratio can honestly be computed from?
@@ -67,7 +78,15 @@ def cagr(equity: np.ndarray, bars_per_year: float) -> float:
     if equity.size < 2 or not is_measurable(equity) or equity[0] <= 0:
         return float("nan")
     years = (equity.size - 1) / float(bars_per_year)
-    if years <= 0:
+    if years < MIN_YEARS_TO_ANNUALISE:
+        # Annualising a short window is an extrapolation, and this one feeds
+        # the owner's stop condition: a symbol listed three months ago that
+        # happened to double gives (2.0 ** 4) - 1 = 1500 % CAGR, finite and
+        # plausible-looking, and orc.target compares exactly that number
+        # against TARGET_CAGR. Every cell in the ledger on 2026-09-05 had at
+        # least 30,113 bars, so nothing recorded is affected -- but KT-3 has
+        # just cleared the survivorship objection that was keeping short-lived
+        # alt symbols out, so this is about to become reachable.
         return float("nan")
     ratio = equity[-1] / equity[0]
     if ratio <= 0:                      # wiped out; annualising is meaningless

@@ -1108,6 +1108,75 @@ def test_a_development_load_actually_truncates_at_the_seal(tmp_path, monkeypatch
         "a development load handed research a bar at or past the seal")
 
 
+def test_an_unreadable_opening_counter_is_not_zero_openings(tmp_path, monkeypatch):
+    """kernel_review 9b4c4e0f67d5, 2026-09-05.
+
+    `_state_count()` swallowed OSError/ValueError/KeyError/TypeError and
+    returned 0, so a state file that EXISTS but cannot be parsed -- a truncated
+    write, a bad merge, a hand edit -- read as "never opened". With the log
+    also gone, openings_used() went back to zero and the project would hand out
+    three fresh looks at the sealed period.
+
+    The existing counter test covers a MISSING log against a valid state file.
+    Nothing covered a state file that is there and is garbage, which is the
+    more likely accident of the two.
+    """
+    from orc import holdout
+
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setattr(holdout, "LOG_FILE", log)
+    state = holdout.state_file()
+
+    # Absent is a genuine zero: a fresh project has neither file.
+    assert not state.exists()
+    assert holdout.openings_used() == 0
+
+    for garbage in ("", "{", '{"openings_used": "two"}', '{"other": 1}',
+                    "null"):
+        state.write_text(garbage, encoding="utf-8")
+        assert holdout.openings_used() == holdout.MAX_FINAL_TESTS, (
+            f"an unparseable state file ({garbage!r}) read as a spent count "
+            "of zero; unknown must resolve upward, never downward")
+
+    # And a readable one is still read, so this did not simply pin the counter.
+    state.write_text('{"openings_used": 1}', encoding="utf-8")
+    assert holdout.openings_used() == 1
+
+
+def test_a_window_too_short_to_annualise_is_not_a_cagr():
+    """kernel_review a1ddba290d1d, 2026-09-05.
+
+    `cagr()` divided by `years` with no floor, so a symbol listed three months
+    ago that happened to double returned (2.0 ** 4) - 1 = 1500 % -- finite,
+    plausible, and compared directly against TARGET_CAGR by orc.target. That is
+    the owner's stop condition being satisfied by an extrapolation.
+
+    Nothing on record was affected: the shortest history in the ledger on
+    2026-09-05 was 30,113 bars. KT-3 had just cleared the survivorship
+    objection that kept short-lived alt symbols out, which is what was about to
+    make it reachable.
+    """
+    from orc.kernel import metrics_fc
+
+    bpy = metrics_fc.BARS_PER_YEAR["1h"]
+
+    # Three months, doubled. This is the number that used to come back.
+    quarter = np.linspace(1.0, 2.0, int(bpy / 4))
+    assert not np.isfinite(metrics_fc.cagr(quarter, bpy)), \
+        "a three-month window still annualises into the stop condition"
+
+    # Two years, doubled: 2 ** 0.5 - 1, and this must still be measured.
+    two_years = np.linspace(1.0, 2.0, int(bpy * 2))
+    assert metrics_fc.cagr(two_years, bpy) == pytest.approx(2 ** 0.5 - 1,
+                                                            rel=1e-3)
+
+    # The floor is a floor, not a rounding: just under is nan, just over is not.
+    just_under = np.linspace(1.0, 2.0, int(bpy * 0.99))
+    just_over = np.linspace(1.0, 2.0, int(bpy * 1.01))
+    assert not np.isfinite(metrics_fc.cagr(just_under, bpy))
+    assert np.isfinite(metrics_fc.cagr(just_over, bpy))
+
+
 def test_positioning_is_sealed_by_the_same_door_the_panels_are(tmp_path, monkeypatch):
     """A new data source is a new way to breach the seal.
 

@@ -162,11 +162,30 @@ def state_file() -> Path:
 
 
 def _state_count() -> int:
-    try:
-        return int(json.loads(
-            state_file().read_text(encoding="utf-8"))["openings_used"])
-    except (OSError, ValueError, KeyError, TypeError):
+    """The standalone record of how many openings are spent.
+
+    Three outcomes, not two. A file that is NOT THERE is a genuine zero -- a
+    fresh project has neither file. A file that is there but cannot be parsed
+    is UNKNOWN, and unknown resolves to MAX_FINAL_TESTS, because every other
+    way this number can be wrong makes it too small and each of those is a
+    restored look at the sealed data.
+
+    Returning 0 for both was the hole: a truncated write, a bad merge or a hand
+    edit leaves an unparseable state file, and with the log also gone
+    openings_used() went back to zero and handed out three fresh openings. The
+    existing test covered a MISSING log against a valid state file; nothing
+    covered a state file that exists and is garbage.
+    """
+    p = state_file()
+    if not p.exists():
         return 0
+    try:
+        return int(json.loads(p.read_text(encoding="utf-8"))["openings_used"])
+    except (OSError, ValueError, KeyError, TypeError):
+        # Deliberately the maximum. This makes the project refuse every further
+        # opening until a human looks at the file, which is the correct failure
+        # for a counter whose only job is to be impossible to walk back.
+        return MAX_FINAL_TESTS
 
 
 def openings_used() -> int:

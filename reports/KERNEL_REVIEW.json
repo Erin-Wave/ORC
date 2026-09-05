@@ -1,385 +1,300 @@
 {
-  "utc": "2026-09-03T23:23:42.157142+00:00",
-  "confidence": "medium",
+  "utc": "2026-09-05T00:44:18.450403+00:00",
+  "confidence": "high",
   "reviewed": [
-    "orc/eval/__init__.py",
-    "orc/eval/analytic.py",
-    "orc/eval/signal.py",
-    "orc/eval/signal_rules.py",
-    "orc/eval/simulate.py",
-    "orc/kernel/liquidation.py",
-    "orc/facts/panel.py",
-    "orc/facts/fetch_vision.py",
-    "orc/kernel/metrics_cf.py",
-    "orc/orchestrator/runner.py",
-    "orc/orchestrator/surface.py",
-    "scripts/kt1_funding_drag.py",
-    "tests/test_kernel.py",
-    "configs/registry/H0002.json",
     "orc/eval/simulate.py",
     "orc/kernel/__init__.py",
     "orc/kernel/inference.py",
     "orc/kernel/liquidation.py",
-    "orc/eval/analytic.py (교차 검증용 참조)",
-    "orc/orchestrator/runner.py (도달 가능성 확인용 참조)",
-    "orc/orchestrator/surface.py (도달 가능성 확인용 참조)",
-    "orc/orchestrator/search_test.py (도달 가능성 확인용 참조)",
-    "orc/facts/panel.py (도달 가능성 확인용 참조)",
+    "orc/facts/panel.py",
+    "orc/orchestrator/runner.py",
+    "orc/orchestrator/surface.py",
+    "orc/orchestrator/verdict.py",
+    "orc/orchestrator/spec.py",
+    "orc/orchestrator/search_test.py",
+    "orc/kernel/metrics_cf.py",
+    "orc/eval/analytic.py",
+    "orc/facts/build_panel.py",
+    "tests/test_kernel.py",
     "orc/kernel/metrics_cf.py",
     "orc/kernel/metrics_fc.py",
     "orc/facts/panel.py",
     "orc/ledger/trials.py",
-    "orc/holdout.py",
-    "orc/config.py",
-    "orc/orchestrator/spec.py",
-    "orc/orchestrator/runner.py",
-    "orc/eval/analytic.py",
-    "orc/kernel/liquidation.py",
-    "orc/facts/fetch_vision.py (funding_rate_per_bar only)",
+    "orc/holdout.py (경계 확인용)",
+    "orc/facts/fetch_vision.py::funding_rate_per_bar (panel.py 호출부 확인용)",
+    "orc/facts/build_panel.py (도달성 확인용)",
+    "orc/eval/simulate.py (metrics_cf와의 정의 대조용)",
+    "orc/orchestrator/runner.py (지표 조립부 확인용)",
+    "orc/orchestrator/surface.py (부분)",
+    "orc/target.py (meets/_rows 확인용)",
+    "scripts/robustness.py, scripts/execution_realism.py, scripts/merge_ledger.py (도달성 확인용)",
+    "tests/test_protocol.py::test_the_code_hash_covers_every_file_that_can_change_a_number",
     "orc/orchestrator/runner.py",
     "orc/orchestrator/verdict.py",
     "orc/orchestrator/surface.py",
     "orc/orchestrator/spec.py",
     "orc/orchestrator/search_test.py",
+    "orc/eval/analytic.py",
+    "orc/eval/simulate.py (bounds contract and simulate() head only)",
+    "orc/eval/signal_rules.py",
     "orc/kernel/inference.py",
     "orc/kernel/metrics_cf.py",
     "orc/kernel/metrics_fc.py",
-    "orc/eval/analytic.py",
-    "orc/eval/simulate.py (signatures and start-bound contract)",
+    "orc/facts/panel.py",
     "orc/ledger/trials.py",
-    "orc/facts/panel.py (load, bars, panel_path)",
-    "orc/orchestrator/robustness.py (ledger-write check)",
-    "scripts/daily_cycle.py (intake_queue)",
-    "scripts/notify.py, scripts/health.py, scripts/robustness.py (survivors consumers)",
-    "tests/test_protocol.py, tests/test_kernel.py (test-name inventory and the search-test/dedupe tests)",
-    "configs/registry/H0001.json, H0002.json, H0006.json, H0007.json",
-    "reports/H0001_SURFACE.json, H0002_SURFACE.json, H0006_SURFACE.json, H0007_SURFACE.json",
-    "ledger/trials.db (6736 rows, queried)",
+    "orc/target.py (grep of the target-decision fields only)",
+    "scripts/daily_cycle.py",
+    "scripts/execution_realism.py (clock handling only)",
+    "scripts/status.py (verdict call site only)",
+    "scripts/briefing.py (verdict call sites only)",
+    "tests/test_kernel.py (test_analytic_matches_simulator only)",
+    "CLAUDE.md",
+    "configs/registry/*.json",
     "orc/holdout.py",
     "orc/facts/panel.py",
     "orc/config.py",
-    "scripts/deploy_panel.py",
-    "orc/facts/fetch_vision.py (funding/klines schema and writers)",
-    "orc/facts/build_panel.py (seal handling and build_all)",
-    "orc/orchestrator/spec.py (TrialConfig fields)",
-    "orc/orchestrator/surface.py (candidate/params construction)",
-    "tests/test_protocol.py (holdout section)",
+    "orc/target.py",
+    "orc/guard.py",
+    "scripts/commit_results.py",
+    "scripts/forever.py",
+    "scripts/briefing.py",
+    ".gitattributes",
     ".gitignore",
-    "reports/KERNEL_REVIEW.md (to separate live defects from already-fixed ones)"
+    "orc/eval/__init__.py",
+    "orc/eval/analytic.py",
+    "orc/eval/simulate.py",
+    "orc/orchestrator/spec.py",
+    "orc/orchestrator/runner.py",
+    "orc/orchestrator/robustness.py",
+    "orc/orchestrator/surface.py",
+    "orc/kernel/metrics_cf.py",
+    "orc/kernel/inference.py",
+    "orc/facts/panel.py",
+    "scripts/robustness.py",
+    "scripts/kt1_funding_drag.py",
+    "scripts/kt3_survivorship.py",
+    "tests/test_kernel.py"
   ],
-  "unreviewed": [],
+  "unreviewed": [
+    "orc/eval/signal.py",
+    "orc/eval/signal_rules.py"
+  ],
   "findings": [
     {
-      "file": "orc/eval/signal.py",
-      "line": 150,
+      "file": "orc/eval/simulate.py",
+      "line": 186,
       "severity": "high",
-      "what": "run_signals accepts a non-finite funding_rate that simulate.py:34 raises on, and the resulting NaN wallet makes `adverse <= liq` false forever, so liquidation is never detected again — while both RuntimeError guards (the wallet invariant at :281 and the trade-log reconciliation at :310) compare against NaN and are silently False.",
-      "trigger": "close = np.linspace(100, 40, 60) (a 60% fall), a 10x long entered at bar 0, symbol='SOMEALTUSDT'. With funding_rate=np.zeros(60) it returns n_liquidations=1, final_equity=0.0. With the same array plus fr[3]=np.nan it returns n_liquidations=0, final_equity=nan, n_trades=1 and raises nothing; runner.py:191 then writes liquidation_rate = 0/1 = 0.0 into the ledger. Reachability today is latent — I scanned all 430 files in FACTS/funding and found 0 non-finite or null rates — so this is one bad vendor row away, not currently firing.",
-      "why_silent": "NaN <= x, NaN >= x and NaN > tol are all False, so every comparison in the module that is supposed to catch a hole answers 'no hole'. The one number that would betray it, n_liquidations, comes back as 0 — an ordinary, publishable integer. simulate.py:30-38 has a comment describing this exact failure mode and refuses the input; signal.py never got the same guard."
-    },
-    {
-      "file": "orc/eval/signal.py",
-      "line": 139,
-      "severity": "medium",
-      "what": "The exchange leverage bracket is checked once against `spec.capital * spec.leverage`, but every position is sized `cash * spec.leverage`, so once the account compounds above its starting capital the evaluator opens positions at a leverage the tier table forbids.",
-      "trigger": "capital=10_000, leverage=10.0, symbol='SOMEALTUSDT' (LONG_TAIL). The door check passes because leverage_at(100_000) == 10. A first trade that takes equity to 32,000 is followed by a second trade whose notional is 320,000, where leverage_at(320_000) == 5. Reproduced: trade 1 notional 100,000 (allowed 10x), trade 2 notional 320,000 (allowed 5x), no error.",
-      "why_silent": "The margin math still looks the bracket up at the true notional, so the liquidation price is internally consistent and the equity curve is arithmetically correct — it is just the curve of a position the exchange would have rejected. The comment at :135-138 states the intent as 'Check the bracket the position actually lands in', which is the bracket at entry, not the bracket at t=0."
-    },
-    {
-      "file": "orc/eval/analytic.py",
-      "line": 133,
-      "severity": "medium",
-      "what": "Track A charges each deposit the funding settlement that landed on the deposit bar itself, but funding_rate_per_bar places a settlement on the bar whose OPEN contains it while the fill is at that bar's CLOSE — so the position is billed for a cash flow that cleared before it existed; lump_sum_reference:184 does the same.",
-      "trigger": "close = np.full(40, 100.0), funding_flow F[0] = 100.0*0.01, one contribution at stride 8, zero fees. evaluate() returns funding_paid[start=0] = 1.0 and lump_sum_reference() returns 1.0, where the correct charge is 0.0. signal.py:236 given the mirror-image input (settlement on the fill bar) returns funding == 0.0 and documents the inclusive version as a defect it fixed ('credited a full-notional settlement to a position that did not yet exist'). On the real KT-1 run (BTCUSDT, stride 168, n=156) every stride is a multiple of 8, so the artefact concentrates in one residue class: 1,650 of 13,203 start offsets (start % 8 == 3) carry a mean 2.21 USDT of phantom funding on 15,600 invested and the other 11,553 carry exactly 0.00; median bill moves 36.407% -> 36.405%.",
-      "why_silent": "The overcharge is contribution * f per deposit — 0.014% of capital on the configs tested — so it never looks anomalous, and it splits the start-date ensemble into two structurally different populations rather than shifting the whole distribution. tests/test_kernel.py::test_analytic_matches_simulator_with_funding cannot see it because simulate.py:175-178 charges funding after the same bar's deployment, so the cross-check pins the two evaluators to each other on the wrong convention."
-    },
-    {
-      "file": "orc/eval/signal.py",
-      "line": 219,
-      "severity": "medium",
-      "what": "A stop exit is booked at the stop level itself regardless of how far the bar traded through it, so a bar that gaps past the stop is filled at a price that never printed — the opposite of the 'adverse first' rule the module's own docstring sets out.",
-      "trigger": "fill at close=100, stop_loss=0.05 at leverage 1 (stop = 95), then a bar whose open, high, low and close are all 60. Reproduced: reason='stop', exit_price=95.0, pnl=-500.00, where a market stop fills near 60 for roughly -4000. Latent on the registered grid: across H0002's full grid (9 symbols x lookback x enter_rate x stop_loss x leverage) I measured 3,676 stop exits and 0 of them occurred on a bar that had already opened past the stop, because at leverage <= 1.0 with stop_loss 0.10/0.25 the stop sits 10-25% away in price. It bites as soon as leverage or a tighter stop puts the stop inside an hourly bar's range.",
-      "why_silent": "The trade is arithmetically consistent — an entry, an exit, a pnl that reconciles with the equity curve — and the invented money is bounded by the bar's range, so it shows up as a slightly better Calmar rather than as anything that looks wrong."
-    },
-    {
-      "file": "orc/eval/analytic.py",
-      "line": 125,
-      "severity": "low",
-      "what": "evaluate() has no finiteness guard on `close` or `funding_flow`, and because W is a suffix cumsum a single non-finite funding value poisons every start offset in the panel, not just the ones holding through it.",
-      "trigger": "close = np.full(60, 100.0), funding_flow F[7] = np.nan, stride 8, n=4: all 36 of 36 terminal multiples come back non-finite with no exception. close[5] = np.nan on the same spec: 4 of 36. simulate.py:34 raises ValueError on exactly the funding input. Also `R = 1.0/close` will turn a close of 0.0 into inf without complaint.",
-      "why_silent": "Nothing checks, and the arrays flow straight into terminal_multiple. It is partly caught downstream — start_date_profile (metrics_cf.py:179-194) drops non-finite rows but reports n_non_finite and frac_non_finite alongside — so the hole is recorded rather than hidden; the ledger row still carries the full n_starts as its path count while the metric was computed on none of them. The current archive has no non-finite rates, so this is latent."
-    },
-    {
-      "file": "orc/eval/signal_rules.py",
-      "line": 45,
-      "severity": "low",
-      "what": "_trailing_sum builds its window from a prefix sum, so one non-finite input makes every trailing window from that bar to the end of the series NaN, rather than only the `window` bars that actually contain it — which silently shuts the rule down for the remainder of history.",
-      "trigger": "x = np.zeros(20) with x[3] = np.nan and window=4: the NaN belongs in windows ending at i=3..6, but all 20 outputs are NaN. Fed through carry_funding, entry is FLAT and exit_ is False for every bar after the poisoned one, so run_signals finds no signals and runner.py raises UnsupportedConfig('no_trades_fired') for the whole cell.",
-      "why_silent": "'No trades fired' is a legitimate and common outcome for a carry rule whose threshold is never met, so a cell that was silenced by one bad data point is recorded identically to a cell whose mechanism simply never triggered. Latent for the same reason as the findings above: the current funding archive is clean."
-    },
-    {
-      "file": "orc/eval/signal.py",
-      "line": 170,
-      "severity": "low",
-      "what": "The side is read once at the opening signal and never re-read, so an `entry` array that flips from +1 to -1 while a position is open holds the original side until an independent exit signal, stop or liquidation fires.",
-      "trigger": "entry = +1 on bars 0-9 then -1 on bars 10-29 with exit_ all False, on a series that rises 100 -> 200 over bars 10-29. Reproduced: one trade, side=+1, bars 1..29, pnl=+10,000 — the flip to short at bar 10 is discarded and the run collects the move the short signal said it would be on the wrong side of. Not reachable from the repo today: both entries in signal_rules.RULES are one-sided (carry_funding emits SHORT/FLAT, carry_funding_long emits LONG/FLAT). It becomes reachable the first time a two-sided rule is registered, which is what CLAUDE.md section 4 describes Track B as being.",
-      "why_silent": "The trade log, the equity curve and the reconciliation check are all consistent; nothing anywhere compares `entry[t]` against the side actually held, so the run reports a perfectly well-formed set of trades that the rule did not ask for."
-    },
-    {
-      "file": "orc/eval/signal.py",
-      "line": 256,
-      "severity": "low",
-      "what": "The equity curve is marked at closes only while the liquidation, stop and take-profit checks all use intrabar extremes, so maximum drawdown — one of the four metrics CLAUDE.md section 4 requires for Track B — cannot see an excursion that did not survive to a close.",
-      "trigger": "A 10x long filled at close=100 on a flat series with low[5]=95.2 and close[5]=100: true mark equity at that low is 5,200 of a 10,000 wallet, reported max_drawdown is 0.0, and n_liquidations is 0 (the wick was checked, just not recorded). On the registered grid the effect is small: at leverage 0.25 on H0002's lookback=21d/enter=0.0001 cell, BTCUSDT reports max_dd 0.5219 close-marked against 0.5228 marked at each bar's adverse extreme — 0.09 pp.",
-      "why_silent": "The curve is a valid mark-to-market path and every other number derived from it reconciles; the drawdown simply describes a coarser path than the one the liquidation check was allowed to see. The comment at :255 reads 'so drawdown sees the path, not just the fills', which is true of fills and not of wicks."
+      "what": "청산만 `low`를 읽고 드로다운은 `close`만 읽는다 — `max_dd_abs`는 종가 기준 pnl로만 갱신되므로, 청산에 이르지 않은 봉 내 급락(wick)은 드로다운 지표에서 완전히 사라진다.",
+      "trigger": "close=[100,100,100,100], low=[100,60,100,100], 1× 무레버리지 1회 납입으로 simulate를 돌리면 max_dd_total=0.0, terminal_multiple=1.0. 같은 -40%가 종가로 찍힌 close=[100,60,100,100]에서는 max_dd_total=0.4. 실데이터에서도 재현된다: 52개 심볼에 대해 bar 0부터의 무레버리지 최대낙폭을 close 기준과 low 기준으로 각각 계산하면 BEAMXUSDT 0.0908, BATUSDT 0.0852, BIGTIMEUSDT 0.0554만큼 과소평가되고(중앙값 0.0044), BATUSDT에는 자기 종가보다 99.81% 낮은 저가를 찍은 봉이 있다.",
+      "why_silent": "`low`는 인자로 받아 `is_liquidated`에만 전달되고, 5단계 mark-to-market은 `px = close[idx]`만 쓴다. 배열 길이·형상·부호가 모두 정상이라 예외가 날 자리가 없고, 결과는 그저 '이 셀은 낙폭이 작다'는 그럴듯한 수치가 된다. 이 값은 latent가 아니라 live다 — runner.py:375의 `_profile(\"dd\", out[\"max_dd_total\"])`가 모든 Track A simulate 원장 행에 dd_q50/dd_q95로 기록하고, surface.py:128은 `median(max_dd_total)`을 랭킹 값으로 반환한다. CLAUDE.md §4가 Track A의 낙폭 정의로 지목한 지표이자 종료 조건의 25% 낙폭이 걸린 지표다."
     },
     {
       "file": "orc/eval/simulate.py",
-      "line": 221,
+      "line": 194,
       "severity": "medium",
-      "what": "반환 dict에 '자본이 실제로 배치되었는가'를 나타내는 값이 하나도 없어서, 게이트가 한 번도 열리지 않아 아무것도 매수하지 않은 경로와 매수 후 정확히 본전으로 끝난 경로가 출력상 완전히 동일하다.",
-      "trigger": "facts/panel_1h/BTCDOMUSDT.parquet 의 development 구간(seal 이전)에 gate='dip:0.20:30' (gate_below_trailing_peak(close, 0.20, 720)), SimSpec(contribution=100, stride_bars=168, n_contributions=52), starts=arange(0, N-H-1, 168) 로 simulate 실행. 90개 start 중 30개(33%)가 horizon 전체에서 게이트가 한 번도 열리지 않아 terminal_multiple 이 정확히 1.0. 실측: tm_q50 = 1.000000, tm_q05 = 0.895017, max_dd q95 = 0.2288, funding_frac q50 = 0.0. runner.py:272 는 이 out 을 그대로 _profile('tm', ...) 에 넣어 PRIMARY_METRIC 인 tm_q05 를 ledger 에 기록하며, 게이트 개방 여부를 검사하는 코드는 runner/surface 어디에도 없다(grep 확인).",
-      "why_silent": "예치는 실제로 일어나 invested = 5200.0 이 정상 기록되고, wallet 에 현금이 그대로 남아 terminal_equity = contributed 가 되므로 terminal_multiple 은 NaN 도 0 도 아닌 정확히 1.0 이 된다. max_dd_total 0.0, funding_frac 0.0, frac_time_in_loss 0.0 이 함께 나와 '무손실·무낙폭 전략'으로 읽히고, 손실을 내는 DCA 셀들보다 tm_q05 상위에 랭크된다. 즉 '측정 불가'가 '완벽한 결과'로 보고된다."
+      "what": "손절/익절 판정이 `close`로만 이루어져, 청산과 같은 봉 내 리스크 체크인데도 서로 다른 가격을 본다 — 봉 내에서 손절선을 뚫었다가 회복한 경로는 손절되지 않고 살아남는다.",
+      "trigger": "close=[100,100,100,100], low=[100,60,100,100], SimSpec(stop_loss=0.30, leverage=1.0, 수수료 0). 봉 1에서 실제로는 -40%였으나 exit_reason=0(EXIT_HORIZON), terminal_multiple=1.0으로 만기까지 보유한다. 같은 하락이 종가로 찍히면 exit_reason=3(EXIT_STOP_LOSS), exit_bar=1, terminal_multiple=0.6.",
+      "why_silent": "`ratio = pnl / contributed`의 pnl은 5단계에서 종가로 계산된 값이다. 손절 누락은 '버텼더니 회복했다'는 유리한 방향으로만, 익절 누락은 불리한 방향으로만 작용해 비대칭이며, 둘 다 정상적인 경로 종료로 기록된다. 현재는 잠복 상태다 — runner.py:357의 주석이 측정한 대로 Track A 1332개 행 중 take_profit·stop_loss가 설정된 행이 하나도 없다. 즉 이 결함을 처음 밟는 것은 손절을 격자에 넣는 다음 가설이고, 그때 조용히 낙관적인 수치를 낸다."
     },
     {
       "file": "orc/eval/simulate.py",
-      "line": 220,
+      "line": 85,
       "severity": "medium",
-      "what": "frac_time_in_loss / frac_time_below_peak 의 분모 lived = exit_bar + 1 은 청산 바를 포함하지만, 분자는 step 1에서 act 가 이미 지워진 뒤라 그 바를 셀 수 없어, 청산 경로만 구조적으로 e/(e+1) 로 상한이 눌린다(TP/SL 종료 경로는 step 6에서 마킹 이후에 닫히므로 이 격차가 없다).",
-      "trigger": "close = low = [100.0, 45.0, 45.0, 45.0], SimSpec(contribution=100, stride_bars=1, n_contributions=3, leverage=2.0), starts=[0]. e=1 에서 청산(exit_reason=1, exit_bar=1), 살아있던 모든 바에서 수중이었는데 frac_time_in_loss = 0.5000, frac_time_below_peak = 0.5000 으로 보고됨(정답 1.0). 동일 가격에 stop_loss=0.30 으로 종료시키면 1.0 이 나온다 — 같아야 할 두 경로가 갈린다.",
-      "why_silent": "0.5 는 완벽하게 그럴듯한 비율이고 NaN 도 1 초과도 아니다. runner.py 는 이 값을 frac_time_in_loss_q50 으로 ledger 에 저장한다. 왜곡은 조기 사망 경로에서 가장 크므로(e=1 이면 2배 과소평가) 가장 빨리 죽는 최악의 경로가 이 지표상 가장 건강해 보이는데, 이는 바로 위 주석(216–219행)이 고쳤다고 주장하는 편향과 같은 방향이다. KT-2 처럼 청산률 100% 구간에서는 앙상블 전체가 영향을 받는다."
+      "what": "범위 밖 접근을 막으라고 있는 경계 검사가 음수 horizon을 통과시키고, 그 뒤 `close[starts + H]`가 numpy 음수 인덱싱으로 배열 끝쪽 봉을 조용히 읽는다.",
+      "trigger": "SimSpec(stride_bars=10, n_contributions=0, hold_bars=0) → horizon_bars = -10. `starts.max()+H >= N`도 `starts.min() < 0`도 거짓이라 검사를 통과한다. close=np.arange(100.,200.), starts=[0,5]로 실행하면 예외 없이 exit_bar=[-10,-10], bars_lived=[1,1], terminal_multiple=[0,0]을 반환하고, 시작일 0의 청산 가격으로 close[-10]=190.0 — 패널 끝에서 10봉 앞의 값 — 을 쓴다. 격자 쪽에도 막는 것이 없다: spec.py의 `Hypothesis.verify()`에 격자 값의 양수 검사가 없고, runner.py는 `stride < 1`과 `horizon >= close.size`만 거르며 `horizon < 0`은 거르지 않는다.",
+      "why_silent": "n_contributions=0이면 납입이 없어 contributed=0 → `total_invested = max(contributed, 1e-12)`가 0으로 나누는 것을 막아주고, terminal_equity도 0이라 terminal_multiple이 0.0으로 떨어진다. 원장에는 '이 변형은 완전히 실패했다'로 읽히는 tm_q05=0.0 행이 남는다. 실행되지 못한 셀이 측정된 실패로 기록되는, 브리핑에 적힌 네 번째 결함과 같은 형태다."
+    },
+    {
+      "file": "orc/eval/simulate.py",
+      "line": 150,
+      "severity": "medium",
+      "what": "격리 마진 모드에서 청산 시 terminal_equity를 0으로 만드는데, `margin = wallet - powder`로 마진에서 명시적으로 제외했던 미투입 현금까지 함께 소멸시킨다 — 마진 모델과 손익 모델이 서로 다른 계정을 가정한다.",
+      "trigger": "SimSpec(contribution=100, stride_bars=1, n_contributions=3, hold_bars=3, leverage=3.0, undeployed_counts_as_margin=False), close=low=[100,100,100,40,100,100], gate=[True,False,False,False,False,False]. 봉 0에서만 투입되고 봉 1·2의 200 USDT는 게이트가 닫혀 powder로 남는다. 봉 3의 폭락으로 포지션이 청산되면 liquidated=True, contributed=300, terminal_equity=0.0, terminal_multiple=0.0 — 마진 계산에서 빼두었으므로 위험에 노출된 적 없는 200 USDT가 사라진다.",
+      "why_silent": "0.0은 청산에 대해 완벽히 그럴듯한 종료 자산이고, 141행의 마진 정의와 150행의 손익 정의가 40행 떨어져 있어 대조되지 않는다. 현재 호출자는 없다 — 코드베이스 전체에서 `undeployed_counts_as_margin=False`를 넘기는 곳이 한 군데도 없으므로 잠복 결함이지만, 이 플래그를 켜는 순간 조용히 발동한다."
+    },
+    {
+      "file": "orc/eval/simulate.py",
+      "line": 187,
+      "severity": "low",
+      "what": "청산된 경로는 청산이 일어난 봉에서 이미 `act`에서 빠진 뒤에 손실 카운터가 돌므로 마지막 봉이 분자에 들어가지 않는데, 분모인 `lived = exit_bar + 1`에는 들어간다 — TP/SL 종료 경로는 마지막 봉을 양쪽 모두에 넣으므로 두 종료 경로의 정의가 어긋난다.",
+      "trigger": "close=low=[100,50,50,50], SimSpec(n_contributions=1, hold_bars=3, leverage=3.0, 수수료 0). 봉 1에서 자본 100%를 잃고 청산되지만 exit_bar=1, bars_lived=2, frac_time_in_loss=0.0, frac_time_below_peak=0.0 — 전액을 날린 경로가 '손실 구간이 한 번도 없었다'고 보고한다.",
+      "why_silent": "0과 1 사이의 정상적인 비율이라 형태만으로는 걸러지지 않고, runner.py:379가 이 값을 `frac_time_in_loss_q50`으로 모든 simulate 행에 기록한다. 실제 앙상블에서의 크기는 작다 — BTCUSDT 5× 168봉 스트라이드 30회 납입(205 시작일, 청산률 0.649)에서 청산 경로의 중앙 수명이 1081봉이므로 누락은 1/1081 수준이고, 0.0을 보고한 청산 경로는 0/133이었다. 초기에 죽는 경로에서만 심각해지는데, 216~219행의 주석이 분모에 대해 이미 지적한 '가장 일찍 죽는 최악의 경로가 이 지표에서 가장 건강해 보인다'는 방향과 정확히 같다."
     },
     {
       "file": "orc/kernel/liquidation.py",
       "line": 70,
       "severity": "low",
-      "what": "BTC_LIKE tier 7 의 cum_maint 가 11,098,050 인데 브라켓 연속성(cum_{k+1} = cum_k + cap_k*(mmr_{k+1}-mmr_k) = 6,348,050 + 230e6*0.025)이 요구하는 값은 12,098,050 이며, 오차가 tier 8·9로 전파되어 notional 230,000,000 지점에서 maintenance_margin 이 1,000,000 만큼 불연속 점프한다. 그 결과 is_liquidated 가 mark 가격에 대해 비단조가 되고 liquidation_price_long 과 불일치한다.",
-      "trigger": "wallet=23,000,000, qty=1000, entry_price=230,000, table=BTC_LIKE. liquidation_price_long → 229,316.51 (청산가). 그런데 is_liquidated 는 mark=230,100 에서 True, mark=230,000 과 229,500 에서 False, mark=229,316.50 에서 다시 True 를 반환한다. 즉 가격이 내려가면서 청산 상태에 들어갔다 나왔다 하며, 폐형해가 0.342% 만큼 생존을 과대평가한다. MAJOR_ALT, LONG_TAIL 은 모든 경계에서 연속임을 확인했다(BTC_LIKE tier6→7 만 유일한 불연속).",
-      "why_silent": "두 함수 모두 예외 없이 float 를 반환하고, simulate 는 bar low 한 점에서만 is_liquidated 를 호출하므로 비단조성이 드러나지 않는다. 어떤 바의 low 가 230,100 이면 죽고 229,500 이면 사는 — 더 낮은 저가가 생존을 낳는 — 결과가 나오지만 liquidation_rate 는 그대로 유한한 숫자로 나온다. 현재 연구의 소액 DCA(대개 수천 USDT)로는 230M notional 에 도달하지 않으므로 실질 도달 불가이나, 모듈 docstring 이 '용량(capacity) 연구가 잘못된 요율을 조용히 쓰지 않도록 표를 전부 구현했다'고 주장하는 바로 그 지점이 틀려 있다."
-    },
-    {
-      "file": "orc/eval/simulate.py",
-      "line": 262,
-      "severity": "low",
-      "what": "gate_below_trailing_peak 의 `elif n > lookback:` 와 gate_below_sma 의 `if n > window:` 가 off-by-one 이라 n == lookback 일 때 sliding_window_view 가 정상 동작함에도 계산을 건너뛰고, n <= window 인 경우와 함께 roll/sma 가 전부 NaN 으로 남아 '전부 False' 게이트를 오류 없이 반환한다.",
-      "trigger": "n=50 하강 시리즈에서 gate_below_sma(c, 48)=2개 개방, 49→1개, 50→0개, 51→0개. 실데이터로는 development 구간이 720바보다 짧은 1h 패널 9개(DYMUSDT 545, GLMUSDT 182, JUPUSDT 702, MAVIAUSDT 206, OMUSDT 394, PIXELUSDT 249, RONINUSDT 572, STRKUSDT 223, ZETAUSDT 664)에 등록된 게이트 'dip:0.20:30'(lookback = p.bars(30) = 720) 을 적용하면 모두 0바 개방. panel.load 는 이 패널들을 거부하지 않으며(MIN_BARS_REQUIRED 는 build 시점 전체 span 기준), 짧은 horizon(예: stride_days=1, n_contributions=5 → 96바)이면 runner 의 no_admissible_start_dates 도 통과한다.",
-      "why_silent": "'하락이 없어서 게이트가 안 열렸다'와 '게이트를 계산할 수 없었다'가 동일한 all-False 배열로 표현된다. 이것이 위 첫 번째 findings 와 결합해 terminal_multiple 정확히 1.0, 낙폭 0 인 결과를 낳는다 — 실측: window=399 는 1바 개방, window=400/401 은 0바이며 세 경우 모두 terminal_multiple=1.000000, max_dd_total=0.0000 으로 구분 불가."
-    },
-    {
-      "file": "orc/kernel/inference.py",
-      "line": 235,
-      "severity": "low",
-      "what": "ordinal_axes 기본값 `[d > 2 for d in g.shape]` 이 축의 '순서성'을 값의 개수로 추정하기 때문에, 2수준 수치 축(leverage=[1,2], n_contributions=[52,104])은 범주형으로 간주되어 이웃 검사에서 통째로 제외되고, 3수준 범주 축(symbol=[BTC,ETH,SOL])은 순서 축으로 간주되어 섭동으로 평가된다. 또한 ordinal_axes 를 g.ndim 보다 짧게 주면(239행 `axis < len(ordinal_axes)`) 남는 축은 조용히 순서형으로 취급된다.",
-      "trigger": "plateau_score(np.array([[1.40,0.20],[1.50,0.20],[1.45,0.20]])) → plateau_ratio 0.95, shape 'PLATEAU'. 정점 1.50 은 2수준 축을 한 칸 움직이면 0.20 (87% 붕괴)인데 그 축이 건너뛰어진다. 같은 격자에 ordinal_axes=[True,True] 를 주면 0.678 / 'SPIKE'. 반대 방향: plateau_score(np.array([[2.0,0.1,0.1],[0.1,0.1,0.1]])) 는 3수준 symbol 축을 이웃으로 써서 다른 심볼을 같은 메커니즘의 섭동으로 취급한다. 3차원 격자에 ordinal_axes=[True,True] 를 주면 이웃 5개(축2 포함), [True,True,False] 면 4개.",
-      "why_silent": "CLAUDE.md 6장이 '값보다 shape 컬럼을 먼저 읽으라'고 규정한 바로 그 라벨이 PLATEAU/SPIKE 사이에서 뒤집히는데, 반환값은 언제나 유한한 비율이고 n_neighbours 도 그럴듯한 정수다. 현재 유일한 프로덕션 호출부인 surface.py:217 은 ordinal_axis() 로 계산한 리스트를 명시적으로 넘기므로 오늘은 도달하지 않는다 — 기본값은 새 호출부가 인자를 생략하는 순간 발동하는 잠복 함정이다."
-    },
-    {
-      "file": "orc/eval/simulate.py",
-      "line": 85,
-      "severity": "low",
-      "what": "start 오프셋 검증이 starts.max()+H >= N 과 starts.min() < 0 만 보고 horizon_bars 자체가 음수인 경우를 잡지 못해, starts + H 가 음수 인덱스가 되어 시리즈 끝에서 값을 읽는다.",
-      "trigger": "SimSpec(contribution=100, stride_bars=5, n_contributions=0) → horizon_bars = -5. simulate(close(len=100), low, starts=[0], spec) 이 검증을 통과하고 루프는 range(-4) 로 비어 있으며, 205–213행이 close[0 + (-5)] = close[95] 를 읽는다. 결과: exit_bar=-5, terminal_multiple=0.0, invested=0.0, bars_lived=1.0. orc/orchestrator/spec.py 에는 n_contributions 하한 검증이 없어(grep 확인) 큐 JSON 에 \"n_contributions\": [0, 52, 104] 를 쓰면 그대로 등록·실행된다.",
-      "why_silent": "terminal_multiple = 0 / max(0, 1e-12) = 0.0 은 '전손'으로 읽히는 완전히 그럴듯한 숫자이며, 잘못된 설정으로 거부되는 대신 ledger 에 행으로 남아 N(다중검정 분모)을 영구히 올린다. 동시에 시리즈 시작 지점의 경로가 시리즈 끝의 가격을 읽는 미래 참조가 발생하지만 invested 가 0 이라 숫자로 드러나지 않는다."
-    },
-    {
-      "file": "orc/ledger/trials.py",
-      "line": 67,
-      "severity": "high",
-      "what": "canonical_hash의 identity가 값이 아니라 JSON 표현 타입에 의존한다 — 7과 7.0이 서로 다른 config_hash를 만들고, np.int64(7)은 default=str에 걸려 문자열 \"7\"이 되므로 같은 셀이 세 가지 정체성을 가질 수 있다.",
-      "trigger": "실제 ledger에서 이미 발생했다. `SELECT config_json, config_hash FROM trials`를 타입 정규화 후 묶으면, (numerically-identical config, symbol, evaluator, panel_hash, code_hash)가 동일한데 config_hash가 둘인 그룹이 90개 있고 metrics_json은 바이트 단위로 동일하다. 예: trial 6968 vs 8124 (ADAUSDT, analytic) — 유일한 차이가 `stride_days: 7.0` 대 `7`. 재현: `\"grid\": {\"stride_days\": [7]}` (int)로 등록한 뒤 `[7.0]` (float)로 다시 등록하면 된다. spec.expand()는 grid 값을 frozen dataclass에 그대로 넣고 타입 강제를 하지 않는다.",
-      "why_silent": "INSERT OR IGNORE가 UNIQUE에 걸리지 않으므로 새 행으로 들어가고 정상적인 신규 trial처럼 보인다. 두 행의 숫자는 완전히 같아서 어떤 리포트에서도 이상하게 읽히지 않는다. N은 줄일 수 없다고 헌장이 못박았으므로, 중복 90행이 다중검정 분모에 영구히 남는다."
-    },
-    {
-      "file": "orc/facts/panel.py",
-      "line": 132,
-      "severity": "high",
-      "what": "bar index가 시계라는 것을 보장하는 연속성 검사가 단방향이다 — `missing = 1 - height/expected`는 bar가 모자랄 때만 발동하고, 중복 bar나 비단조 ts로 height가 expected 이상이면 missing이 음수가 되어 그대로 통과한다. 정렬 여부는 아예 검사하지 않는다.",
-      "trigger": "실행해서 확인했다. BTCUSDT 1h 패널을 `pl.concat([src, src]).sort(\"ts\")`로 만들어 load()에 넣으면 거부되지 않고 78,486 bars로 로드된다. `p.bars(7)`은 여전히 168을 반환하지만 인덱스 168개가 덮는 실제 시간은 86시간이고 `np.all(np.diff(ts) > 0)`은 False다. 또 `pl.concat([src[20000:], src[:20000]])`처럼 회전된 프레임은 expected가 0이 되어 line 132에서 의도된 거부 메시지 대신 맨 ZeroDivisionError가 난다.",
-      "why_silent": "load()가 예외 없이 Panel을 돌려주므로 모든 stride_days / hold_days / lookback_days / max_hold_days가 절반 길이로 조용히 재척도되고, _span이 기록하는 horizon_days와 effective_independent_paths도 같은 배수만큼 틀린다. 게다가 fetch_vision.funding_rate_per_bar는 bars가 정렬되어 있다고 가정한 searchsorted를 쓰는데, 그 전제를 검증하는 유일한 자리가 바로 이 검사다."
+      "what": "BTC_LIKE의 480,000,000 구간 cum_maint가 연속성이 요구하는 값보다 정확히 1,000,000 작아, 명목가 230,000,000을 지날 때 유지증거금이 계단처럼 뛴다 — cum_maint는 구간별 유지증거금을 연속으로 만들려고 존재하는 파생값이므로 이는 전사 오류다.",
+      "trigger": "maintenance_margin(230_000_000)=22,401,950이고 maintenance_margin(230_000_000*1.0000001)=23,401,953 — 점프 1,000,003. 연속성 공식 cum[i+1] = cum[i] + cap[i]*(mmr[i+1]-mmr[i])는 12,098,050을 요구하는데 표에는 11,098,050이 들어 있다. 세 표의 나머지 18개 경계는 모두 오차 0으로 정확히 연속이므로 규칙이 아니라 이 한 줄이 틀렸다.",
+      "why_silent": "MMR도 cum도 그 자체로는 그럴듯한 숫자이고, `lookup`의 searchsorted 경계 처리는 정확하며(side='left'가 Binance의 (하한, 상한] 규칙과 일치), 나는 이 구간 주변 6001개 계정을 훑어 `liquidation_price_long`과 `is_liquidated`가 불일치하는 사례를 찾지 못했다 — 즉 어떤 교차 검증도 이것을 잡지 못한다. 방향은 보수적(증거금이 더 엄격)이고 이 프로젝트의 포지션 규모로는 도달 불가능하다. 보고하는 이유는 59~61행 주석이 '용량 연구가 조용히 잘못된 요율을 쓰지 못하도록 표를 전부 구현했다'고 주장하는데, 실패하는 것이 정확히 그 주장이기 때문이다."
     },
     {
       "file": "orc/kernel/metrics_fc.py",
       "line": 69,
       "severity": "high",
-      "what": "파산 계좌를 거부하려고 둔 `np.any(equity <= 0.0)` 가드가 NaN에 무력하다 (`nan <= 0`은 False). NaN이 섞인 equity는 가드를 통과하고, np.log/np.diff가 만든 NaN 수익률을 `r[np.isfinite(r)]`가 삭제한 뒤 남은 수익률을 연속된 bar처럼 취급해 Sharpe를 계산한다.",
-      "trigger": "실행해서 확인했다. `equity = [10000, 10100, nan, 9000, 9100, 9200]`에 대해 metrics_fc.summary는 `max_drawdown: nan`, `calmar: nan`을 주면서 `sharpe: 1652.06`을 반환한다. 같은 배열을 읽는 두 경로가 어긋난다.",
-      "why_silent": "같은 curve에 대해 다른 지표는 전부 nan으로 '측정 불가'를 말하는데 Sharpe만 유한한 수를 내놓고, 그 수는 sqrt(bars_per_year) 연율화를 삭제된 bar 수를 무시한 채 적용한 값이라 크기만 클 뿐 형식상 정상으로 읽힌다. section 4가 보고하라고 요구하는 네 지표 중 하나가 바로 이것이다."
-    },
-    {
-      "file": "orc/kernel/metrics_cf.py",
-      "line": 96,
-      "severity": "medium",
-      "what": "hi와 lo가 bisection의 bracket 경계이면서 동시에 반환값이다. bracket 밖의 IRR은 정확히 +1000.0 (연 100,000 %) 또는 -0.9999로 ledger에 기록되며, 진짜로 측정된 rate와 구별할 표식이 없다.",
-      "trigger": "구성해서 확인했다. `mwrr_equal_interval(100.0, n_contributions=[1.0], years_between=7/365, terminal_value=[110.0], horizon_years=[2/365])` → `[1000.]`. runner.py의 simulate 분기는 `n_real`과 `years_real`을 path별로 넘기므로 take_profit/stop_loss로 며칠 만에 V>C로 빠져나온 path가 그대로 이 값을 만든다. 현재 ledger에도 이미 mwrr_best >= 1000이 435행, mwrr_q95 >= 1000이 205행, mwrr_q99 >= 1000이 330행, mwrr_worst <= -0.9999가 186행 들어 있다.",
-      "why_silent": "포화값이 예외나 NaN이 아니라 float이므로 _profile의 start_date_profile을 그대로 통과해 mwrr_mean, mwrr_q90, mwrr_q95, mwrr_q99 안으로 섞여 들어간다. section 4가 horizon 변화에 견디는 유일한 비교라고 지정한 annualised IRR이 실제로는 bracket 상수를 평균낸 값이 된다."
-    },
-    {
-      "file": "orc/kernel/metrics_fc.py",
-      "line": 31,
-      "severity": "medium",
-      "what": "max_drawdown이 측정할 수 없는 입력에 대해 0.0을 반환한다 — 빈 배열과 1-bar curve 모두 '낙폭이 없었다'로 읽히는 수를 돌려준다.",
-      "trigger": "실행해서 확인했다. `max_drawdown(np.array([]))` → `0.0`. `summary(np.array([10000.]))` → `{\"cagr\": nan, \"calmar\": nan, \"sharpe\": nan, \"max_drawdown\": 0.0, \"years\": 0.0}`.",
-      "why_silent": "나머지 세 지표는 모두 nan으로 '측정 불가'를 정직하게 말하는데 max_drawdown만 0.0을 말한다. max_drawdown은 Track B 주 지표인 Calmar의 분모이자 section 4가 요구하는 좌측 꼬리 진술 자체이므로, 2026-09-02의 '실행할 수 없었던 검사가 결과처럼 기록된' 패턴과 정확히 같다."
-    },
-    {
-      "file": "orc/facts/panel.py",
-      "line": 175,
-      "severity": "medium",
-      "what": "load_many가 FileNotFoundError와 ValueError를 삼키고 더 작은 dict를 반환한다. load()가 거부하는 모든 이유 — line 122의 'no bars left in the ... span', line 133의 시계 신뢰성 거부 — 가 전부 ValueError라서, 시계를 믿을 수 없어 제외된 심볼과 애초에 요청하지 않은 심볼이 구별되지 않는다.",
-      "trigger": "`load_many([\"BTCUSDT\", \"ETHUSDT\"], development_only=True)`에서 ETHUSDT 패널에 1 % 갭이 있으면 load()가 line 134에서 ValueError를 던지고, 호출자는 키가 하나뿐인 dict를 받는다. 2-심볼 universe로 등록된 가설이 1개 심볼로 평가되고, 그 사실을 담는 키가 반환값 어디에도 없다. (현재 프로덕션 호출자는 없으므로 잠재 결함이다.)",
-      "why_silent": "반환 타입이 정상이고 dict.items()로 도는 코드는 있는 심볼만 처리한다. universe가 줄었다는 신호가 없으므로 결과는 등록된 universe 전체에 대한 것으로 읽히고, 시계 검사가 잡아낸 구멍이 '검사가 작동한 결과'처럼 보이지 않고 아예 사라진다."
+      "what": "cagr()는 years = (equity.size - 1) / bars_per_year 로 연율화하면서 years에 하한이 없고 최소 히스토리 검사도 없어, 상장한 지 얼마 안 된 심볼의 짧은 개발구간이 유한하고 그럴듯한 초거대 CAGR을 만들어 내며 그대로 프로젝트의 종료 조건을 만족시킨다.",
+      "trigger": "ZETAUSDT는 개발구간이 664봉(2024-02-02 ~ 2024-02-29, 27.7일)뿐인데 panel.load로 정상 로드되고 _assert_bar_index_is_a_clock을 통과하며 has_funding()도 True라 run_signal_trial이 그대로 받는다. 실행 확인: eq = np.linspace(10000, 20000, 664)에 중간 한 봉만 0.8배 → metrics_fc.summary(eq, '1h')가 years 0.0757, cagr 9492.140, max_drawdown 0.1992를 돌려주고, orc.target.meets(m)이 True를 반환한다(TARGET_CAGR 1.0, TARGET_MAX_DRAWDOWN 0.25).",
+      "why_silent": "is_measurable()는 유한성만 보고 길이는 보지 않으며, 계산 자체는 그 창(window)에 대해 정확하다. 27일에서 뽑아낸 수치라는 사실은 metrics dict의 bars/years 필드에만 남고 meets()도 best_so_far()도 그것을 읽지 않는다. 현재 원장의 Track B 행은 전부 30,000봉 이상이라 아직 발현되지 않았을 뿐, KT-3의 LOCAL_UNIVERSE_ACCEPTABLE 판정으로 알트 유니버스가 열려 있고 1시간봉 패널 272개 중 짧은 것들이 이미 로드된다."
     },
     {
       "file": "orc/ledger/trials.py",
-      "line": 179,
+      "line": 268,
       "severity": "medium",
-      "what": "`json.dumps(metrics, default=float)`가 맨 `NaN` 리터럴을 쓴다 — 유효한 JSON이 아니며, 그 결과 best()의 `json_extract(...) IS NOT NULL` 필터가 해당 행을 순위 모집단에서 조용히 제외한다.",
-      "trigger": "실제 ledger에서 측정했다. 6,736행 중 751행이 metrics_json에 맨 NaN을 담고 있다. `\"sharpe\"` 키를 가진 행은 5,292개인데 `json_extract(metrics_json,'$.sharpe') IS NOT NULL`로 보이는 행은 4,541개다 — 차이 751행은 전부 equity가 0에 닿아 sharpe가 NaN이 된 청산 케이스다. 재현: `run_signal_trial`이 청산으로 끝난 셀 하나를 기록한 뒤 `Ledger.best(family, \"sharpe\")`를 부르면 된다.",
-      "why_silent": "best()는 limit개를 채워 정상적으로 반환하고, 몇 행이 모집단에서 빠졌는지 알려주는 카운트가 없다. 빠진 행은 N에는 그대로 남으므로 분모는 유지되고 분자만 줄어든다. 로컬 SQLite 3.50.4는 JSON5로 파싱해 NULL을 주지만 JSON5 이전 빌드에서는 같은 문서가 'malformed JSON' 오류가 되므로, ledger의 유일한 순위 API 동작이 SQLite 버전에 따라 달라진다."
+      "what": "record()가 metrics_json을 _canonical 없이 json.dumps(metrics, sort_keys=True, default=float)로 쓰기 때문에 NaN/Infinity가 맨몸으로 기록되어 저장된 문자열이 유효한 JSON이 아니게 된다. 같은 파일 140줄 위의 _canonical은 정확히 이 이유(\"json.dumps emits bare NaN/Infinity, which is not JSON and does not round-trip\")로 존재하는데 config 경로만 고쳐졌고 metrics 경로는 그대로다.",
+      "trigger": "metrics_fc.sharpe/calmar/cagr는 설계상 float('nan')을 반환한다. 실제 원장 조회 결과 7,122행 중 751행(10.5%)이 SELECT COUNT(*) FROM trials WHERE json_valid(metrics_json)=0 에 걸린다(예: trial_id 7087, funding_carry_short/ADAUSDT, \"sharpe\": NaN). 같은 dict가 리포트로도 흘러가 reports/FINDINGS.json, H0001/H0002/H0006/H0007/H0017/H0019_SURFACE.json, KERNEL_REVIEW.json, ROBUSTNESS.json 9개 파일이 현재 유효한 JSON이 아니다.",
+      "why_silent": "Python의 json.loads는 맨몸 NaN을 받아주므로 프로젝트 안에서는 왕복이 되고, 이 머신의 SQLite 3.50은 JSON5를 허용해 json_extract가 NaN을 SQL NULL로, Infinity를 REAL inf로 조용히 파싱한다. 그래서 Ledger.best()와 target._rows()의 쿼리가 아무 오류 없이 돈다. 두 가지가 뒤에 숨는다: (1) SQLite 3.42 미만(예: ubuntu-22.04의 3.37)에서는 같은 쿼리가 malformed JSON으로 실패하므로 두 머신이 원장을 다르게 읽는다, (2) Infinity 값은 best()의 ORDER BY m DESC에서 1위로 정렬되고 meets()는 NaN만 거르므로 통과한다."
+    },
+    {
+      "file": "orc/ledger/trials.py",
+      "line": 176,
+      "severity": "medium",
+      "what": "code_hash()에서 CODE_HASH_ROOTS 항목이 존재하지 않으면 root.is_file()이 False라 디렉터리로 취급되고, 없는 디렉터리에 대한 rglob('*.py')는 예외 없이 빈 이터레이터를 돌려주므로 그 경로는 해시에 아무것도 기여하지 않은 채 침묵한다.",
+      "trigger": "실행 확인: code_hash([...CODE_HASH_ROOTS[:-1], 'orc/facts/panelX.py'])가 code_hash([...CODE_HASH_ROOTS[:-1]])와 완전히 같은 해시를 반환한다(b2e93a28f9801731). 구체적 발현 경로는 파일 이동/개명이다 — orc/orchestrator/runner.py를 옮기면 그 순간부터 runner의 모든 수정이 UNIQUE 키에서 사라지고, 고쳐진 평가기가 재실행되어도 옛 행과 키가 맞아 INSERT OR IGNORE에 버려지며 \"new 0\"을 찍는다.",
+      "why_silent": "예외도 경고도 없고 해시는 여전히 정상적인 16진 문자열이다. 이걸 막으라고 만든 tests/test_protocol.py:2606은 CODE_HASH_ROOTS에 그 '문자열'이 들어 있는지만 검사하고 그 경로가 디스크에 실제로 존재하는지는 확인하지 않으므로, 개명 후에도 254개 스위트가 초록으로 남는다. 상수 위 주석이 서술한 mutation.py 사건과 같은 구멍이 방향만 바꿔 그대로 열려 있다."
     },
     {
       "file": "orc/kernel/metrics_cf.py",
-      "line": 182,
+      "line": 82,
+      "severity": "medium",
+      "what": "mwrr_equal_interval()이 NaN terminal_value를 감지하지 못하고 브래킷 하한 -0.9999를 결과로 돌려준다. np.sign(nan) == np.sign(nan)이 False라 outside 가드를 빠져나가고, 이분법 루프의 go_right 비교가 매번 False라 b가 a로 붕괴하며, 마지막 np.where(V <= EPS, -1.0, r)도 NaN에는 False다.",
+      "trigger": "실행 확인: mwrr_equal_interval(100.0, 15, 7/365.25, np.array([1500.0, np.nan, 0.0, 30.0])) → [-3.89e-16, -0.9999, -1.0, -0.9999]. 이어서 start_date_profile(그 결과)는 n=4, q05=-1.0, n_non_finite=0을 보고한다.",
+      "why_silent": "-0.9999는 '연 -99.99%'라는 완벽하게 그럴듯한 IRR이고, 무엇보다 non-finite 경로를 지우고 왼쪽 꼬리를 계산하는 사고를 막으려고 추가된 start_date_profile의 n_non_finite 카운터가 0을 보고한다 — NaN이 카운터에 닿기 전에 유한한 값으로 바뀌어 앙상블에서 두 번째로 나쁜 값으로 자리잡기 때문이다. 게다가 테스트 스위트가 대조군으로 쓰는 mwrr_irregular(114행)도 같은 이유로 NaN을 놓치고 같은 -0.9999를 돌려주므로, 두 구현을 맞대보는 교차검증이 틀린 답에 합의한다. 현재 build_panel이 close <= 0 행을 걸러내므로 즉시 발현되지는 않으나, 클라우드 번들·외부 소스 패널 등 load()를 통과하는 어떤 NaN 가격도 곧장 이 경로다(panel.load에는 가격 유한성 검사가 없다)."
+    },
+    {
+      "file": "orc/kernel/metrics_cf.py",
+      "line": 128,
+      "severity": "medium",
+      "what": "drawdown_on_invested()와 terminal_multiple()은 원장의 어떤 숫자도 만들지 않는 죽은 코드다 — 실제 기록되는 값은 analytic.py:145,193과 simulate.py:225,234가 각자 인라인으로 계산하며, metrics_cf의 두 함수를 부르는 곳은 tests/test_kernel.py:190뿐이다.",
+      "trigger": "grep 확인: drawdown_on_invested / terminal_multiple의 호출자는 tests/test_kernel.py 하나뿐. 정의도 갈린다 — simulate.py는 frac_time_in_loss를 실제로 산 봉수(lived = exit_bar+1)로 나누고 그 주석은 전체 호라이즌으로 나누던 것이 결함이었다고 명시하는데, metrics_cf:155는 여전히 배열 전체 길이로 나눈다. 실행 확인: contributed=[100,100,200,200,300,...], equity=[100,90,180,150,0,0,...]인 10봉 경로에서 metrics_cf는 frac_time_in_loss 0.9, simulate 규약은 0.8. 또한 metrics_cf:148은 분모 하한이 1.0인데 simulate.py:224는 1e-12다.",
+      "why_silent": "테스트가 초록이고 함수가 올바른 값을 돌려주지만, 그 값이 어디에도 기록되지 않으므로 이 함수를 고쳐도 원장은 한 줄도 달라지지 않고 반대로 이 함수의 테스트는 기록된 숫자에 대해 아무것도 증명하지 않는다. 비용은 실재한다: orc/kernel이 CODE_HASH_ROOTS에 들어 있어 이 죽은 코드를 한 글자만 고쳐도 code_hash가 움직이고 레지스트리 전체가 재실행되어 N이 한 세대만큼 늘어난다 — 어떤 측정도 바뀌지 않은 채로."
+    },
+    {
+      "file": "orc/kernel/metrics_fc.py",
+      "line": 53,
       "severity": "low",
-      "what": "모든 path가 non-finite인 앙상블에서 start_date_profile이 예외 대신 분위수 키가 전혀 없는 dict를 반환한다.",
-      "trigger": "실행해서 확인했다. `start_date_profile(np.array([np.nan, np.inf, -np.inf]))` → `{'n': 0, 'n_non_finite': 3}`. _profile을 거치면 그 trial의 metrics에는 tm_q05도 tm_worst도 tm_mean도 없다. (현재 Track A 1,444행은 전부 tm_q05를 갖고 있으므로 실현되지는 않았다.)",
-      "why_silent": "행은 정상적으로 ledger에 들어가 N을 1 올리고, `json_extract(metrics_json,'$.tm_q05')`는 NULL을 반환해 best()와 PRIMARY_METRIC으로 선택하는 모든 surface에서 조용히 사라진다. 측정할 수 없었던 셀이 거부로 남지 않고 '키가 없는 정상 행'으로 남는다."
+      "what": "max_drawdown()이 is_measurable() 검사보다 먼저 빈 배열에 대해 0.0을 반환한다. 측정할 수 없었던 검사가 '드로다운 없음'이라는 최상의 결과로 기록되는 형태다.",
+      "trigger": "실행 확인: metrics_fc.max_drawdown(np.array([])) → 0.0 (같은 입력에 is_measurable()은 False). metrics_fc.summary(np.array([]))는 {'max_drawdown': 0.0, 'cagr': nan, 'sharpe': nan, ...}을 돌려준다. 1봉 곡선도 같다: summary(np.array([10000.0]))['max_drawdown'] == 0.0.",
+      "why_silent": "다른 세 비율은 모두 nan을 내는데 이것만 유효한 값을 내므로, 리포트에서 '최대낙폭 0.0%'로 읽힌다. 현재 run_signal_trial이 n_trades == 0에서 UnsupportedConfig를 던지므로 빈 곡선이 여기까지 오지는 않아 잠재 상태다."
     },
     {
-      "file": "orc/orchestrator/surface.py",
-      "line": 581,
-      "severity": "high",
-      "what": "The Track A search test compares an observed annualised money-weighted return against a null distribution of terminal multiples: `write_report` passes `surfaces[sym][\"best_value\"]`, which is ranked on `mwrr_q05` (see `ranking_metric`, line 69), while the Track A null closure at line 507 scores each synthetic path with `tm_q05_on_path`, i.e. `tm_q05`.",
-      "trigger": "Any Track A hypothesis; it is already in the committed reports. reports/H0001_SURFACE.json ETHUSDT: `best_value` 0.6789 == `mwrr_q05_best` 0.6789 (the cell's `tm_q05` is 3.6056) is passed as `observed_best` against `null_mean` 24.73 / `null_q95` 72.0 — terminal multiples. reports/H0007_SURFACE.json BNBUSDT: `observed_best` -0.3619 (an IRR) against `null_mean` 0.777, `null_q95` 1.206 (multiples).",
-      "why_silent": "Both quantities are plain floats, so `best_of_g_pvalue` computes a p-value, the status is \"ok\" and a verdict prints. On today's symbols the multiples sit above the IRRs so p=1.0 and it errs toward rejection, which is why nobody noticed; the sign flips the moment the null's tm_q05 distribution falls below the observed IRR — on H0007/BTCUSDT `null_q95` is 1.036, so any cell with mwrr_q05 above ~1.04 would be reported SURVIVES_SEARCH at p<0.05 by the one test that consumes N."
-    },
-    {
-      "file": "orc/orchestrator/runner.py",
-      "line": 340,
-      "severity": "high",
-      "what": "The panel cache in `run_hypothesis` is keyed on `cfg.symbol` alone (`panels: dict[str, Panel]`), so when `clock` varies across the grid every configuration after the first is evaluated against the panel loaded for the first clock.",
-      "trigger": "A hypothesis with clock as an axis, e.g. track B, universe [\"BTCUSDT\"], grid {\"clock\": [\"1h\",\"1m\"], \"lookback_days\": [7.0,21.0,60.0]} — both panels exist on disk (facts/panel_1h/BTCUSDT.parquet and facts/panel_1m/BTCUSDT.parquet). Executed against a spy on panel_mod.load: 6 configurations produced exactly one load, ('BTCUSDT','1h'). The three \"1m\" cells then run on hourly bars while `run_signal_trial` line 175 annualises with `metrics_fc.BARS_PER_YEAR[cfg.clock]` = 525600 on a curve of 8760 bars/yr, so `years` is 60x too small and CAGR/Sharpe/Calmar explode; that cell then wins `nanargmax` and clears the break-even floor.",
-      "why_silent": "A Panel is a Panel: every downstream call succeeds and returns finite numbers, the row is written with `evaluator`, `n_starts` and `panel_hash` all present — the panel_hash is simply the 1h one under a config that says 1m, and nothing cross-checks the two."
-    },
-    {
-      "file": "orc/orchestrator/runner.py",
-      "line": 360,
-      "severity": "high",
-      "what": "`hypothesis_id` is passed to `ledger.record` but is not part of the ledger's UNIQUE key (config_hash, symbol, evaluator, panel_hash, code_hash), so a second hypothesis that re-enumerates cells an earlier one already ran gets INSERT OR IGNORE'd — the rows keep the first hypothesis's id, and `surface_from_ledger`'s `WHERE hypothesis_id=?` (surface.py:118) reports those cells as never run.",
-      "trigger": "Exactly the follow-up section 6 prescribes: H0006 (family negative_funding_carry_long, an 8-cell probe, fixed {rule, exit_rate 0.0001, leverage 1.0, max_hold_days null, take_profit null, capital 10000.0, clock \"1h\"}) re-registered wide as H0010 with the same fixed block and grid lookback_days [7,14,21,30] x enter_rate [0.0,-0.0001] x stop_loss [0.15,null]. The 8 overlapping cells produce byte-identical config dicts. Reproduced on a temp ledger: second record() returned (1, False), the single row still reads hypothesis_id H0006, and `SELECT count(*) WHERE hypothesis_id='H0010'` returns 0.",
-      "why_silent": "`done` counts the evaluation rather than the insert, so the summary prints \"evaluated 8\" and only `new` is smaller; the surface then has NaN at exactly those lattice points, `plateau_score` skips NaN neighbours without complaint, and the family reads as a grid that was run and produced fewer filled cells."
+      "file": "orc/facts/panel.py",
+      "line": 221,
+      "severity": "low",
+      "what": "load_many()가 심볼별로 FileNotFoundError와 ValueError를 삼키고 dict를 반환하므로, 유니버스가 조용히 줄어들고 호출자는 요청한 목록과 대조할 방법이 없다.",
+      "trigger": "_assert_bar_index_is_a_clock은 봉 중복·역순·클럭 미정렬·결측 초과에 대해 ValueError를 던진다 — 실제 아카이브에서 개발구간 기준 325개 중 53개가 여기서 걸린다(CVCUSDT 42.8% 결측 등). load_many(['BTCUSDT','CVCUSDT','SLPUSDT'])는 예외 없이 1개짜리 dict를 돌려준다. 즉 '봉 인덱스가 시계가 아니다'라는, 호출자가 가장 들어야 할 사실이 삼켜지는 예외에 정확히 포함된다.",
+      "why_silent": "예외가 값(더 작은 dict)이 되고, Track B의 effective_independent_paths는 심볼 수에서 나오므로 3심볼 등록이 1심볼 측정으로 실행돼도 결과 형태는 동일하다. 현재 이 함수를 부르는 코드는 orc/ scripts/ tests/ 어디에도 없어 잠재 상태다."
     },
     {
       "file": "orc/orchestrator/spec.py",
-      "line": 66,
-      "severity": "medium",
-      "what": "`to_dict()` returns the values exactly as they were passed — the dataclass annotations (`stride_days: float`, `n_contributions: int`) are not enforced — so `canonical_hash` json-dumps 7 as \"7\" and 7.0 as \"7.0\" and the same configuration acquires two different trial identities.",
-      "trigger": "Live in the ledger today: H0007 carries fixed {\"stride_days\": 7, \"n_contributions\": 52} (ints from JSON) while H0001's grid carries [1.0, 7.0, 30.0] / [52, 104, 156]. Normalising every numeric to float collapses 90 groups of rows that currently hold two config_hashes each — e.g. ADAUSDT, funded, weekly, 52 deposits, recorded twice with tm_q05 0.43153789886329497 and 0.4315378988632958.",
-      "why_silent": "Nothing errors and both rows carry the same measurement to fourteen digits; the only visible effect is that N — the multiple-testing denominator, and the ledger's documented \"every backtest lands here once\" guarantee — is larger than the number of distinct measurements, and re-running a trial whose spelling changed prints \"new 1\" as though a new experiment had happened."
+      "line": 254,
+      "severity": "high",
+      "what": "`Hypothesis.expand()` builds each cell as `params = dict(zip(keys, values))` then `params.update(self.fixed)`, so `fixed` overwrites the grid — a parameter named in both blocks has its whole pre-registered axis silently collapsed to the single fixed value, while `size()` still charges the full product against the probe ceiling and `run_hypothesis` still prints the full count as evaluated.",
+      "trigger": "A queue file with `\"grid\": {\"leverage\": [1.0, 2.0, 3.0]}` and `\"fixed\": {\"leverage\": 1.0, \"clock\": \"1h\"}`. Verified by running it: `h.size()` returns 3, `h.shape_is_measurable()` is True so `intake_queue` accepts it, `expand()` returns 3 configs whose distinct leverage set is `[1.0]` and which reduce to 1 distinct `canonical_hash`. `run_hypothesis` reports `evaluated 3, new 1`.",
+      "why_silent": "Every layer reports a number that is individually true. The ledger dedupes to one row so nothing errors; the surface shows `cells_filled: 1, cells_total: 3`, which is exactly what an honestly unevaluable grid point looks like (`horizon_exceeds_history` produces the same NaN); and the resulting single-cell surface is disqualified as `shape unmeasured`, which reads as a weak family rather than as a registration that never tested its own axis."
     },
     {
       "file": "orc/orchestrator/surface.py",
-      "line": 464,
-      "severity": "medium",
-      "what": "`search_test_for` (line 464), `pbo_for_hypothesis` (line 276) and `pbo_for_signal_hypothesis` (line 399) hardcode `panel_mod.load(symbol, \"1h\")`, and the Track B null at line 490 hardcodes `BARS_PER_YEAR[\"1h\"]`, while the trial itself was run on `cfg.clock`.",
-      "trigger": "A hypothesis with fixed {\"clock\": \"1m\"} — legal on both config types, and 1m panels exist. `run_signal_trial` annualises the observed Calmar at 525600 bars/yr; the null at line 490 annualises the same rule at 8760, so the observed value is ~60x the scale of every null draw, `np.sum(nb >= observed_best)` is 0, and p = 1/200 = 0.005 → SURVIVES_SEARCH. The PBO for the same hypothesis is computed over an entirely different bar series from the one the reported cell was measured on, yet returns status \"ok\" and covers_reported_best true.",
-      "why_silent": "Every path returns a well-formed result dict; the clock never appears in the PBO or search-test output, so nothing in the report says the null and the observation came from different data."
+      "line": 232,
+      "severity": "high",
+      "what": "`idx = tuple(h.grid[a].index(key[i]) ...)` is unguarded: any stored config value that is not an element of the registered grid list raises `ValueError: list.index(x): x not in list` out of `surface_from_ledger`, and `daily_cycle` catches it around `write_report`, so the whole hypothesis is dropped from `reports` and therefore from `CYCLE_REPORT.md` — the only document section 9b lets a reasoning pass open — while its rows stay in the ledger and keep counting toward N.",
+      "trigger": "Same registration shape as above but with the fixed value outside the grid list: `\"grid\": {\"stride_days\": [7.0, 14.0, 30.0]}`, `\"fixed\": {\"stride_days\": 1.0}`. Reproduced end-to-end against a temporary ledger: intake accepts (3 cells, shape measurable), the row is recorded with `stride_days: 1.0`, and `surface_from_ledger(h, 'mwrr_q05')` raises `ValueError: list.index(x): x not in list`.",
+      "why_silent": "The exception never reaches a human decision point. `daily_cycle.py:189` wraps `write_report` in `except Exception`, prints one line to stdout, and continues; the cycle exits green, `CYCLE_SUMMARY.json` records `trials_added` as normal, and the family is simply absent from the markdown. An absent family is indistinguishable from a family that has not been registered yet, so the next reasoning pass has nothing to decide continue-or-close against."
     },
     {
       "file": "orc/orchestrator/surface.py",
-      "line": 194,
+      "line": 585,
+      "severity": "high",
+      "what": "`search_test_for` hardcodes the execution clock: it loads `panel_mod.load(symbol, \"1h\")` (line 576), constructs the scorer with clock `\"1h\"` (lines 585-586), and `_TrackBNullScorer` annualises with `metrics_fc.BARS_PER_YEAR[\"1h\"]` (line 558) — while `run_signal_trial` produced `observed_best` using `metrics_fc.summary(equity, cfg.clock)`. On any clock but 1h the observed statistic and the null distribution are the same quantity computed with different annualisation constants, exactly the tm-versus-mwrr units error the module's own docstring says it was built to close.",
+      "trigger": "A Track B hypothesis with `\"fixed\": {\"clock\": \"1m\", ...}` — reachable today: `facts/panel_1m/` is populated, `Panel.bars_per_day` and `BARS_PER_YEAR` both carry \"1m\", and `scripts/execution_realism.py` exists to run these configs on minute bars. Measured on one synthetic equity curve of 525,600 bars: `calmar` is 3.0276 under the 1m constant and 0.0430 under the 1h constant — a factor of 70 on identical equity. Every null draw is scored 70x low, so `sum(nb >= observed)` is 0 and `best_of_g` returns p = 1/200 with `survives_search: true` for every cell in the grid.",
+      "why_silent": "`best_of_g_pvalue` only refuses a non-finite `observed_best`; a finite number 70x above the null is precisely what a real discovery looks like. The result comes back `status: \"ok\"`, `verdict: SURVIVES_SEARCH`, and `verdict.disqualifiers` then clears the strongest check in the project — the one the whole ledger's N exists to feed — on a comparison between two different definitions of a year."
+    },
+    {
+      "file": "orc/orchestrator/surface.py",
+      "line": 430,
       "severity": "medium",
-      "what": "The lattice is built from `h.grid[a]` in declaration order (line 201) while `plateau_score` treats index adjacency as value adjacency; `ordinal_axis` (spec.py:120) checks only that three numeric levels exist, never that they are sorted, and the comment at lines 184-189 claiming a None level \"is not a neighbour of anything\" is implemented nowhere.",
-      "trigger": "(a) A queue file with \"lookback_days\": [21, 7, 60] — declared ordinal, laid out as 21,7,60, so the neighbours of a peak at 7 are 21 and 60 and the diagnostic measures a jump of two grid steps as a perturbation. (b) \"stop_loss\": [0.1, 0.2, 0.3, null] — three numerics make the axis ordinal, so the peak at index 2 (stop 0.3) takes index 3, the no-stop-at-all cell, as its neighbour; if the unstopped cell scores near the peak the surface is labelled PLATEAU on the strength of a different mechanism. H0002 already ships stop_loss [0.1, 0.25, null] and max_hold_days [7.0, 30.0, null] in that spelling — one more numeric level on either turns the None into a neighbour.",
-      "why_silent": "`plateau_ratio` comes out as an ordinary number and the label reads PLATEAU/SLOPE/SPIKE exactly as it does on a sorted axis; nothing records which index held which value."
+      "what": "`pbo_for_signal_hypothesis` (line 430) and `pbo_for_hypothesis` (line 307) both call `panel_mod.load(symbol, \"1h\")` regardless of `cfg.clock`, so for a non-1h hypothesis the entire overfitting check is recomputed on hourly data: `p.bars(cfg.lookback_days)` yields a lookback in hours rather than minutes, `build_signals` resamples the CCI against `panel.clock == \"1h\"`, and the equity curves the CSCV matrix is built from are curves the trial never produced.",
+      "trigger": "The same `\"fixed\": {\"clock\": \"1m\"}` Track B hypothesis. `configs = [c for c in h.expand() if c.symbol == symbol]` carries `clock=\"1m\"`, but every price series, timestamp and bar count fed to `run_signals` comes from the 1h panel loaded on line 430.",
+      "why_silent": "Nothing compares the panel's clock against the config's. The function returns `status: \"ok\"` with a full complement of plausible fields, and `covers_reported_best` is computed by matching grid labels — which match, because the labels come from the grid and not from the data. `verdict.survivors` accepts it as a measured, covering PBO for a cell measured on different bars."
+    },
+    {
+      "file": "orc/orchestrator/surface.py",
+      "line": 328,
+      "severity": "medium",
+      "what": "`pbo_for_hypothesis` fills the CSCV matrix with `res[\"terminal_multiple\"]` (line 328) and `cscv_pbo` elects its in-sample winner with `perf[is_rows].mean(axis=0)`, so the PBO prices the overfitting of a selection made on the MEAN terminal multiple — while the cell it is applied to was chosen by `ranking_metric`, which returns `mwrr_q05`, a fifth-percentile annualised return. The two statistics do not agree on which cell is best, which is the reason the ranking was moved off terminal multiple in the first place.",
+      "trigger": "Any Track A hypothesis whose right-skew differs across the grid — e.g. a stride axis where the widest-stride cell has the highest mean terminal multiple and the narrowest has the highest `mwrr_q05`. `write_report` reports and disqualifies the `mwrr_q05` argmax; `cscv_pbo` repeatedly elects the mean-TM argmax as `best` and reports how often *that* cell degraded out of sample. The `covers_reported_best` flag does not catch it: it only tests membership of the reported cell among the columns, not that the selection statistic is the one that chose it.",
+      "why_silent": "The number is well-formed and in range, and the horizon filter directly above it looks like the fix for exactly this class of problem, so the reported `SELECTION_INFORMATIVE` reads as an answer about the reported cell. It is an answer about a selection nobody made."
     },
     {
       "file": "orc/orchestrator/runner.py",
-      "line": 268,
-      "severity": "medium",
-      "what": "The simulator's start grid is `np.arange(0, len(p) - horizon - 1, step)`, which stops one short of the last admissible start — `simulate` documents and enforces `start + horizon_bars < len(close)`, so `len(p) - horizon - 1` is itself valid — and the same expression appears at runner.py:104 and surface.py:92.",
-      "trigger": "A cell whose horizon is exactly len(p)-1 (e.g. N=100 bars, stride 1 bar, 100 contributions, hold 0): it passes the `horizon >= len(p)` guard at line 222, `arange(0, 0)` is empty, and the trial is recorded as skipped with reason \"no_admissible_start_dates\" — while the identical shape with include_funding=False routes to the analytic evaluator, which admits start 0 (ends0 = 99 < 100) and returns a number. Verified by running both: analytic n_starts 1, simulate on the same start returns terminal_multiple 1.1766, runner's grid empty. One bar shorter (horizon 98) the analytic returns 2 starts and the runner offers 1.",
-      "why_silent": "A skipped configuration is recorded as a fact about the grid rather than as an error, and on a normal panel losing one start out of thousands moves a quantile in the fifth decimal — so the two evaluators disagree about whether a cell is measurable at all, and the disagreement reads as grid coverage."
-    },
-    {
-      "file": "orc/orchestrator/spec.py",
-      "line": 231,
-      "severity": "medium",
-      "what": "`expand()` does `params.update(self.fixed)` after the grid point, so a key present in both `fixed` and `grid` silently collapses that axis to the fixed value while `size()` (line 192) still counts every level of it.",
-      "trigger": "A queue file with grid {\"stride_days\": [1,7,30], \"n_contributions\": [52,104,156]} and fixed {\"stride_days\": 7, \"contribution\": 100.0}: intake accepts it (size() = 9 per symbol, inside the ceiling), the prereg hash seals a three-level stride axis, and expand() emits three identical stride-7 configs per n_contributions. The cycle prints \"9 configurations, evaluated 9\", the ledger dedupes to 3 rows, and the surface fills 3 of 9 lattice cells.",
-      "why_silent": "No code anywhere checks for a key in both dicts; every emitted config is well-formed, the run summary counts the duplicates as evaluations, and the six never-run cells appear in the report as unfilled rather than as never enumerated — indistinguishable from a cell the evaluator could not express."
-    },
-    {
-      "file": "orc/orchestrator/spec.py",
-      "line": 195,
+      "line": 342,
       "severity": "low",
-      "what": "`size()` scores an empty axis as `max(len(v), 1)` = 1 while `expand()`'s `product()` yields nothing, so a grid with an empty list registers as a sized hypothesis and enumerates zero configurations.",
-      "trigger": "A queue file with grid {\"stride_days\": [1,7,30], \"hold_days\": []}: `shape_is_measurable()` passes on stride_days, `size()` returns 3 x |universe| so the probe ceiling is cleared, the hypothesis is hashed and saved, `expand()` returns [], and `run_hypothesis` reports configurations 0 / evaluated 0 / skipped 0 while `write_report` writes a report with an empty `surfaces` dict.",
-      "why_silent": "`max(len(v), 1)` reads as a defensive guard rather than a divergence; registration succeeds, an id and a prereg hash are permanently spent, and the family shows up in the registry as asked-and-answered with no rows behind it."
-    },
-    {
-      "file": "orc/orchestrator/surface.py",
-      "line": 151,
-      "severity": "low",
-      "what": "`provenance` accumulates the code and panel hash of every row returned by the query, including the superseded ones that the newest-wins overwrite at line 145 discarded, so `assembled_from` describes the history of the cell rather than the revisions the surface is actually made of.",
-      "trigger": "H0001 as committed: reports/H0001_SURFACE.json reports assembled_from {\"code_revisions\": 10, \"panel_revisions\": 4} for every symbol, while grouping the same rows by config and keeping the newest per cell (exactly what line 145 does) leaves 1 distinct code_hash across all 12 used rows on ADAUSDT/AVAXUSDT/BNBUSDT. H0002 reports the same warning from 5 revisions over 540 rows and 1 over the 108 used.",
-      "why_silent": "It is a count that is always at least the true value, so it never contradicts anything; the flag whose stated meaning is \"the cells on this surface are not comparable to each other\" is permanently on for every hypothesis and therefore carries no signal when it is genuinely true."
+      "what": "`starts = np.arange(0, len(p) - horizon - 1, step)` uses an exclusive stop one short of the admissible range. `simulate`'s own contract is `starts + horizon_bars < N`, so the last legal start is `N - horizon - 1` and the correct stop is `N - horizon`; every path-dependent Track A cell silently omits its latest start date. The same expression appears at runner.py:104, runner.py:161 and surface.py:116, so the analytic evaluator and the simulator disagree about the size of the ensemble they are supposed to be two implementations of.",
+      "trigger": "N=2000 bars, stride 24, 50 contributions (horizon 1176). `analytic.evaluate` returns 824 starts with a maximum of 823; `np.arange(0, 2000-1176-1, 1)` returns 823 starts with a maximum of 822. Passing the omitted start 823 to `simulate` directly runs without error and returns a terminal multiple of 1.3012 — it was always admissible.",
+      "why_silent": "One start in eight hundred moves no quantile, `_span`'s `start_last` is only one bar early, and `test_analytic_matches_simulator` never exercises the boundary because it draws its start offsets from `res[\"start_idx\"]` rather than reconstructing them the way the runner does."
     },
     {
       "file": "orc/orchestrator/verdict.py",
       "line": 32,
       "severity": "low",
-      "what": "`floor = BREAK_EVEN.get(metric)` returns None for any metric outside the three-entry table and the break-even check is then skipped entirely, while every other unrunnable check in this function is deliberately recorded as a disqualifier.",
-      "trigger": "`write_report(h, metric=\"tm_q50\")` — the metric parameter is public and threaded straight into `report[\"metric\"]` — produces a report in which a cell at tm_q50 0.4, having lost 60 % of contributed capital, collects no \"at or below\" reason and is announced by notify.py as clearing every check. The mirror case: `survivors()` falls back to \"tm_q05\" when a report has no \"metric\" key, applying a multiple's floor of 1.0 to a Calmar or an IRR.",
-      "why_silent": "The other four disqualifiers still run and print, so the verdict looks complete; the one line that would have said the cell loses money simply never appends, which is the same failure this module was written to close."
+      "what": "`floor = BREAK_EVEN.get(metric)` followed by `if floor is not None` makes an unrecognised metric name skip the break-even check entirely and silently — the one branch in this function that treats a missing input as clearance rather than appending an `unmeasured` reason, which is the rule the other three branches state explicitly in their comments.",
+      "trigger": "`write_report(h, metric=\"tm_q50\")` writes `report[\"metric\"] = \"tm_q50\"`; `survivors()` reads it back, `BREAK_EVEN.get(\"tm_q50\")` is None, and a cell whose median terminal multiple is 0.3 — seventy percent of contributed capital lost — has no `at or below` reason appended. Latent rather than live: no production caller passes `metric`, and `ranking_metric` currently returns only names that are in the dict.",
+      "why_silent": "The comment above `BREAK_EVEN` says these thresholds exist because 'without these a cell that loses a third of the capital reads as surviving'; a typo or a new ranking metric removes them with no error, no missing key, and no `unmeasured` line in the verdict — the disqualifier list just comes back one item shorter."
     },
     {
       "file": "orc/holdout.py",
-      "line": 133,
+      "line": 168,
       "severity": "high",
-      "what": "The irreversible opening counter is reconstructed entirely from ledger/FINAL_TEST_LOG.jsonl, and a missing file is read as \"never opened\" rather than as \"the count is unknown\", so losing or not carrying that one untracked file restores all three openings.",
-      "trigger": "Verified by execution: with TOKEN_FILE/LOG_FILE patched to a tmp dir, spend all three openings (the fourth is correctly refused with \"all 3 final-test openings are spent\"), then point LOG_FILE at a path that does not exist. openings_used() returns 0 and open_final_test({\"id\": \"after a clone\"}, \"fresh checkout\") succeeds, logging {\"opening\": 1, \"of\": 3}. In the real project this needs no patching: `git ls-files ledger` lists only trials.sqlite, .gitignore names FINAL_TEST_TOKEN but never the log, and ledger/FINAL_TEST_LOG.jsonl does not exist on this machine. Any fresh clone, any second working directory (LOG_FILE and READS_FILE are pinned to config.ORC_ROOT and, unlike config.LEDGER_DB, honour no env override), or a ledger/ restored from a backup taken before an opening resets the count to zero.",
-      "why_silent": "`_openings()` returns [] for both \"the file was never written\" and \"the file is gone\", and nothing downstream can tell them apart. The record then written is well-formed — {\"opening\": 1, \"of\": 3} — and scripts/status.py, scripts/briefing.py and scripts/daily_cycle.py all print `0/3 openings used`, which is exactly what an untouched project looks like. READS_FILE records the same openings independently and no code path ever compares the two files, so the one surviving witness is never consulted."
+      "what": "_state_count()가 OSError/ValueError/KeyError/TypeError를 전부 삼키고 0을 돌려주므로, 존재하지만 파싱할 수 없는 FINAL_TEST_STATE.json은 '측정 불가'가 아니라 '한 번도 열지 않음'으로 읽히고, 로그가 함께 없으면 openings_used()가 이미 소비된 openings를 0으로 되돌린다.",
+      "trigger": "실행으로 확인함. TOKEN_FILE/LOG_FILE/READS_FILE를 tmp로 돌린 뒤 정상적으로 한 번 open_final_test()를 수행 → openings_used()==1, state_file()에 {\"openings_used\": 1}. 그 다음 (a) ledger/FINAL_TEST_LOG.jsonl을 잃고 — 이 파일은 git에 없다(`git ls-files ledger`는 trials.sqlite 하나만 반환), .gitattributes의 union 머지 드라이버는 reports/*.jsonl에만 걸려 있고 ledger/*.jsonl에는 없다 — (b) state 파일이 부분 기록으로 남으면(write_text는 truncate 후 write라 원자적이지 않다. 예: '{\"openings_used\": 1, \"of\"'), openings_used()는 0을 반환했다. 빈 파일(0바이트)도 동일하게 0이었다. 즉 세 번의 되돌릴 수 없는 openings가 전부 복구된다.",
+      "why_silent": "0은 신규 프로젝트의 정상값과 구분되지 않는다. open_final_test()는 예외 없이 opening 1을 다시 발급하고 로그에 {\"opening\": 1, \"of\": 3}을 적으므로 기록 자체가 일관돼 보인다. orc/guard.py의 holdout_regression()은 소스의 MAX_FINAL_TESTS 상수만 검사하지 카운터 파일의 가독성은 보지 않으므로, CLAUDE.md 12절이 약속한 '개봉 카운터는 내려갈 수 없다'를 실제로 확인하는 곳이 아무 데도 없다. 게다가 openings_used()의 docstring은 정확히 이 상황('로그만 잃어도 0으로 돌아가지 않는다')을 막았다고 서술하고 있어서, 손상된 파일은 방어가 작동한 것처럼 읽힌다."
     },
     {
       "file": "orc/holdout.py",
-      "line": 149,
-      "severity": "high",
-      "what": "openings_used() takes max() of the recorded ordinals, so two records claiming the same opening collapse into one, and open_final_test never checks that the ordinal it is about to write is unused — the count can under-report real openings.",
-      "trigger": "Verified by execution: a log holding ordinals [1, 2, 3, 3] — four records — returns openings_used() == 3, leaving the cap apparently intact. Two records share an ordinal whenever two processes enter open_final_test with one FINAL_TEST_TOKEN present: both openings_used() calls return the same N before either writes, both pass the token-text check, and both append `used + 1`. CLAUDE.md §10 already records one unguarded concurrent write in this project that cost 39 minutes and 112 trials, so the interleaving is not hypothetical here. The append is not atomic with the read and there is no lock, no O_EXCL claim, and no post-write re-read.",
-      "why_silent": "Nothing compares the number of records to the ordinals the records themselves state; the two are allowed to disagree in the direction that hands out extra openings. The extra opening returns a normal record dict reading {\"opening\": 3, \"of\": 3} and every display prints `3/3 openings used` — indistinguishable from a project that spent exactly its three. The docstring at lines 140-147 justifies max() over len() as a defence against a lost line, which is true, but the swap traded one failure mode for its exact mirror and neither the code nor a test checks both."
+      "line": 250,
+      "severity": "medium",
+      "what": "TOKEN_FILE.unlink()가 로그와 state를 이미 기록한 뒤 try 없이 마지막에 호출되므로, 삭제가 실패하면 opening은 소비되고 토큰은 살아남으며 READS 기록은 아예 남지 않고 호출자는 HoldoutViolation이 아닌 맨 OSError를 받는다.",
+      "trigger": "이 Windows 기계에서 실행으로 확인함. 토큰을 읽기 전용으로 두고(os.chmod(tok, stat.S_IREAD), 즉 `attrib +R`·읽기 전용 공유·동기화 폴더·다른 프로세스가 잡은 핸들) final_test({\"id\":\"H0002\"}, \"final\")에 진입하면 PermissionError [WinError 5]가 올라온다. 최종 상태: 토큰 존재 True, openings_used()==1, LOG_FILE에 opening 1 기록, READS_FILE 미생성, _sealed_reads는 None. 예외가 open_final_test()에서 터져 88행이 반환하지 못하므로 89행의 `_sealed_reads = []`에 도달하지 못하고 try/finally가 통째로 건너뛰어진다. 이어서 토큰이 남아 있으므로 두 번째 open_final_test()가 '두 번째 의도적 행위' 없이 opening 2를 그대로 소비하는 것도 확인했다.",
+      "why_silent": "로그는 정상적인 opening 한 줄이고 state도 그것과 일치하므로 사후 감사에서는 '열었고 아무것도 읽지 않은 개봉'으로 읽힌다. 이것은 정말로 아무것도 측정하지 않은 개봉과 파일상 구별되지 않는다. 토큰이 남아 있다는 사실은 어디에도 기록되지 않고, 남은 토큰은 '아직 열지 않았다'는 신호로 읽히므로 사람이 재시도하면 두 번째 opening이 조용히 사라진다."
+    },
+    {
+      "file": "orc/holdout.py",
+      "line": 197,
+      "severity": "medium",
+      "what": "CLAUDE.md 2절이 유일한 문으로 지목하는 open_final_test()는 opening을 소비하고 토큰을 지우지만 봉인 읽기 권한은 전혀 부여하지 않는다 — 권한을 주는 것은 final_test()뿐이라 문서화된 경로를 따르면 세 번 중 한 번을 쓰고 아무 데이터도 얻지 못한다.",
+      "trigger": "실행으로 확인함. holdout.open_final_test({\"hypothesis_id\":\"H0002\"}, \"final\") 호출 후 sealed_reads_permitted()는 False, openings_used()는 1, 토큰은 삭제됨. 이어서 panel.load(\"BTCUSDT\",\"1h\", sealed_only=True)는 'refusing to read sealed data ...: no final test is open'으로 거부한다. MANUAL_SETUP.md:304는 final_test()를 쓰지만 프로젝트 헌법인 CLAUDE.md:61은 open_final_test()를 지목하고 있어 두 경로가 서로 다른 것을 의미한다.",
+      "why_silent": "open_final_test()는 실패하지 않고 완전한 record dict를 반환한다. 로그에는 정상 개봉 한 줄이 남고 READS_FILE에는 줄이 없으므로, 위의 unlink 실패 사례와 파일상 완전히 같은 모양이 된다. 남은 것은 '측정하지 않은 개봉'인데 이것을 되돌리거나 구분할 방법은 프로젝트에 없다."
     },
     {
       "file": "orc/holdout.py",
       "line": 114,
       "severity": "medium",
-      "what": "sealed_slice() is exported beside the gated loader but never calls note_sealed_read(), so it hands back the sealed period with no token, no log record and no counter increment.",
-      "trigger": "Verified by execution with no final test open: `holdout.sealed_slice(pl.read_parquet(panel.panel_path('BTCUSDT','1h')))` returns 21,505 rows beginning 2024-03-01 00:00, while `holdout.sealed_reads_permitted()` is still False and `holdout.openings_used()` is still 0. No exception. The same data through the door — `panel.load('BTCUSDT','1h', sealed_only=True)` — correctly raises HoldoutViolation. Two code paths that cut on the same boundary, one gated and one not.",
-      "why_silent": "It returns an ordinary DataFrame of ordinary bars. Both audit counters keep their untouched values, so status.py and briefing.py still report the seal as intact and the reads log has no line to contradict them. The module docstring at lines 14-22 claims \"the loader refuses to hand back sealed bars outside one\" — true of orc/facts/panel.py, but sealed_slice is the function that actually performs the cut, and the docstring's claim reads as if it covered the module."
+      "what": "sealed_slice()는 development_slice()와 대칭으로 노출돼 있으면서 note_sealed_read()를 호출하지 않아, 토큰도 로그도 카운터 증가도 없이 봉인 구간을 그대로 반환한다.",
+      "trigger": "실행으로 확인함. 최종 테스트가 열려 있지 않은 상태에서 holdout.sealed_slice(pl.read_parquet(panel.panel_path('BTCUSDT','1h')))는 2024-03-01 00:00부터 2026-08-14 00:00까지 21,505행을 반환하고, 그 뒤에도 sealed_reads_permitted()는 False, openings_used()는 0이다. 같은 데이터를 문을 통해 요청한 panel.load('BTCUSDT','1h', sealed_only=True)는 HoldoutViolation을 던진다. 경계에서 자르는 실제 함수는 sealed_slice이고, 게이트는 그 바로 위 호출자(orc/facts/panel.py:169)에만 붙어 있다.",
+      "why_silent": "평범한 DataFrame이 반환된다. 두 감사 카운터가 모두 그대로이므로 status.py와 briefing.py는 봉인이 온전하다고 계속 보고하고, READS 로그에는 반박할 줄이 없다. 모듈 docstring 14–22행의 '로더는 최종 테스트 바깥에서 봉인 바를 돌려주기를 거부한다'는 문장은 panel.py에 대해서만 참인데 모듈 전체를 덮는 것처럼 읽힌다."
     },
     {
       "file": "orc/holdout.py",
-      "line": 172,
+      "line": 228,
       "severity": "medium",
-      "what": "open_final_test validates neither `candidate` nor `reason`, and json.dumps(..., default=str) derives identity from the Python type rather than the value, so candidate_sha256 presents itself as the record of what was measured while pinning whatever the caller happened to pass.",
-      "trigger": "Verified by execution: `open_final_test({}, \"\")` succeeds and logs `\"candidate\": {}`, `\"reason\": \"\"`, `\"candidate_sha256\": \"44136fa355b3678a...\"` — sha256 of the literal string \"{}\". Separately, default=str makes the digest depend on provenance: `{\"start\": date(2021,1,1)}` and `{\"start\": \"2021-01-01\"}` both serialise to '{\"start\": \"2021-01-01\"}' and collide, while a value json cannot serialise natively is quoted and a plain one is not, so the same cell hashes two ways. The existing test at tests/test_protocol.py:209 passes {\"cfg\": \"candidate A\"} and asserts only `len(...) == 64`, which any of these satisfy.",
-      "why_silent": "Every case yields 64 valid hex characters, and nothing in the project ever reads a candidate_sha256 back or compares two openings' digests. So the log cannot say which of H0002's 972 parameter cells an opening measured, cannot distinguish an opening that pinned a full configuration from one that pinned {}, and cannot reveal that a second opening re-measured the first opening's candidate — the exact reuse the three-opening cap exists to prevent."
+      "what": "candidate_sha256이 json.dumps(..., sort_keys=True, default=str)에서 나오므로 되돌릴 수 없는 개봉을 '정확히 어떤 설정을 측정했는가'에 묶어야 할 식별자가 값이 아니라 파이썬 타입과 객체 주소 같은 우발적인 것에 의존하고, 게다가 candidate와 reason은 전혀 검증되지 않는다.",
+      "trigger": "실행으로 확인함. (a) __repr__이 없는 설정 객체를 담아 같은 candidate를 두 번 해시하면 default=str이 '<...object at 0x...>'를 문자열화해 5e547f3fc9acbdc0과 e9d6134080a908b2로 서로 다른 다이제스트가 나온다 — 같은 후보가 두 개의 신원을 갖는다. (b) 반대로 {\"start\": date(2021,1,1)}과 {\"start\": \"2021-01-01\"}은 둘 다 2721d6a273a36664로 충돌한다. (c) open_final_test({}, \"\")가 그대로 성공해 candidate {}, reason \"\", candidate_sha256 44136fa3...(문자열 '{}'의 sha256)로 opening 1을 소비한다. tests/test_protocol.py:209의 기존 테스트는 길이가 64인지만 확인하므로 셋 다 통과한다.",
+      "why_silent": "언제나 64자 16진수 문자열이 나오고 로그 줄은 완전해 보인다. 다이제스트가 무엇을 가리키는지는 나중에 그 candidate를 재구성해 다시 해시해 봐야만 드러나는데, 그때는 이미 개봉이 소진된 뒤이고 재현이 되지 않아도 '설정이 바뀐 것'인지 '해시가 주소를 담았던 것'인지 구분할 근거가 없다."
     },
     {
       "file": "orc/holdout.py",
-      "line": 185,
-      "severity": "medium",
-      "what": "The token is unlinked after the log record is already on disk, so an unlink failure burns an opening that measured nothing, leaves the token in place for the next attempt to burn another, and writes no corresponding READS_FILE line.",
-      "trigger": "Verified by execution: mark the token read-only (`os.chmod(tok, stat.S_IREAD)` — Windows `attrib +R`, a file on a read-only or synced share, or a handle held by another process) and enter `final_test({\"id\": \"X\"}, \"r\")`. It raises PermissionError — a bare OSError, not HoldoutViolation — after the record is written. Final state: token still present (True), LOG_FILE holds 1 opening, READS_FILE does not exist. Because the exception escapes open_final_test, final_test never reaches `_sealed_reads = []`, so the try/finally never runs. The concurrent case at line 149 produces the same shape with FileNotFoundError for whichever process unlinks second.",
-      "why_silent": "The exception itself is loud, but the state it leaves is not. The log record is byte-for-byte indistinguishable from a real opening, so an opening that measured nothing permanently consumes one of three, and no code path reconciles LOG_FILE against READS_FILE — the only witness that the opening measured nothing is a file that was never written."
-    },
-    {
-      "file": "orc/holdout.py",
-      "line": 169,
+      "line": 214,
       "severity": "low",
-      "what": "The token comparison decodes as strict UTF-8 and canonicalises with str.strip(), which removes neither a byte-order mark nor a UTF-16 encoding, so a byte-correct token written by the environment's default tools is rejected.",
-      "trigger": "Verified by execution: a UTF-8-with-BOM token reads back as '\\ufeffI am opening...' and compares unequal, because U+FEFF is not whitespace to str.strip(); a UTF-16LE token reads back as 'I\\x00 \\x00a\\x00m\\x00'. This environment's own PowerShell notes record that `>` and `Out-File` here default to UTF-8 with BOM, and MANUAL_SETUP.md:287 instructs the operator to create the file with an editor. (CRLF is not affected — Path.read_text uses universal newlines, which I checked before reporting.)",
-      "why_silent": "It is not silent: it fails closed with \"FINAL_TEST_TOKEN text does not match; refusing to open.\" It is listed only because the door's identity check depends on an incidental encoding rather than on the text, and the message names no differing byte — the operator sees a correct-looking file rejected, which is the state that invites editing the check or TOKEN_TEXT rather than the token."
+      "what": "토큰 텍스트 비교가 str.strip()만 쓰므로 UTF-8 BOM이 붙은 토큰 파일은 U+FEFF가 공백이 아니어서 거부되는데, BOM은 이 기계의 PowerShell 5.1이 Out-File/Set-Content -Encoding utf8로 파일을 쓸 때 붙는 기본값이다.",
+      "trigger": "실행으로 확인함. TOKEN_TEXT를 encoding='utf-8-sig'로 쓰면 파일 선두는 b'\\xef\\xbb\\xbfI '가 되고 open_final_test()는 'FINAL_TEST_TOKEN text does not match; refusing to open.'으로 거부한다. MANUAL_SETUP.md:293이 사람에게 손으로 쓰라고 지시하는 바로 그 파일이다. (참고로 CRLF는 read_text의 universal newlines가 흡수하므로 문제가 되지 않는 것도 함께 확인했다 — CRLF 토큰은 정상 수락됐다.)",
+      "why_silent": "숫자를 만들어내지는 않으므로 안전한 방향으로 실패한다(등급을 low로 둔 이유). 다만 두 파일은 에디터에서 글자 하나 다르지 않게 보이는데 오류 메시지는 '텍스트가 다르다'고만 말하므로, 문이 열리지 않는 이유가 인코딩이라는 사실이 사용자에게 드러나지 않는다."
+    },
+    {
+      "file": "orc/eval/analytic.py",
+      "line": 124,
+      "severity": "high",
+      "what": "`evaluate()`는 `funding_flow`를 무조건 받아들여 파산(ruin) 개념이 전혀 없는 유한한 terminal value를 돌려준다 — 지갑이 음수로 내려가도 그대로 계산을 계속한다. 이 상태를 결과에서 배제하는 전제조건은 `TrialConfig.uses_analytic`(`include_funding`이 True면 항상 False)이라는 다른 모듈의 property에만 존재할 뿐 여기서는 강제되지 않으며, `scripts/robustness.py:62 _tm_q05_over_mask`가 이 라우팅을 거치지 않고 funding이 켜진 Track A 셀에 대해 직접 호출하여 regime 게이트를 채점한다.",
+      "trigger": "`TrialConfig(symbol=\"SOLUSDT\", contribution=100.0, stride_days=7.0, n_contributions=156, include_funding=True)`를 development 1h 패널에 대해 실행. `scripts/robustness.py:81`이 `evaluate(p.close, spec, funding_flow=p.funding_flow)`를 호출해 regime 점수 rising=+1.6234, falling=+0.0137을 내고, `orc/orchestrator/robustness.py:155`의 `passed = (rising > 0 and falling > 0)`가 True를 기록한다. 동일한 cfg를 `run_trial`에 넣으면 `uses_analytic`이 False라 simulate로 라우팅되어 `tm_q05 = 0.0000`, `liquidation_rate = 0.821`이 나온다 — 시작일의 82 %가 청산되는 셀이 regime 검사를 통과한다. 반대 방향도 같은 경로에서 측정된다: ADAUSDT 동일 설정에서 closed form은 tm_q05 = -0.4988(무레버리지 롱이 납입액보다 49.88 % 더 빚지는, 일어날 수 없는 값)을, simulate는 tm_q05 = 0.0 / liq 0.692를 낸다. 두 수치 모두 실제 패널에서 실행해 얻은 것이다.",
+      "why_silent": "closed form은 청산된 경로가 만드는 0.0 대신, 음수로 가는 지갑에서 funding 청구서를 계속 빼기만 하므로 평범하게 생긴 유한한 float를 반환한다. analytic.py 안에는 부호나 손익분기점을 검사하는 코드가 없고, `regime_consistency`는 `rising > 0 and falling > 0`만 묻고, `verdict()`는 그 True를 통과한 검사로 집계한다. `_tm_q05_over_mask`를 덮는 테스트가 하나도 없어서 `tests/test_protocol.py:141`이 spec 수준에서 단언하는 라우팅 불변식이 이 호출 지점에서는 한 번도 확인되지 않는다. 게이트가 작동하는 것처럼 보이는 채로 구멍이 남는다."
     }
   ]
 }
