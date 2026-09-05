@@ -485,6 +485,61 @@ def test_the_next_id_skips_one_that_was_proposed_and_killed(tmp_path):
 # --------------------------------------------------------------------------
 # N can only grow, so what one hypothesis may add to it is capped
 # --------------------------------------------------------------------------
+def test_the_null_annualises_on_the_clock_the_observed_statistic_used():
+    """kernel_review 527347d245dd, 2026-09-05.
+
+    search_test_for wrote "1h" in three places -- the panel load, the scorer,
+    and BARS_PER_YEAR inside _TrackBNullScorer -- while run_signal_trial
+    produced observed_best with metrics_fc.summary(equity, cfg.clock). On any
+    other clock the null was a distribution in different units from the number
+    compared against it, and the p-value was an answer about units.
+
+    Latent: every registered cell is on 1h, so no recorded p-value is affected.
+    That is luck, not a guard, which is what this replaces."""
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+
+    assert 'BARS_PER_YEAR[cfg.clock]' in src, \
+        "the Track B null is annualising on a literal again"
+    assert 'BARS_PER_YEAR["1h"]' not in src
+    assert 'panel_mod.load(symbol, clock' in src, \
+        "the null's panel must come from the configurations, not a literal"
+
+    # A grid spanning two clocks has no single scale to annualise on, so it is
+    # refused rather than silently given the first one.
+    from orc.orchestrator import surface
+
+    h = _hyp(grid={"clock": ["1h", "1m"]}, fixed={"contribution": 100.0})
+    h.track = "A"
+    out = surface.search_test_for(h.register(), "BTCUSDT", 1.0)
+    assert "clocks" in out.get("status", ""), out
+
+
+def test_a_ledger_row_off_the_registered_grid_does_not_delete_the_hypothesis():
+    """kernel_review 9e1a7cd48281, 2026-09-05.
+
+    `h.grid[a].index(key[i])` was unguarded, so one stored value that is not an
+    element of the registered grid raised ValueError out of
+    surface_from_ledger. daily_cycle catches around write_report, so the WHOLE
+    hypothesis vanished from CYCLE_REPORT.md -- the one document section 9b
+    lets a reasoning pass read. A family that silently stops being reported is
+    a family nobody closes, and the row that caused it stays invisible because
+    the report it would have appeared in was never written.
+
+    The row is counted and dropped, and the count is reported, because a
+    surface narrower than the ledger thinks the family is must say so."""
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+
+    assert "off_grid" in src and "cells_off_grid" in src, \
+        "an off-grid row is dropped silently again"
+    # The guard has to be a try/except around the lookup, not a filter that
+    # would also swallow a genuine shape error elsewhere.
+    i = src.index("idx = tuple(h.grid[a].index(")
+    assert "try:" in src[i - 200:i], "the index lookup is unguarded again"
+    assert "off_grid += 1" in src[i:i + 400]
+
+
 def test_an_axis_named_in_both_grid_and_fixed_is_refused():
     """kernel_review a763423a77c8, 2026-09-05.
 

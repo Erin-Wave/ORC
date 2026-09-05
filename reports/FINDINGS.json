@@ -2123,29 +2123,31 @@
     },
     "9e1a7cd48281": {
       "id": "9e1a7cd48281",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T00:44:18.450403+00:00",
       "last_seen_utc": "2026-09-05T00:44:18.450403+00:00",
-      "disposition": "",
+      "disposition": "an off-grid row is counted into assembled_from.cells_off_grid and dropped, instead of raising and deleting the hypothesis from CYCLE_REPORT.md. test_a_ledger_row_off_the_registered_grid_does_not_delete_the_hypothesis",
       "file": "orc/orchestrator/surface.py",
       "line": 232,
       "severity": "high",
       "what": "`idx = tuple(h.grid[a].index(key[i]) ...)` is unguarded: any stored config value that is not an element of the registered grid list raises `ValueError: list.index(x): x not in list` out of `surface_from_ledger`, and `daily_cycle` catches it around `write_report`, so the whole hypothesis is dropped from `reports` and therefore from `CYCLE_REPORT.md` — the only document section 9b lets a reasoning pass open — while its rows stay in the ledger and keep counting toward N.",
       "trigger": "Same registration shape as above but with the fixed value outside the grid list: `\"grid\": {\"stride_days\": [7.0, 14.0, 30.0]}`, `\"fixed\": {\"stride_days\": 1.0}`. Reproduced end-to-end against a temporary ledger: intake accepts (3 cells, shape measurable), the row is recorded with `stride_days: 1.0`, and `surface_from_ledger(h, 'mwrr_q05')` raises `ValueError: list.index(x): x not in list`.",
-      "why_silent": "The exception never reaches a human decision point. `daily_cycle.py:189` wraps `write_report` in `except Exception`, prints one line to stdout, and continues; the cycle exits green, `CYCLE_SUMMARY.json` records `trials_added` as normal, and the family is simply absent from the markdown. An absent family is indistinguishable from a family that has not been registered yet, so the next reasoning pass has nothing to decide continue-or-close against."
+      "why_silent": "The exception never reaches a human decision point. `daily_cycle.py:189` wraps `write_report` in `except Exception`, prints one line to stdout, and continues; the cycle exits green, `CYCLE_SUMMARY.json` records `trials_added` as normal, and the family is simply absent from the markdown. An absent family is indistinguishable from a family that has not been registered yet, so the next reasoning pass has nothing to decide continue-or-close against.",
+      "decided_utc": "2026-09-05T01:29:29.454701+00:00"
     },
     "527347d245dd": {
       "id": "527347d245dd",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T00:44:18.450403+00:00",
       "last_seen_utc": "2026-09-05T00:44:18.450403+00:00",
-      "disposition": "",
+      "disposition": "the clock comes from the configurations; a grid spanning two clocks is refused rather than given one null. test_the_null_annualises_on_the_clock_the_observed_statistic_used",
       "file": "orc/orchestrator/surface.py",
       "line": 585,
       "severity": "high",
       "what": "`search_test_for` hardcodes the execution clock: it loads `panel_mod.load(symbol, \"1h\")` (line 576), constructs the scorer with clock `\"1h\"` (lines 585-586), and `_TrackBNullScorer` annualises with `metrics_fc.BARS_PER_YEAR[\"1h\"]` (line 558) — while `run_signal_trial` produced `observed_best` using `metrics_fc.summary(equity, cfg.clock)`. On any clock but 1h the observed statistic and the null distribution are the same quantity computed with different annualisation constants, exactly the tm-versus-mwrr units error the module's own docstring says it was built to close.",
       "trigger": "A Track B hypothesis with `\"fixed\": {\"clock\": \"1m\", ...}` — reachable today: `facts/panel_1m/` is populated, `Panel.bars_per_day` and `BARS_PER_YEAR` both carry \"1m\", and `scripts/execution_realism.py` exists to run these configs on minute bars. Measured on one synthetic equity curve of 525,600 bars: `calmar` is 3.0276 under the 1m constant and 0.0430 under the 1h constant — a factor of 70 on identical equity. Every null draw is scored 70x low, so `sum(nb >= observed)` is 0 and `best_of_g` returns p = 1/200 with `survives_search: true` for every cell in the grid.",
-      "why_silent": "`best_of_g_pvalue` only refuses a non-finite `observed_best`; a finite number 70x above the null is precisely what a real discovery looks like. The result comes back `status: \"ok\"`, `verdict: SURVIVES_SEARCH`, and `verdict.disqualifiers` then clears the strongest check in the project — the one the whole ledger's N exists to feed — on a comparison between two different definitions of a year."
+      "why_silent": "`best_of_g_pvalue` only refuses a non-finite `observed_best`; a finite number 70x above the null is precisely what a real discovery looks like. The result comes back `status: \"ok\"`, `verdict: SURVIVES_SEARCH`, and `verdict.disqualifiers` then clears the strongest check in the project — the one the whole ledger's N exists to feed — on a comparison between two different definitions of a year.",
+      "decided_utc": "2026-09-05T01:29:29.985576+00:00"
     },
     "31467f6cfd55": {
       "id": "31467f6cfd55",

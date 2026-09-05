@@ -228,8 +228,28 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     for sym, cells in values.items():
         shape = [len(h.grid[a]) for a in axes]
         grid = np.full(shape, np.nan)
+        off_grid = 0
         for key, v in cells.items():
-            idx = tuple(h.grid[a].index(key[i]) for i, a in enumerate(axes))
+            # A stored value that is not an element of the registered grid used
+            # to raise ValueError out of here, daily_cycle caught it around
+            # write_report, and the WHOLE hypothesis vanished from
+            # CYCLE_REPORT.md -- the one document section 9b lets a reasoning
+            # pass read. A family that silently stops being reported is a
+            # family nobody closes, and the ledger row that caused it stays
+            # invisible because the report it would have appeared in was never
+            # written.
+            #
+            # Such a row is real and is not part of THIS grid: a row recorded
+            # before a grid was corrected, or a merge that brought in a
+            # neighbour's cell. It is counted and dropped, and the count is
+            # reported, because a surface assembled from rows that do not
+            # belong to it is exactly what `assembled_from` below exists to
+            # warn about.
+            try:
+                idx = tuple(h.grid[a].index(key[i]) for i, a in enumerate(axes))
+            except ValueError:
+                off_grid += 1
+                continue
             grid[idx] = v
         if np.all(np.isnan(grid)):
             continue
@@ -252,6 +272,10 @@ def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
             "assembled_from": {
                 "code_revisions": len(provenance.get(sym, {}).get("code", ())),
                 "panel_revisions": len(provenance.get(sym, {}).get("panel", ())),
+                # Rows that carry a value no longer on this hypothesis's grid.
+                # Above zero means the surface is narrower than the ledger
+                # thinks the family is.
+                "cells_off_grid": off_grid,
             },
             # The denominator behind the winning cell.  n_starts counts start
             # offsets, which overlap almost completely; independent_paths is the
@@ -555,7 +579,16 @@ class _TrackBNullScorer:
             r = run_signals(close, hi, lo, entry, exit_, spec,
                             funding_rate=p.funding_rate, symbol=self.symbol)
             if r["n_trades"]:
-                v = metrics_fc.calmar(r["equity"], metrics_fc.BARS_PER_YEAR["1h"])
+                # cfg.clock, not "1h". run_signal_trial produced the OBSERVED
+                # statistic with metrics_fc.summary(equity, cfg.clock), so a
+                # null annualised on a fixed 1h would be a distribution in
+                # different units from the number compared against it -- and
+                # the p-value would then be an answer about units, which is the
+                # defect this class's Track A twin already carries a comment
+                # about. Every registered cell is on 1h today, so no recorded
+                # p-value is affected; that is luck, not a guard.
+                v = metrics_fc.calmar(r["equity"],
+                                      metrics_fc.BARS_PER_YEAR[cfg.clock])
                 if np.isfinite(v):
                     best = max(best, v)
         return best
@@ -573,17 +606,33 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
     """
     from orc.orchestrator.search_test import best_of_g
 
-    p = panel_mod.load(symbol, "1h", development_only=True)
     configs = [c for c in h.expand() if c.symbol == symbol]
     if len(configs) < 2:
         return {"status": "fewer than two configurations"}
+
+    # The execution clock comes from the configurations, not from a literal.
+    # It was "1h" in three places here while run_signal_trial scored the
+    # observed statistic on cfg.clock, so on any other clock the null would
+    # have been a distribution in different units from the number it is
+    # compared against.
+    #
+    # A grid that puts clock on an axis cannot be given one null, because there
+    # is no single scale the answer would be in. That is a refusal rather than
+    # a silent choice of the first one.
+    clocks = {c.clock for c in configs}
+    if len(clocks) > 1:
+        return {"status": f"the grid spans clocks {sorted(clocks)}; one null "
+                          "cannot be annualised for all of them"}
+    clock = clocks.pop()
+
+    p = panel_mod.load(symbol, clock, development_only=True)
 
     # A scorer OBJECT rather than a closure, because best_of_g runs these on a
     # process pool and a closure cannot be pickled.  Neither holds the panel:
     # it is re-loaded once per worker process from _null_panel, which keeps the
     # per-task pickle to one price series instead of the whole panel.
-    score = (_TrackBNullScorer(tuple(configs), symbol, "1h") if h.track == "B"
-             else _TrackANullScorer(tuple(configs), symbol, "1h"))
+    score = (_TrackBNullScorer(tuple(configs), symbol, clock) if h.track == "B"
+             else _TrackANullScorer(tuple(configs), symbol, clock))
 
     return best_of_g(observed_best, score, p, len(configs))
 
