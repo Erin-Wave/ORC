@@ -138,6 +138,26 @@ def simulate(
         #    number KT-2 reads.
         has_pos = act & (qty > 0.0)
         ep = np.where(qty > 0.0, basis / np.maximum(qty, 1e-300), 0.0)
+
+        # 1a. drawdown is marked at the worst price INSIDE the bar, against the
+        # same entering state the liquidation check uses. Step 5 marks to
+        # `close` only, so a wick that did not reach the liquidation level
+        # vanished from the drawdown entirely: close=[100,100,100,100] with
+        # low=[100,60,100,100] reported max_dd_total 0.0000 where the identical
+        # -40% printed as a close reports 0.4000. That is not a reporting
+        # nicety -- runner.py records dd_q50/dd_q95 on every Track A simulate
+        # row from this number and surface.py ranks on its median, and section
+        # 4 names drawdown on invested capital as Track A's definition.
+        #
+        # The PEAK is deliberately not raised here. A high inside the bar would
+        # lift peak_pnl and inflate every later drawdown measured from it; a low
+        # can only deepen the trough. Both errors are one-sided and this is the
+        # side that cannot flatter a cell.
+        pnl_low = wallet + qty * (lo - ep) - contributed
+        max_dd_abs = np.where(has_pos,
+                              np.maximum(max_dd_abs, peak_pnl - pnl_low),
+                              max_dd_abs)
+
         margin = wallet if spec.undeployed_counts_as_margin else wallet - powder
         liq_now = has_pos & is_liquidated(margin, qty, ep, lo, table)
         if liq_now.any():

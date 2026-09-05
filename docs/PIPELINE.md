@@ -350,3 +350,75 @@ I8("오너 화면의 모든 줄은 참이어야 한다")의 두 번째 적용이
 - **medium/low findings 94건.** 차단하지 않지만 읽히지도 않는다.
 - **워크스테이션은 큐를 걷지 않는다.** 의도된 분업이다(동시 원장 쓰기로
   run #19이 112 trial과 39분을 잃었다). 바꾸려면 잠금부터 설계해야 한다.
+
+---
+
+## 7. 평가기 정정과 `code_hash` — 2026-09-05
+
+`kernel_review`가 밤새 76.7분 돌고 high 7건을 반환했고, `next_action`이 9절대로
+연구를 멈춰 세웠다. 이 절은 그중 **평가기를 건드리는 3건**을 왜 한 커밋으로
+묶었는지에 대한 지도다. 다음에 평가기를 고치는 사람이 같은 계산을 다시 하지
+않도록.
+
+### 7a. 왜 한 커밋인가
+
+`orc/ledger/trials.py`의 유니크 키는
+`(config_hash, symbol, evaluator, panel_hash, code_hash)`이고,
+`CODE_HASH_ROOTS`는 `orc/kernel`, `orc/eval`, `orc/orchestrator/runner.py`,
+`orc/orchestrator/spec.py`, `orc/facts/panel.py`다.
+
+이건 버그가 아니라 설계다 — 고쳐진 평가기가 옛 키와 충돌해서
+`INSERT OR IGNORE`에 조용히 버려지고 "new 0"이 찍히는 것을 막는 장치다.
+**그 대가는 정정 한 번당 등록부 한 세대가 N에 추가된다는 것이다.**
+
+따라서 평가기 정정은 **모아서 한 번에** 한다. 3건을 따로 커밋하면
+7,122행이 세 번 재실행되고 N은 세 세대만큼 늘어난다. 한 커밋이면 한 세대다.
+N은 다중검정 분모이고 절대 줄지 않으므로, 이 선택은 되돌릴 수 없다.
+
+`orc/orchestrator/surface.py`와 `scripts/`는 `CODE_HASH_ROOTS` 밖이다.
+거기 있는 정정은 공짜이고 묶을 이유가 없다.
+
+### 7b. 이번에 고친 것과 불변식
+
+| # | 불변식 | 지키는 것 |
+|---|---|---|
+| I10 | **낙폭은 봉 안의 최악 가격에서 잰다.** 청산에 이르지 않은 wick도 낙폭이다 | `simulate.py` 1a단계 + `test_a_wick_that_did_not_liquidate_still_counts_as_drawdown` |
+| I11 | **한 파라미터는 축이거나 상수이지 둘 다일 수 없다** | `Hypothesis.assert_no_axis_clash()`, `size()`와 `expand()` 양쪽에서 |
+| I12 | **닫힌 형식은 파산을 못 보므로 파산했다고 말한다** | `analytic.evaluate`의 `ruined`/`n_ruined` + `uses_analytic` 라우팅 |
+
+I10은 7건 중 유일하게 **live**였다. `runner.py:375`가 모든 Track A simulate
+행에 `dd_q50`/`dd_q95`를 이 값으로 기록하고 `surface.py:128`이 그 중앙값을
+랭킹에 쓴다. 나머지 6건은 검증 결과 전부 잠복이었다 — 기록된 결과를 오염시킨
+것은 없다.
+
+I11은 `size()`와 `expand()`가 서로 다른 답을 내고 있었다는 것이 요점이다:
+`size()`는 확장 없이 곱만 계산해 상한에 전액을 청구하고, `expand()`는
+`params.update(self.fixed)`로 축을 한 값에 접었다. 그래서 **두 곳 모두**에서
+거부한다.
+
+I12에서 닫힌 형식은 지갑을 추적하지 않으므로 경로 중간의 파산을 원리적으로
+볼 수 없다. 볼 수 있는 것(터미널 ≤ 0)만 보고하고, 나머지는 `uses_analytic`
+라우팅이 계속 담당한다. `scripts/robustness.py`가 그 라우팅을 우회해
+직접 호출하던 것을 막았다.
+
+### 7c. 다음에 평가기를 고치기 전에
+
+3절의 확인 목록에 더해:
+
+1. `python -c "from orc.ledger.trials import code_hash; print(code_hash())"` —
+   지금 값을 기록해 둔다. 커밋 후 달라져야 하고, 달라졌다면 등록부가 재실행된다.
+2. 고칠 것이 `CODE_HASH_ROOTS` 안인지 밖인지 먼저 확인한다. 밖이면 묶지 마라.
+3. 안이라면 **지금 열려 있는 평가기 정정을 전부 찾아서 같이 고쳐라.**
+   따로 내보내는 커밋 하나가 N 한 세대다.
+4. 각 정정마다 수정을 되돌려서 테스트가 실제로 죽는지 확인한다. 2026-09-05에
+   5건 모두 303개 스위트가 초록인 채로 통과했다 — 초록은 증거가 아니다.
+
+### 7d. 이번 리뷰가 읽지 않은 것
+
+`reports/KERNEL_REVIEW.md` 머리말에 있고 finding 목록에는 없다:
+
+> 2 file(s) were NOT read this run: `orc/eval/signal.py`, `orc/eval/signal_rules.py`
+
+**지금 보고되는 모든 Track B 결과를 생산하는 코드다.** "27건 / 72파일 /
+confidence high"는 그 둘을 뺀 이야기이므로, 다음 `kernel_review`가 이 둘을
+읽었는지 확인하기 전에는 Track B 평가기가 감사됐다고 말할 수 없다.

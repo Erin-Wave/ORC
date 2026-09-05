@@ -135,6 +135,21 @@ def evaluate(
     gross = units * close[ends]
     terminal = gross * (1.0 - spec.exit_cost) - funding_paid
 
+    # The closed form has no wallet and therefore no concept of ruin: it keeps
+    # subtracting the funding bill from a position a real account would have
+    # been liquidated out of. Where it CAN see that -- a terminal value at or
+    # below zero -- it must say so rather than hand back a multiple, because a
+    # negative terminal multiple reads downstream as an ordinary bad outcome
+    # and a quantile over it is a number about an account that cannot exist.
+    #
+    # Where it CANNOT see it is the reason TrialConfig.uses_analytic routes
+    # every funding-on cell to the simulator: a path that went through zero and
+    # recovered on paper is invisible here and no guard in this function can
+    # find it. This makes the visible half honest; the routing is still what
+    # makes the ledger correct.
+    ruined = terminal <= 0.0
+    multiple = np.where(ruined, np.nan, terminal / invested)
+
     return {
         "n_starts": int(starts.size),
         "start_idx": starts,
@@ -142,7 +157,9 @@ def evaluate(
         "units": units,
         "invested": float(invested),
         "terminal_value": terminal,
-        "terminal_multiple": terminal / invested,
+        "terminal_multiple": multiple,
+        "ruined": ruined,
+        "n_ruined": int(ruined.sum()),
         "funding_paid": funding_paid,
         "avg_fill_price": invested / np.maximum(units, 1e-300),
         "final_price": close[ends],

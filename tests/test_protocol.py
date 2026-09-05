@@ -485,6 +485,42 @@ def test_the_next_id_skips_one_that_was_proposed_and_killed(tmp_path):
 # --------------------------------------------------------------------------
 # N can only grow, so what one hypothesis may add to it is capped
 # --------------------------------------------------------------------------
+def test_an_axis_named_in_both_grid_and_fixed_is_refused():
+    """kernel_review a763423a77c8, 2026-09-05.
+
+    expand() built each cell as dict(zip(keys, values)) then
+    params.update(self.fixed), so `fixed` won. A name in both blocks had its
+    whole pre-registered axis collapsed to a single value -- while size() still
+    charged the full product against the probe ceiling and run_hypothesis still
+    printed the full count as evaluated.
+
+    That is the pre-registration failing in the exact direction the protocol
+    exists to prevent, and it would have been invisible: every cell produced is
+    valid, the ledger stays consistent, and only the config_json of the rows
+    would have shown that five levels were one. No registered hypothesis has
+    ever had an overlap, checked across all six.
+
+    It is refused rather than resolved because there is no correct answer to
+    which of the two the author meant, and a wrong guess is permanent.
+    """
+    h = _hyp(grid={"stride_days": [1.0, 7.0, 30.0]},
+             fixed={"contribution": 100.0, "clock": "1h", "stride_days": 7.0})
+    # Both doors, because they disagreed: size() charged the full product and
+    # expand() collapsed the axis, so refusing in one of them still lets the
+    # other through.
+    with pytest.raises(ValueError, match="both"):
+        h.size()
+    with pytest.raises(ValueError, match="both"):
+        h.register().expand()
+
+    # And the ordinary case is untouched.
+    ok = _hyp(grid={"stride_days": [1.0, 7.0, 30.0]},
+              fixed={"contribution": 100.0, "clock": "1h"})
+    assert len({c.stride_days for c in ok.register().expand()}) == 3, \
+        "the axis must still expand when there is no clash"
+    assert ok.size() == 3 * len(ok.universe)
+
+
 def test_a_grid_beyond_the_ceiling_is_refused_whole(tmp_path, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
     import daily_cycle

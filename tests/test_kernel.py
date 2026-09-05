@@ -1108,6 +1108,81 @@ def test_a_development_load_actually_truncates_at_the_seal(tmp_path, monkeypatch
         "a development load handed research a bar at or past the seal")
 
 
+def test_a_wick_that_did_not_liquidate_still_counts_as_drawdown():
+    """kernel_review b29a2f5e1a0d, 2026-09-05, and the one finding of the seven
+    that was LIVE rather than latent.
+
+    Step 1 read `low` for the liquidation check and step 5 marked to market on
+    `close` alone, so any intrabar fall that stopped short of the liquidation
+    level left no trace in the drawdown at all. runner.py records dd_q50 and
+    dd_q95 on every Track A simulate row from this number and surface.py ranks
+    on its median, and section 4 names drawdown on invested capital as Track
+    A's definition -- so this was understating the recorded metric, not a
+    display detail.
+    """
+    from orc.eval import simulate as sim
+
+    spec = sim.SimSpec(contribution=100.0, stride_bars=1, n_contributions=1,
+                       hold_bars=3, leverage=1.0, fee_bps=0.0,
+                       slippage_bps=0.0, exit_fee_bps=0.0)
+    starts = np.array([0])
+
+    flat_close = np.array([100.0, 100.0, 100.0, 100.0])
+    wick_low = np.array([100.0, 60.0, 100.0, 100.0])
+    wick = sim.simulate(flat_close, wick_low, starts, spec)
+
+    # The identical -40%, printed as a close instead of a wick.
+    on_close = np.array([100.0, 60.0, 100.0, 100.0])
+    closed = sim.simulate(on_close, on_close, starts, spec)
+
+    assert closed["max_dd_total"][0] == pytest.approx(0.40, abs=1e-9)
+    assert wick["max_dd_total"][0] == pytest.approx(0.40, abs=1e-9), \
+        "a -40% wick that did not liquidate vanished from the drawdown"
+
+    # Both recover to 100, so neither lost anything by the end. The drawdown is
+    # the whole difference between them, which is the point.
+    assert wick["terminal_multiple"][0] == pytest.approx(1.0, abs=1e-9)
+    assert closed["terminal_multiple"][0] == pytest.approx(1.0, abs=1e-9)
+
+    # A bar whose low equals its close adds nothing: the fix must not invent
+    # drawdown where there was none.
+    calm = np.array([100.0, 101.0, 102.0, 103.0])
+    assert sim.simulate(calm, calm, starts, spec)["max_dd_total"][0] == \
+        pytest.approx(0.0, abs=1e-9)
+
+
+def test_the_closed_form_says_ruined_rather_than_a_multiple(monkeypatch):
+    """kernel_review 04dbaaf9817f, 2026-09-05.
+
+    `evaluate()` subtracts the funding bill from a position a real account
+    would have been liquidated out of and returns a finite terminal value, and
+    the only thing excluding that state from results was `uses_analytic` in
+    another module -- which scripts/robustness.py reached past, calling this
+    directly for the regime gate on any cell with include_funding set.
+
+    The closed form cannot see a path that went through zero and recovered, so
+    the routing is still what makes the ledger correct. What it CAN see is a
+    terminal at or below zero, and that must not come back as a multiple.
+    """
+    from orc.eval.analytic import AnalyticSpec, evaluate
+
+    n = 400
+    close = np.full(n, 100.0)
+    spec = AnalyticSpec(contribution=100.0, stride_bars=1, n_contributions=4,
+                        hold_bars=10, fee_bps=0.0, slippage_bps=0.0,
+                        exit_fee_bps=0.0)
+
+    ok = evaluate(close, spec)
+    assert ok["n_ruined"] == 0
+    assert np.all(np.isfinite(ok["terminal_multiple"]))
+
+    # A funding bill far larger than the position is worth.
+    ruinous = evaluate(close, spec, funding_flow=close * 0.5)
+    assert ruinous["n_ruined"] > 0, "a wiped-out account still reported a value"
+    assert np.all(np.isnan(ruinous["terminal_multiple"][ruinous["ruined"]])), \
+        "a negative terminal came back as an ordinary bad multiple"
+
+
 def test_an_unreadable_opening_counter_is_not_zero_openings(tmp_path, monkeypatch):
     """kernel_review 9b4c4e0f67d5, 2026-09-05.
 

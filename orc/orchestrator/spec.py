@@ -212,7 +212,28 @@ class Hypothesis:
                 "Register a NEW hypothesis id instead of editing this one.")
 
     # ------------------------------------------------------------------
+    def assert_no_axis_clash(self) -> None:
+        """A parameter may be an axis or a constant, never both.
+
+        Checked from BOTH size() and expand() because they disagreed: size()
+        multiplies the grid without expanding it, so it charged the full
+        product against the configuration ceiling, while expand() applied
+        `fixed` last and collapsed the axis to one value. Refusing in expand()
+        alone would let intake register the hypothesis and fail later; refusing
+        in size() alone would let a caller that goes straight to expand()
+        through.
+        """
+        clash = sorted(set(self.grid) & set(self.fixed))
+        if clash:
+            raise ValueError(
+                f"{self.hypothesis_id}: {clash} appear in both `grid` and "
+                "`fixed`. The grid axis would be silently collapsed to the "
+                "fixed value while still being charged against the "
+                "configuration ceiling. Remove it from one of the two and "
+                "register under a new id.")
+
     def size(self) -> int:
+        self.assert_no_axis_clash()
         n = len(self.universe)
         for v in self.grid.values():
             n *= max(len(v), 1)
@@ -247,6 +268,24 @@ class Hypothesis:
         self.verify()
         cls = SignalTrialConfig if self.track == "B" else TrialConfig
         keys = sorted(self.grid)
+
+        # `fixed` used to be applied with params.update(self.fixed), so a name
+        # in BOTH blocks had its whole pre-registered axis silently collapsed
+        # to one value -- while size() still charged the full product against
+        # the probe ceiling and run_hypothesis still printed the full count as
+        # evaluated. A registration that says it tried five levels and tried
+        # one is the pre-registration failing in the direction the whole
+        # protocol exists to prevent, and it would have been invisible: the
+        # cells are valid, the ledger is consistent, and only the config_json
+        # of the rows would have shown it.
+        #
+        # No registered hypothesis has ever had an overlap (checked across all
+        # six on 2026-09-05), so nothing on record is affected. It is refused
+        # rather than resolved because there is no correct answer to "which of
+        # the two did the author mean" -- a new id is cheap and a wrong guess
+        # is permanent.
+        self.assert_no_axis_clash()
+
         out: list = []
         for sym in sorted(self.universe):
             for values in product(*(self.grid[k] for k in keys)):

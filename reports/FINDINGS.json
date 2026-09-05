@@ -1938,16 +1938,17 @@
     },
     "b29a2f5e1a0d": {
       "id": "b29a2f5e1a0d",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T00:44:18.450403+00:00",
       "last_seen_utc": "2026-09-05T00:44:18.450403+00:00",
-      "disposition": "",
+      "disposition": "drawdown is marked at the bar low against the entering state, peak still on close. test_a_wick_that_did_not_liquidate_still_counts_as_drawdown",
       "file": "orc/eval/simulate.py",
       "line": 186,
       "severity": "high",
       "what": "청산만 `low`를 읽고 드로다운은 `close`만 읽는다 — `max_dd_abs`는 종가 기준 pnl로만 갱신되므로, 청산에 이르지 않은 봉 내 급락(wick)은 드로다운 지표에서 완전히 사라진다.",
       "trigger": "close=[100,100,100,100], low=[100,60,100,100], 1× 무레버리지 1회 납입으로 simulate를 돌리면 max_dd_total=0.0, terminal_multiple=1.0. 같은 -40%가 종가로 찍힌 close=[100,60,100,100]에서는 max_dd_total=0.4. 실데이터에서도 재현된다: 52개 심볼에 대해 bar 0부터의 무레버리지 최대낙폭을 close 기준과 low 기준으로 각각 계산하면 BEAMXUSDT 0.0908, BATUSDT 0.0852, BIGTIMEUSDT 0.0554만큼 과소평가되고(중앙값 0.0044), BATUSDT에는 자기 종가보다 99.81% 낮은 저가를 찍은 봉이 있다.",
-      "why_silent": "`low`는 인자로 받아 `is_liquidated`에만 전달되고, 5단계 mark-to-market은 `px = close[idx]`만 쓴다. 배열 길이·형상·부호가 모두 정상이라 예외가 날 자리가 없고, 결과는 그저 '이 셀은 낙폭이 작다'는 그럴듯한 수치가 된다. 이 값은 latent가 아니라 live다 — runner.py:375의 `_profile(\"dd\", out[\"max_dd_total\"])`가 모든 Track A simulate 원장 행에 dd_q50/dd_q95로 기록하고, surface.py:128은 `median(max_dd_total)`을 랭킹 값으로 반환한다. CLAUDE.md §4가 Track A의 낙폭 정의로 지목한 지표이자 종료 조건의 25% 낙폭이 걸린 지표다."
+      "why_silent": "`low`는 인자로 받아 `is_liquidated`에만 전달되고, 5단계 mark-to-market은 `px = close[idx]`만 쓴다. 배열 길이·형상·부호가 모두 정상이라 예외가 날 자리가 없고, 결과는 그저 '이 셀은 낙폭이 작다'는 그럴듯한 수치가 된다. 이 값은 latent가 아니라 live다 — runner.py:375의 `_profile(\"dd\", out[\"max_dd_total\"])`가 모든 Track A simulate 원장 행에 dd_q50/dd_q95로 기록하고, surface.py:128은 `median(max_dd_total)`을 랭킹 값으로 반환한다. CLAUDE.md §4가 Track A의 낙폭 정의로 지목한 지표이자 종료 조건의 25% 낙폭이 걸린 지표다.",
+      "decided_utc": "2026-09-05T01:24:36.352199+00:00"
     },
     "dedb023311b6": {
       "id": "dedb023311b6",
@@ -2108,16 +2109,17 @@
     },
     "a763423a77c8": {
       "id": "a763423a77c8",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T00:44:18.450403+00:00",
       "last_seen_utc": "2026-09-05T00:44:18.450403+00:00",
-      "disposition": "",
+      "disposition": "assert_no_axis_clash refuses an overlap from both size() and expand(). test_an_axis_named_in_both_grid_and_fixed_is_refused",
       "file": "orc/orchestrator/spec.py",
       "line": 254,
       "severity": "high",
       "what": "`Hypothesis.expand()` builds each cell as `params = dict(zip(keys, values))` then `params.update(self.fixed)`, so `fixed` overwrites the grid — a parameter named in both blocks has its whole pre-registered axis silently collapsed to the single fixed value, while `size()` still charges the full product against the probe ceiling and `run_hypothesis` still prints the full count as evaluated.",
       "trigger": "A queue file with `\"grid\": {\"leverage\": [1.0, 2.0, 3.0]}` and `\"fixed\": {\"leverage\": 1.0, \"clock\": \"1h\"}`. Verified by running it: `h.size()` returns 3, `h.shape_is_measurable()` is True so `intake_queue` accepts it, `expand()` returns 3 configs whose distinct leverage set is `[1.0]` and which reduce to 1 distinct `canonical_hash`. `run_hypothesis` reports `evaluated 3, new 1`.",
-      "why_silent": "Every layer reports a number that is individually true. The ledger dedupes to one row so nothing errors; the surface shows `cells_filled: 1, cells_total: 3`, which is exactly what an honestly unevaluable grid point looks like (`horizon_exceeds_history` produces the same NaN); and the resulting single-cell surface is disqualified as `shape unmeasured`, which reads as a weak family rather than as a registration that never tested its own axis."
+      "why_silent": "Every layer reports a number that is individually true. The ledger dedupes to one row so nothing errors; the surface shows `cells_filled: 1, cells_total: 3`, which is exactly what an honestly unevaluable grid point looks like (`horizon_exceeds_history` produces the same NaN); and the resulting single-cell surface is disqualified as `shape unmeasured`, which reads as a weak family rather than as a registration that never tested its own axis.",
+      "decided_utc": "2026-09-05T01:24:36.894632+00:00"
     },
     "9e1a7cd48281": {
       "id": "9e1a7cd48281",
@@ -2278,16 +2280,17 @@
     },
     "04dbaaf9817f": {
       "id": "04dbaaf9817f",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T00:44:18.450403+00:00",
       "last_seen_utc": "2026-09-05T00:44:18.450403+00:00",
-      "disposition": "",
+      "disposition": "evaluate reports ruined/n_ruined and nans the multiple; robustness returns nan for a cell the closed form cannot score. test_the_closed_form_says_ruined_rather_than_a_multiple",
       "file": "orc/eval/analytic.py",
       "line": 124,
       "severity": "high",
       "what": "`evaluate()`는 `funding_flow`를 무조건 받아들여 파산(ruin) 개념이 전혀 없는 유한한 terminal value를 돌려준다 — 지갑이 음수로 내려가도 그대로 계산을 계속한다. 이 상태를 결과에서 배제하는 전제조건은 `TrialConfig.uses_analytic`(`include_funding`이 True면 항상 False)이라는 다른 모듈의 property에만 존재할 뿐 여기서는 강제되지 않으며, `scripts/robustness.py:62 _tm_q05_over_mask`가 이 라우팅을 거치지 않고 funding이 켜진 Track A 셀에 대해 직접 호출하여 regime 게이트를 채점한다.",
       "trigger": "`TrialConfig(symbol=\"SOLUSDT\", contribution=100.0, stride_days=7.0, n_contributions=156, include_funding=True)`를 development 1h 패널에 대해 실행. `scripts/robustness.py:81`이 `evaluate(p.close, spec, funding_flow=p.funding_flow)`를 호출해 regime 점수 rising=+1.6234, falling=+0.0137을 내고, `orc/orchestrator/robustness.py:155`의 `passed = (rising > 0 and falling > 0)`가 True를 기록한다. 동일한 cfg를 `run_trial`에 넣으면 `uses_analytic`이 False라 simulate로 라우팅되어 `tm_q05 = 0.0000`, `liquidation_rate = 0.821`이 나온다 — 시작일의 82 %가 청산되는 셀이 regime 검사를 통과한다. 반대 방향도 같은 경로에서 측정된다: ADAUSDT 동일 설정에서 closed form은 tm_q05 = -0.4988(무레버리지 롱이 납입액보다 49.88 % 더 빚지는, 일어날 수 없는 값)을, simulate는 tm_q05 = 0.0 / liq 0.692를 낸다. 두 수치 모두 실제 패널에서 실행해 얻은 것이다.",
-      "why_silent": "closed form은 청산된 경로가 만드는 0.0 대신, 음수로 가는 지갑에서 funding 청구서를 계속 빼기만 하므로 평범하게 생긴 유한한 float를 반환한다. analytic.py 안에는 부호나 손익분기점을 검사하는 코드가 없고, `regime_consistency`는 `rising > 0 and falling > 0`만 묻고, `verdict()`는 그 True를 통과한 검사로 집계한다. `_tm_q05_over_mask`를 덮는 테스트가 하나도 없어서 `tests/test_protocol.py:141`이 spec 수준에서 단언하는 라우팅 불변식이 이 호출 지점에서는 한 번도 확인되지 않는다. 게이트가 작동하는 것처럼 보이는 채로 구멍이 남는다."
+      "why_silent": "closed form은 청산된 경로가 만드는 0.0 대신, 음수로 가는 지갑에서 funding 청구서를 계속 빼기만 하므로 평범하게 생긴 유한한 float를 반환한다. analytic.py 안에는 부호나 손익분기점을 검사하는 코드가 없고, `regime_consistency`는 `rising > 0 and falling > 0`만 묻고, `verdict()`는 그 True를 통과한 검사로 집계한다. `_tm_q05_over_mask`를 덮는 테스트가 하나도 없어서 `tests/test_protocol.py:141`이 spec 수준에서 단언하는 라우팅 불변식이 이 호출 지점에서는 한 번도 확인되지 않는다. 게이트가 작동하는 것처럼 보이는 채로 구멍이 남는다.",
+      "decided_utc": "2026-09-05T01:24:37.468603+00:00"
     }
   }
 }

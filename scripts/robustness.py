@@ -69,6 +69,20 @@ def _tm_q05_over_mask(panel, cfg, mask: np.ndarray) -> float:
     """
     from orc.eval.analytic import AnalyticSpec, evaluate
 
+    # The routing that keeps the ledger correct is `cfg.uses_analytic`, and
+    # this function used to reach past it: it called the closed form directly
+    # with funding_flow whenever cfg.include_funding was set, so a funding-on
+    # Track A cell was scored for the regime gate by an evaluator with no
+    # concept of ruin -- the one shape section 5 says the closed form is NOT
+    # exact for. The cell robustness happened to pick had include_funding
+    # false, so nothing recorded is affected.
+    #
+    # A regime score this evaluator cannot produce is UNMEASURED, not a
+    # number. verdict.disqualifiers already treats an unmeasured check as a
+    # failure to clear, which is the correct direction.
+    if not cfg.uses_analytic:
+        return float("nan")
+
     stride, hold = panel.bars(cfg.stride_days), panel.bars(cfg.hold_days)
     if stride < 1 or (cfg.n_contributions - 1) * stride + hold >= len(panel):
         return float("nan")
