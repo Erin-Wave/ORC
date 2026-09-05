@@ -26,3 +26,7 @@ logs/
 # scripts/mutation.py works in a throwaway copy of the tree; it removes it on
 # success and a crashed run must not leave it committable.
 .mutation/
+
+# The differential oracle's scratch. ref_signal.py IS committed -- it is the
+# check -- but the raw provider output it was cut from is not.
+oracle/_raw.py
