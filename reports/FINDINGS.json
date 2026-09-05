@@ -226,16 +226,17 @@
     },
     "353f8b55c407": {
       "id": "353f8b55c407",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-02T11:34:16.156106+00:00",
       "last_seen_utc": "2026-09-02T11:34:16.156106+00:00",
-      "disposition": "",
+      "disposition": "max_hold joined _PRIORITY between take_profit and signal, and the clock/signal tie now goes to max_hold. Found and confirmed by oracle/fuzz.py",
       "file": "orc/eval/signal.py",
       "line": 184,
       "severity": "medium",
       "what": "`reason: \"signal\"`이 서로 다른 세 가지 종료를 구별 없이 덮는다 — 규칙이 실제로 낸 청산 신호, `max_hold_bars` 타임아웃, 패널 끝에서의 강제 시가평가 종료(`sig_exit = n - 2` 기본값). 셋 다 `ends` 리스트에 들어가기 전에 이미 `b`가 `min(...)`으로 잘려 있어 사후에 구분할 수 없다.",
       "trigger": "BTCUSDT, `carry_funding`, `lookback_days=21`, `enter_rate=0.0001`, `exit_rate=5e-05`, `leverage=1.0`, `max_hold_days=7.0`(전부 H0002의 등록된 그리드 값): 78개 트레이드가 **전부** `reason: \"signal\"`로 기록되지만, 실제 청산 신호가 종료시킨 것은 1건이고 76건은 보유 한도 타임아웃, 1건은 패널 끝 강제 종료다. `max_hold_days=30.0`이면 23건 중 21건이 타임아웃 · 1건이 패널 끝, `max_hold_days=None`이면 3건 중 2건만 진짜 신호다. 이 트레이드 수는 `runner.py:136`에서 `effective_independent_paths = float(r[\"n_trades\"])`로 그대로 흘러가므로, 같은 시계가 76번 울린 것이 76개의 독립적 규칙 결정으로 보고된다. `win_rate`도 강제 종료 트레이드를 정상 트레이드로 세어 계산된다.",
-      "why_silent": "강제 종료된 트레이드는 진짜 신호 종료와 구조적으로 동일한 레코드(사이드, 체결가, 종료가, 이유)를 남기고 `bars_held`도 정상 범위다. `reason`을 읽는 지표는 `n_liquidations` 하나뿐이라 나머지 세 경우가 뭉쳐도 어떤 계산도 깨지지 않는다. 그런데 H0002 그리드의 축 하나가 바로 `max_hold_days`이고 — 즉 '보유 한도가 도움이 되는가'가 질문인데 로그는 규칙이 스스로 78번 나갔다고 말한다 — CLAUDE.md 6절이 반드시 읽으라고 지정한 `effective_independent_paths`가 그 뭉친 수를 그대로 쓴다."
+      "why_silent": "강제 종료된 트레이드는 진짜 신호 종료와 구조적으로 동일한 레코드(사이드, 체결가, 종료가, 이유)를 남기고 `bars_held`도 정상 범위다. `reason`을 읽는 지표는 `n_liquidations` 하나뿐이라 나머지 세 경우가 뭉쳐도 어떤 계산도 깨지지 않는다. 그런데 H0002 그리드의 축 하나가 바로 `max_hold_days`이고 — 즉 '보유 한도가 도움이 되는가'가 질문인데 로그는 규칙이 스스로 78번 나갔다고 말한다 — CLAUDE.md 6절이 반드시 읽으라고 지정한 `effective_independent_paths`가 그 뭉친 수를 그대로 쓴다.",
+      "decided_utc": "2026-09-05T09:39:53.283852+00:00"
     },
     "0dc00348ae81": {
       "id": "0dc00348ae81",

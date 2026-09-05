@@ -108,8 +108,11 @@ MUTATIONS = [
     {
         "id": "target_wins_the_tie",
         "file": "orc/eval/signal.py",
-        "old": '_PRIORITY = {"liquidation": 0, "stop": 1, "take_profit": 2, "signal": 3}',
-        "new": '_PRIORITY = {"liquidation": 0, "take_profit": 1, "stop": 2, "signal": 3}',
+        # max_hold joined the table on 2026-09-05: a position closed by the
+        # clock used to be reported as "signal". The mutation still swaps the
+        # two that matter -- stop against take_profit -- and nothing else.
+        "old": '_PRIORITY = {"liquidation": 0, "stop": 1, "take_profit": 2, "max_hold": 3,',
+        "new": '_PRIORITY = {"liquidation": 0, "take_profit": 1, "stop": 2, "max_hold": 3,',
         "why": "an hourly bar cannot say whether the stop or the target was "
                "touched first, and resolving it in our own favour is how a "
                "backtest invents money.",

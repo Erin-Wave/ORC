@@ -15,7 +15,28 @@ Conventions, all chosen to be pessimistic where the data cannot say:
                    cannot, and guessing in one's own favour is how a backtest
                    invents money.
   liquidation wins If the maintenance margin is breached inside the bar, the
-                   position is gone regardless of where the bar closed.
+                   position is gone regardless of where the bar closed, AND
+                   THE ACCOUNT IS AT ZERO. Not the residue above the bankruptcy
+                   price -- zero.
+
+                   Decided 2026-09-05 and written here because it had never
+                   been written anywhere. The differential oracle found it: an
+                   independently written second implementation kept the residue
+                   (1000 -> 40.4 on a 5x long halved) and went on trading, and
+                   every numeric disagreement between the two traced to this
+                   one unstated choice. With no liquidation in the window they
+                   agree to 0.00e+00.
+
+                   Zero, for three reasons that all point the same way. A
+                   Binance USD-M liquidation is an immediate-or-cancel order
+                   plus a clearance fee (CLAUDE.md section 7b), which takes the
+                   position margin; the residue assumes a fill exactly at the
+                   maintenance-margin price, which is the one price a forced
+                   IOC order is least likely to get. KT-2 closed leverage above
+                   1x on `liquidation rate hits 100% at 2x and above`, and that
+                   conclusion reads a liquidation as ruin. And it is the
+                   pessimistic reading, which is what every other line in this
+                   list chooses when the data cannot say.
   funding is real  A long pays when the rate is positive and a short is paid.
                    That asymmetry is the entire subject of Track B's first
                    family, so it is charged bar by bar, never approximated.
@@ -42,7 +63,8 @@ _LIQ_ITERS = 3
 # Tie-break when several exits fall in the same bar.  Lower goes first, and the
 # order is deliberately the one that costs the most: an hourly bar cannot say
 # whether the stop or the target was touched first, so it is not our choice.
-_PRIORITY = {"liquidation": 0, "stop": 1, "take_profit": 2, "signal": 3}
+_PRIORITY = {"liquidation": 0, "stop": 1, "take_profit": 2, "max_hold": 3,
+             "signal": 4}
 
 
 @dataclass(frozen=True)
@@ -191,8 +213,24 @@ def run_signals(
         ke = int(np.searchsorted(exit_idx, a, side="left"))
         sig_exit = int(exit_idx[ke]) if ke < exit_idx.size else n - 2
         b = min(sig_exit + 1, n - 1)
-        if spec.max_hold_bars is not None:
-            b = min(b, a + spec.max_hold_bars)
+        # Which of the two ended it, kept rather than collapsed. `max_hold` had
+        # no entry in _PRIORITY, so a position closed by the CLOCK was reported
+        # as "signal" -- an exit nothing signalled. The timing and the equity
+        # were right; the exits histogram execution_realism prints was not, and
+        # a reader counting signal exits was counting two different things.
+        #
+        # Found by the differential oracle: after five specification gaps were
+        # closed it was the ONE remaining disagreement across 400 fuzz cases,
+        # and the only one where the reference was right and this was wrong.
+        # `<=`, not `<`. When the clock and the exit signal land on the SAME
+        # bar the tie goes to max_hold, because _PRIORITY orders it ahead of
+        # signal -- and the whole point of that table is that ties resolve the
+        # same way everywhere. Written with `<` first, which reported the tie
+        # as "signal" and was the last disagreement the oracle held on to.
+        held_out = False
+        if spec.max_hold_bars is not None and a + spec.max_hold_bars <= b:
+            b = a + spec.max_hold_bars
+            held_out = True
 
         # The scan starts at a+1, not at a.  The fill is close[a], so bar a's
         # own extremes all happened before the position existed and cannot
@@ -221,7 +259,8 @@ def run_signals(
                                 qty, fill, table)
 
         # Every way this trade can end, as (bar offset, priority, reason, price).
-        ends = [(b - a, _PRIORITY["signal"], "signal", float(close[b]))]
+        _why = "max_hold" if held_out else "signal"
+        ends = [(b - a, _PRIORITY[_why], _why, float(close[b]))]
 
         hit = _first_true(adverse <= liq if side == LONG else adverse >= liq)
         if hit >= 0:

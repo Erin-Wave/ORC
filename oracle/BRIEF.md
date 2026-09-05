@@ -24,14 +24,43 @@ Return a dict with at least: `equity` (float64 array, one per bar, starting at
 spec.capital), `n_trades`, `trades` (list of dicts with entry_bar, exit_bar,
 reason, exit_price, funding), `n_liquidations`, `funding_collected`.
 
+`reason` is exactly one of: `liquidation`, `stop`, `take_profit`, `max_hold`,
+`signal`. A position still open on the last bar is closed at that bar's close
+and ALSO reported as `signal` -- there is no separate `end` label. The
+implementation under test has no such label and inventing one makes the two
+disagree about a word rather than about a number.
+
 ## Semantics, in order
 
-1. NO LOOKAHEAD. A signal read at bar i is acted on at bar i+1. Nothing is ever
-   filled at a price that was used to decide the fill. A position opened
-   because entry[i] != 0 fills at close[i+1].
+1. NO LOOKAHEAD, AND THE LAST BAR HAS NO i+1. A signal read at bar i is acted
+   on at bar i+1. Nothing is ever filled at a price that was used to decide the
+   fill. A position opened because entry[i] != 0 fills at close[i+1].
 
-2. ONE POSITION AT A TIME. While a position is open, `entry` is ignored. A new
-   position may only open on a bar after the previous one closed.
+   So entry[n-1] -- the signal on the FINAL bar -- opens nothing. There is no
+   bar to fill it at. A trade whose entry_bar equals its exit_bar is proof this
+   rule was broken: it was filled and closed on the same bar, which means it
+   was filled at a price that decided the fill.
+
+   The first version of this brief left it implicit and the reference produced
+   exactly that trade -- (83, 83) on an 84-bar panel, identical to the
+   implementation on all thirteen trades before it.
+
+2. ONE POSITION AT A TIME, AND RULE 1 STILL APPLIES TO THE RE-ENTRY. While a
+   position is open, `entry` is ignored -- including on the bar it closes.
+
+   Concretely, because rules 1 and 2 overlap here and the first version of this
+   brief did not say how. A position that CLOSES on bar X was still open during
+   X, so entry[X] is ignored. The first signal that can be acted on is
+   entry[X+1], and by rule 1 it fills at X+2.
+
+       exit at bar 5  ->  next entry signal read at 6, FILLED AT 7
+       not filled at 6
+
+   The implementation under test skips the bar; the reference did not, and that
+   one bar was the source of every remaining disagreement between them after
+   the liquidation and cost rules were pinned down. It is the conservative
+   reading: a fill on the closing bar would be acting on a signal that was
+   visible while the position that blocked it was still open.
 
 3. EXITS, and the tie-break when several fall in the same bar. Priority is
    liquidation < stop < take_profit < signal, LOWER FIRST. An hourly bar cannot
@@ -40,9 +69,20 @@ reason, exit_price, funding), `n_liquidations`, `funding_collected`.
 4. ADVERSE FIRST. If a stop and a target both fall inside one bar, the stop is
    taken.
 
-5. LIQUIDATION WINS. If maintenance margin is breached anywhere inside the bar
-   -- against `low` for a long, `high` for a short -- the position is gone
-   regardless of where the bar closed. Use
+5. LIQUIDATION WINS, AND IT LEAVES ZERO. If maintenance margin is breached
+   anywhere inside the bar -- against `low` for a long, `high` for a short --
+   the position is gone regardless of where the bar closed AND the account is
+   at zero. Not the residue above the bankruptcy price. Equity is 0.0 from that
+   bar onward and no further position is opened, because there is nothing to
+   open one with.
+
+   This sentence was missing in the first version of this brief and it was the
+   single source of every numeric disagreement between the two implementations.
+   Decided in favour of zero: a Binance USD-M liquidation is an IOC order plus
+   a clearance fee and takes the position margin, the residue assumes a fill at
+   exactly the maintenance-margin price, and KT-2 reads a liquidation as ruin.
+
+   Use
    `orc.eval.signal.liquidation_level(side, wallet, qty, entry_price, table)`;
    that helper is shared on purpose, it is not the thing under test.
 
@@ -52,8 +92,35 @@ reason, exit_price, funding), `n_liquidations`, `funding_collected`.
 7. FUNDING IS CHARGED BAR BY BAR, from a+1, on the mark notional. A long pays
    when the rate is positive and a short is paid. Never approximated.
 
-8. COSTS. Buys fill at P*(1+c), sells at P*(1-c), where c is
-   (fee_bps + slippage_bps)/1e4. Mark-to-market is always at P.
+   AND IT SETTLES AFTER THE LIQUIDATION CHECK, NOT BEFORE. Within one bar the
+   order is: check liquidation against the account as it stood ENTERING the
+   bar, then settle that bar's funding. Margin that arrives later in time must
+   not rescue a position from a high or a low that had already printed.
+
+   This bites hardest on a short receiving funding: crediting it first grows
+   the wallet, lifts the liquidation level, and the position survives a bar it
+   was already gone on. The first version of this brief did not say which came
+   first, and on one case in three thousand -- a short at 5x through a +1.33%
+   settlement -- the reference survived to bar 80 where the implementation was
+   liquidated at 77. Same class as a defect already on record for the Track A
+   simulator, where a scheduled deposit applied before the liquidation check
+   made every deposit bar err towards survival.
+
+8. COSTS, AND THE COST IS IN THE FILL PRICE, NOT A SEPARATE DEDUCTION.
+   c = (fee_bps + slippage_bps)/1e4. A buy fills at P*(1+c) and a sell at
+   P*(1-c); mark-to-market is always at P.
+
+   Concretely, and this is the sentence the first version was missing: the
+   QUANTITY comes from the fill price.
+
+       qty = (capital * leverage) / (P * (1 + c))       for a long
+
+   NOT `qty = capital*leverage/P` with `capital*leverage*c` subtracted from the
+   wallet afterwards. The two differ at second order in c and the difference is
+   real: 1000 capital at 5x with 1bp slippage gives 999.500050 the first way
+   and 999.500000 the second. The first version of this brief said only "buys
+   fill at P*(1+c)" and the reference read it the other way, which is how this
+   paragraph came to exist.
 
 9. A LIQUIDATED TRADE reports the funding it actually accrued up to the
    liquidation bar, not the funding of the full intended holding period.
