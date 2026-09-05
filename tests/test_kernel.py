@@ -1193,6 +1193,59 @@ def test_a_panel_starts_where_its_funding_record_starts(tmp_path, monkeypatch):
     assert len(without) == 200
 
 
+def test_the_open_interest_filter_can_only_remove_entries():
+    """oi_confirmed_reversion has to be cci_reversion MINUS bars, never a
+    different signal, or the pair it forms with the unconditional rule answers
+    nothing: two shapes that differ in more than one place cannot attribute a
+    difference in result to either.
+
+    Measured on BTCUSDT's development window at oi_drop=0.01, indicator window
+    5 days on the 4-hour candle:
+
+        entry bars   11,536 unconditional -> 3,459 confirmed   70% removed
+        subset       yes
+        sign flips   0
+        exits        identical
+
+    The TRADE count is allowed to rise even though entries only fall, and that
+    is not a defect: removing an early entry frees a later bar that would have
+    been inside an existing position to open a new one. BTCUSDT went from 10
+    trades to 12 that way. Pinned here so it is not "fixed" later.
+    """
+    from orc.eval.signal_rules import oi_confirmed_reversion
+
+    # -200 .. +200 and back, so both sides of the band are exercised.
+    value = np.concatenate([np.linspace(0, -200, 40), np.linspace(-200, 200, 80),
+                            np.linspace(200, 0, 40)])
+    falling = np.full(value.size, -0.05)     # open interest down 5% everywhere
+    rising = np.full(value.size, +0.05)
+
+    e_all, x_all = oi_confirmed_reversion(value, falling, 100.0, 0.0, 0.01)
+    e_none, x_none = oi_confirmed_reversion(value, rising, 100.0, 0.0, 0.01)
+
+    assert np.any(e_all != 0), "a window where OI always falls must admit entries"
+    assert not np.any(e_none != 0), \
+        "a window where OI always ROSE cannot be forced deleveraging anywhere"
+    # The exit is never gated: both shapes must close the same way.
+    assert np.array_equal(x_all, x_none)
+
+    # Subset and no sign flips, against the unconditional rule it is paired with.
+    from orc.eval.signal_rules import cci_reversion
+
+    base, base_x = cci_reversion(value, 100.0, 0.0)
+    mixed = np.where(np.arange(value.size) % 2 == 0, -0.05, +0.05)
+    e_mix, x_mix = oi_confirmed_reversion(value, mixed, 100.0, 0.0, 0.01)
+    assert np.all((e_mix != 0) <= (base != 0)), "the filter added an entry"
+    assert not np.any((e_mix != 0) & (e_mix != base)), "the filter flipped a side"
+    assert np.array_equal(x_mix, base_x)
+
+    # A discriminator that admits everything is the unconditional rule wearing
+    # a different name, and is refused rather than silently allowed.
+    for useless in (0.0, -0.01):
+        with pytest.raises(ValueError, match="oi_drop"):
+            oi_confirmed_reversion(value, falling, 100.0, 0.0, useless)
+
+
 def test_the_long_only_simulator_refuses_a_short_instead_of_answering():
     """The defect that killed H0015, found by the adversary running the
     evaluator rather than by anything in the suite.

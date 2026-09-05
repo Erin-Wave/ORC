@@ -227,6 +227,21 @@ def load(symbol: str, development_only: bool = True) -> pl.DataFrame:
             f"`python -m orc.facts.positioning {symbol}` first")
 
     df = pl.read_parquet(p).sort("ts")
+
+    # A published open interest of zero is a gap in the feed, not a moment when
+    # nobody held a contract. Binance prints them: 143 rows over 9 days for
+    # BTCUSDT and 134 over 8 for AVAXUSDT, about 0.04% each, and BTCUSDT's
+    # open interest was not zero on 2021-05-22.
+    #
+    # It matters more than the count suggests because this series exists to be
+    # DIFFERENCED. A zero next to a real level is a -100% change and then an
+    # infinite one, which to a rule reading "open interest fell, so positions
+    # closed" is the loudest signal in the file -- manufactured by absence.
+    # Dropped here rather than carried, so the panel's carry-forward sees a
+    # gap and holds the last real level, which is what a missing reading of a
+    # LEVEL means.
+    df = df.filter(pl.col("open_interest") > 0.0)
+
     if not development_only:
         if not holdout.sealed_reads_permitted():
             raise holdout.HoldoutViolation(

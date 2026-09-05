@@ -401,6 +401,52 @@ def cci_breakout(value: np.ndarray, enter_level: float,
     return _two_sided(value, enter_level, exit_level, fade=False)
 
 
+def oi_confirmed_reversion(value: np.ndarray, oi_change: np.ndarray,
+                           enter_level: float, exit_level: float,
+                           oi_drop: float) -> tuple[np.ndarray, np.ndarray]:
+    """cci_reversion, but the displacement has to come with positions CLOSING.
+
+    Section 7b names the limit of the CCI family in one sentence: the
+    liquidation stream is not in this archive, so a displaced price is evidence
+    of forced flow rather than a measurement of it, and ordinary aggressive
+    trading displaces price too. `cci_reversion` cannot tell the two apart and
+    says so.
+
+    Open interest can, in one direction. A forced close REDUCES it and a new
+    aggressive position RAISES it, so a move on which open interest rose cannot
+    be a liquidation cascade whatever the price did. That is refutation, not
+    confirmation, and it is the whole of what this adds: the same entry as
+    cci_reversion with the bars that are provably NOT forced flow removed.
+
+    So the two are a pair in the way reversion and breakout are a pair. If the
+    unconditional rule pays and this one does not, what the unconditional rule
+    reads is not forced closing. If this one pays and the unconditional one
+    does not, the discriminator is carrying the result.
+
+    Measured on the development window before any of this was registered: on
+    the median symbol open interest fell on 61% of the worst 1% of hourly
+    returns against a 50% baseline, so four in ten of the largest drops were
+    not deleveraging at all. The filter is therefore expected to remove
+    roughly that many entries, and a variant that removes almost none has
+    found a level that is not binding.
+
+    `oi_drop` is a fraction, positive, and the condition is a FALL of at least
+    that much over the same window the indicator reads.
+    """
+    entry, exit_ = _two_sided(value, enter_level, exit_level, fade=True)
+    if oi_drop <= 0.0:
+        raise ValueError(
+            "oi_drop must be a positive fraction: it names how far open "
+            "interest has to FALL for a bar to be admissible, and zero or "
+            "less admits every bar, which is cci_reversion under another name")
+    permitted = oi_change <= -abs(oi_drop)
+    # The exit is untouched. A position opened on a confirmed bar is closed by
+    # the indicator coming back inside the band, exactly as the unconditional
+    # rule closes it -- gating the exit as well would make the two shapes
+    # differ in more than one place and the comparison would answer nothing.
+    return entry * permitted.astype(entry.dtype), exit_
+
+
 def cci_mtf(base: np.ndarray, filt: np.ndarray, enter_level: float,
             exit_level: float, filter_level: float) -> tuple[np.ndarray, np.ndarray]:
     """Slow timeframe says which side is allowed; fast timeframe says when.
@@ -494,6 +540,38 @@ def _build_cci(fn):
     return build
 
 
+def _build_oi_confirmed(cfg, panel, price=None):
+    if not panel.has_positioning():
+        raise ValueError(
+            f"{panel.symbol}: no open-interest series on this panel. Load it "
+            "with panel.load(..., with_positioning=True), and fetch it first "
+            "with `python -m orc.facts.positioning`.")
+    if cfg.oi_drop is None:
+        raise ValueError("oi_confirmed_reversion needs oi_drop; without it "
+                         "there is no discriminator and it is cci_reversion")
+
+    value = _cci_of(panel, cfg.timeframe_hours, cfg.lookback_days, price)
+
+    # The change is measured over the indicator's own window, so the two are
+    # asking about the same stretch of history rather than about two different
+    # ones that happen to end on the same bar.
+    w = _period_bars(cfg.lookback_days, cfg.timeframe_hours) * max(
+        1, int(round(cfg.timeframe_hours * panel.bars_per_day / 24)))
+    oi = panel.open_interest
+    if w < 1 or w >= oi.size:
+        raise ValueError(
+            f"{panel.symbol}: an open-interest window of {w} bars does not fit "
+            f"in {oi.size}; a partial window is not a reading")
+    past = np.concatenate([np.full(w, np.nan), oi[:-w]])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        change = (oi - past) / past
+    # A bar with no comparison yet is not admissible. nan <= -x is False, which
+    # is the answer wanted, but it is written down rather than relied on.
+    change = np.where(np.isfinite(change), change, np.inf)
+    return oi_confirmed_reversion(value, change, cfg.enter_level,
+                                  cfg.exit_level, cfg.oi_drop)
+
+
 def _build_cci_mtf(cfg, panel, price=None):
     if cfg.filter_timeframe_hours is None:
         raise ValueError("cci_mtf needs filter_timeframe_hours; without a "
@@ -525,6 +603,7 @@ RULES = {
     "cci_reversion": _build_cci(cci_reversion),
     "cci_breakout": _build_cci(cci_breakout),
     "cci_mtf": _build_cci_mtf,
+    "oi_confirmed_reversion": _build_oi_confirmed,
 }
 
 # Which rules read the funding series rather than price.  The runner refuses a
@@ -532,6 +611,12 @@ RULES = {
 # funding bar by bar inside the evaluator, so it wants the history too, but for
 # a different reason and with a different message.
 FUNDING_RULES = ("carry_funding", "carry_funding_long")
+
+# Which rules need the open-interest series. The runner loads the panel with
+# it only for these, because the positioning store covers the nine researched
+# symbols and not the other ~470: loading it unconditionally would turn every
+# other symbol into a FileNotFoundError at the door.
+POSITIONING_RULES = ("oi_confirmed_reversion",)
 
 
 def build_signals(cfg, panel, close: np.ndarray | None = None,

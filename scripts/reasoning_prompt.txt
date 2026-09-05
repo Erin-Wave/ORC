@@ -141,8 +141,8 @@ Track A -- TrialConfig fields:
   `gate` is a string: "none", "dip:<drop>:<lookback_days>", or "sma:<days>".
 
 Track B -- SignalTrialConfig fields:
-  rule, lookback_days, enter_rate, exit_rate, timeframe_hours, enter_level, exit_level, filter_timeframe_hours, filter_lookback_days, filter_level, capital, leverage, stop_loss, take_profit, max_hold_days, clock, fee_bps, slippage_bps, cost_multiplier
-  `rule` must be one of: carry_funding, carry_funding_long, cci_breakout, cci_mtf, cci_reversion
+  rule, lookback_days, enter_rate, exit_rate, timeframe_hours, enter_level, exit_level, filter_timeframe_hours, filter_lookback_days, filter_level, oi_drop, capital, leverage, stop_loss, take_profit, max_hold_days, clock, fee_bps, slippage_bps, cost_multiplier
+  `rule` must be one of: carry_funding, carry_funding_long, cci_breakout, cci_mtf, cci_reversion, oi_confirmed_reversion
 
   The carry rules read the funding series and use `enter_rate` / `exit_rate`,
   which are per SETTLEMENT and not annualised.
@@ -158,6 +158,39 @@ Track B -- SignalTrialConfig fields:
   slower than `timeframe_hours`), `filter_level` (must be positive), and
   optionally `filter_lookback_days`; the slow candle decides which side may be
   taken and the fast one triggers a pullback entry inside it.
+
+  `oi_confirmed_reversion` is new on 2026-09-05 and it is the first rule in
+  this project that reads something other than price and funding. It is
+  `cci_reversion` with one extra condition: open interest must have FALLEN by
+  at least `oi_drop` (a positive fraction) over the indicator's own window for
+  a bar to be admissible. It needs `oi_drop` and refuses without it.
+
+  Why that is a different test and not a finer grid. Section 7b says the CCI
+  family is a PARTIAL test because a displaced price is evidence of forced flow
+  rather than a measurement of it, and ordinary aggressive trading displaces
+  price too. Open interest separates them in ONE direction: a forced close
+  reduces it and a new position raises it, so a move on which open interest
+  ROSE cannot be a liquidation cascade whatever the price did. That is
+  refutation, not confirmation, and it is the whole of what the rule adds.
+
+  So it is a PAIR with unconditional `cci_reversion`, the way reversion and
+  breakout are a pair. If the unconditional rule pays and this one does not,
+  what the unconditional rule reads is not forced closing. Say which of those
+  two the claim is about.
+
+  Measured before any of it was registered: on the median symbol open interest
+  fell on 61% of the worst 1% of hourly returns against a 50% baseline. So a
+  binding `oi_drop` should remove a noticeable share of entries, and a level
+  that removes almost none has found a threshold that is not doing anything.
+
+  It is still not the liquidation stream, and a fall in open interest does not
+  prove the closes were compulsory -- a voluntary exit reduces it identically.
+  A claim that says more than "this bar was not a new-position move" is
+  claiming something the data did not measure.
+
+  Positioning is held for the nine researched symbols only, at 5-minute
+  resolution, from 2021-12 (BTCUSDT from 2020-09). A universe naming a symbol
+  without it records the skip rather than a number.
 
 If the shape you want needs a rule or a field that does not exist, say so in
 the claim and propose the closest thing that does exist. A hypothesis the

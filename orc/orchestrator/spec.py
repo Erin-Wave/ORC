@@ -115,6 +115,12 @@ class SignalTrialConfig:
     filter_timeframe_hours: float | None = None
     filter_lookback_days: float | None = None
     filter_level: float = 100.0
+    # How far open interest must FALL over the indicator's own window for a bar
+    # to be admissible, as a positive fraction. None means the rule does not
+    # read positioning; oi_confirmed_reversion refuses without it, because a
+    # discriminator that admits every bar is the unconditional rule wearing a
+    # different name.
+    oi_drop: float | None = None
     capital: float = 10_000.0
     leverage: float = 1.0
     stop_loss: float | None = None       # fraction of margin

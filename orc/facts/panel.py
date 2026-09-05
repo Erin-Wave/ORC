@@ -45,6 +45,12 @@ class Panel:
     funding_settled: np.ndarray
     holdout_state: str
     panel_hash: str
+    # Contracts outstanding, one level per bar, or None when the caller did not
+    # ask for it. Opt-in rather than always loaded because the positioning
+    # store covers the researched symbols and not the other ~470, and a Panel
+    # that silently carried zeros for the rest would be the funding defect
+    # again in a new column.
+    open_interest: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.close.size)
@@ -60,6 +66,16 @@ class Panel:
     def funding_flow(self) -> np.ndarray:
         """P[t] * f[t], the input the analytic evaluator wants."""
         return self.close * self.funding_rate
+
+    def has_positioning(self) -> bool:
+        """Is there an open-interest series on this panel at all?
+
+        None and an array of zeros are different facts, for the same reason
+        has_funding exists: a rule that reads open interest must be refused on
+        a panel that has none, rather than handed a column of zeros it will
+        read as "nobody held a position".
+        """
+        return self.open_interest is not None
 
     def has_funding(self) -> bool:
         # A symbol every one of whose settlements printed 0.0 still has a
@@ -141,6 +157,7 @@ def load(
     development_only: bool = True,
     with_funding: bool = True,
     sealed_only: bool = False,
+    with_positioning: bool = False,
 ) -> Panel:
     """Load one symbol.
 
@@ -220,6 +237,46 @@ def load(
                 _assert_bar_index_is_a_clock(df, symbol, clock)
         fr, settled = funding_rate_per_bar(df["ts"], fund)
 
+    oi = None
+    if with_positioning:
+        # Same rule as funding above, for the same reason: the positioning
+        # store starts 2021-12 for most symbols and 2020-09 for BTCUSDT, while
+        # the panels start earlier. A bar with no reading is not a bar with
+        # zero open interest, and a column of zeros would read to a rule as
+        # "every position was closed" -- the loudest possible signal, from
+        # absence.
+        from orc.facts import positioning
+
+        pos = positioning.load(symbol, development_only=development_only)
+        if pos.height == 0:
+            raise ValueError(f"{symbol}: positioning is empty in the {state} span")
+
+        first = pos["ts"].min()
+        keep = df["ts"] >= first
+        if int(df.height - keep.sum()):
+            df = df.filter(keep)
+            if df.height == 0:
+                raise ValueError(
+                    f"{symbol}: positioning starts at {first}, after every bar "
+                    f"in the {state} span")
+            _assert_bar_index_is_a_clock(df, symbol, clock)
+            if with_funding and funding_path(symbol).exists():
+                fr, settled = funding_rate_per_bar(df["ts"], fund)
+
+        # Open interest is a LEVEL, so each bar takes the last reading inside
+        # it -- the same convention as a close. Readings are every five
+        # minutes; a bar with none carries the previous level forward rather
+        # than a zero, and a leading gap cannot exist because the panel was
+        # just truncated to the first reading.
+        oi = (df.select("ts")
+                .join_asof(pos.select("ts", "open_interest").sort("ts"),
+                           on="ts", strategy="backward")["open_interest"]
+                .to_numpy().astype(np.float64))
+        if not np.all(np.isfinite(oi)):
+            raise ValueError(
+                f"{symbol}: open interest has gaps the panel cannot carry "
+                "forward; the positioning store is incomplete for this span")
+
     close = df["close"].to_numpy().astype(np.float64)
     return Panel(
         symbol=symbol, clock=clock,
@@ -239,9 +296,15 @@ def load(
         # discarded as a duplicate of the old one.
         # The settlement mask is part of the identity: two funding tables
         # can give the same rate array and different settlement counts.
+        # Open interest joins the identity for the same reason the wick did:
+        # a rule that reads it produces different numbers from one that does
+        # not, and two panels that differ only in this column must not collide
+        # on the ledger's UNIQUE key.
         panel_hash=_hash_arrays(close, fr, settled.astype(np.float64),
                                 df["high"].to_numpy().astype(np.float64),
-                                df["low"].to_numpy().astype(np.float64)),
+                                df["low"].to_numpy().astype(np.float64),
+                                oi if oi is not None else np.zeros(0)),
+        open_interest=oi,
     )
 
 

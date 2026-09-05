@@ -26,7 +26,8 @@ from orc.eval.analytic import AnalyticSpec, evaluate, lump_sum_reference
 from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak,
                                simulate)
 from orc.eval.signal import SignalSpec, run_signals
-from orc.eval.signal_rules import FUNDING_RULES, build_signals
+from orc.eval.signal_rules import (FUNDING_RULES, POSITIONING_RULES,
+                                   build_signals)
 from orc.facts import panel as panel_mod
 from orc.facts.panel import Panel
 from orc.kernel import metrics_fc
@@ -216,7 +217,17 @@ def _span(p: Panel, starts: np.ndarray, horizon: int) -> dict:
 
 def run_signal_trial(cfg: "SignalTrialConfig", p: Panel | None = None) -> TrialOutcome:
     """Track B: one equity curve per symbol, judged on fixed-capital ratios."""
-    p = p or panel_mod.load(cfg.symbol, cfg.clock, development_only=True)
+    if p is None:
+        try:
+            p = panel_mod.load(cfg.symbol, cfg.clock, development_only=True,
+                               with_positioning=cfg.rule in POSITIONING_RULES)
+        except FileNotFoundError as exc:
+            # A symbol with no positioning file is not a crash, it is a symbol
+            # this rule cannot be asked about. The ledger records the skip and
+            # the reason, which is information about the universe.
+            if cfg.rule in POSITIONING_RULES:
+                raise UnsupportedConfig(f"no positioning data: {exc}") from exc
+            raise
     if not p.has_funding():
         # Both kinds of rule are refused, for two different reasons.  A carry
         # rule has nothing to read.  A price rule reads price and would run
