@@ -2023,3 +2023,13 @@
 {"utc": "2026-09-05T08:04:18.536086+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T08:04:48.878542+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T08:05:19.226351+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:05:52.843682+00:00", "action": "robustness", "detail": "exit 1: H0001  unconditional_dca_spot_style  (nothing cleared; gating the best cell for the record) |   ETHUSDT    FAIL: cost  UNMEASURED: regime, execution |       cost x2   +nan -> +nan |       walk        in +1.6801  out +1.1169 |       regime      the cell could not be scored in rising and falling |       execution   no minute panel here; certification has to happen locally |     best = max(re", "ok": false, "seconds": 2.4}
+{"utc": "2026-09-05T08:06:23.189504+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:06:53.530386+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:07:23.868943+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:07:54.216858+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:08:24.557185+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:08:54.903687+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:09:25.244863+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:09:55.597600+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:10:25.937451+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
