@@ -1193,6 +1193,41 @@ def test_a_panel_starts_where_its_funding_record_starts(tmp_path, monkeypatch):
     assert len(without) == 200
 
 
+def test_the_long_only_simulator_refuses_a_short_instead_of_answering():
+    """The defect that killed H0015, found by the adversary running the
+    evaluator rather than by anything in the suite.
+
+    simulate is long-only in every line -- `has_pos = act & (qty > 0.0)` gates
+    the liquidation check, is_liquidated scores against the bar LOW, equity is
+    qty * (px - ep) -- and it accepted leverage=-1.0 and answered anyway. qty
+    goes negative, has_pos is False forever, and liquidation is never evaluated
+    once. Measured before the fix, a short DCA held through a 6x rally:
+
+        terminal_multiple  -5.0     an account that lost 5x its capital
+        liquidated         False    and was never closed
+
+    A plausible number for a position that would have been wiped out on the
+    way, which is worse than a refusal. deposit_funded_short_carry came from
+    the scouting notebook rather than from re-arranging a closed family, and
+    this is what it died of.
+
+    Track B carries a side (orc/eval/signal.py: LONG, SHORT, FLAT, and
+    liquidation_level solving both), so a short belongs there.
+    """
+    from orc.eval import signal, simulate as sim
+
+    kw = dict(contribution=100.0, stride_bars=1, n_contributions=1)
+    assert sim.SimSpec(**kw, leverage=1.0).leverage == 1.0
+    assert sim.SimSpec(**kw, leverage=0.25).leverage == 0.25
+
+    for not_a_long in (-1.0, -0.25, 0.0):
+        with pytest.raises(ValueError, match="long-only"):
+            sim.SimSpec(**kw, leverage=not_a_long)
+
+    # And the claim about where a short belongs has to stay true.
+    assert (signal.LONG, signal.SHORT, signal.FLAT) == (1, -1, 0)
+
+
 def test_a_wick_that_did_not_liquidate_still_counts_as_drawdown():
     """kernel_review b29a2f5e1a0d, 2026-09-05, and the one finding of the seven
     that was LIVE rather than latent.

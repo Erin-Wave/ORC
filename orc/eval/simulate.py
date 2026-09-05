@@ -50,6 +50,33 @@ class SimSpec:
     stop_loss: float | None = None        # exit all when pnl/contributed <= -x
     undeployed_counts_as_margin: bool = True
 
+    def __post_init__(self) -> None:
+        # This simulator is long-only and used to answer anyway. Every path
+        # here assumes a long: `has_pos = act & (qty > 0.0)` is the gate on the
+        # liquidation check, `is_liquidated` is scored against the bar's LOW,
+        # and equity is `qty * (px - ep)`. Hand it leverage=-1.0 and qty goes
+        # negative, has_pos is False forever, and liquidation is never
+        # evaluated once -- so a short DCA held through a 6x rally returned
+        # terminal_multiple -5.0 with liquidated False. An account that lost
+        # five times its capital and was never closed.
+        #
+        # That is not "cannot express a short". It is a plausible number for a
+        # position that would have been liquidated on the way, which is the
+        # worst kind of wrong. It killed H0015 (deposit_funded_short_carry) --
+        # a mechanism taken from the scouting notebook, not a re-skin of a
+        # closed family -- and the adversary had to discover it by running the
+        # evaluator rather than by being told.
+        #
+        # Track B expresses shorts properly: orc/eval/signal.py carries
+        # LONG, SHORT, FLAT and liquidation_level() solves both sides, with the
+        # short's unbounded loss called out. A short belongs there.
+        if self.leverage <= 0.0:
+            raise ValueError(
+                f"simulate is long-only and leverage={self.leverage} is not a "
+                "long. It would return a finite terminal value for a position "
+                "that was never checked for liquidation. Use the Track B "
+                "evaluator (orc/eval/signal.py), which carries a side.")
+
     @property
     def entry_cost(self) -> float:
         return (self.fee_bps + self.slippage_bps) / 1e4
