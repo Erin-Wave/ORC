@@ -313,6 +313,57 @@ def test_a_liquidated_position_loses_the_whole_margin():
     assert r["final_equity"] == pytest.approx(0.0)
 
 
+def test_a_liquidation_leaves_nothing_to_open_the_next_trade_with():
+    """The exact case the two implementations disagreed on, pinned.
+
+    docs/PIPELINE.md 10c carried this as UNDECIDED for a day, and every numeric
+    disagreement between run_signals and the independently written oracle
+    traced to it:
+
+        close=[100, 100, 50, ...], leverage 5, long
+        run_signals   equity 1000 -> 0.0,   1 trade,  no further trade
+        reference     equity 1000 -> 40.4,  2 trades, enters on the next signal
+
+    Both are defensible and the difference is 100% of the remaining capital, so
+    the choice had to be written down rather than left to whichever file was
+    read first.  Zero, for the reasons in signal.py: a Binance USD-M
+    liquidation is an IOC order plus a clearance fee and takes the position
+    margin; the residue assumes a fill exactly at the maintenance-margin price,
+    which is the one price a forced order is least likely to get; and KT-2
+    closed leverage above 1x reading `liquidation rate 100% at 2x` as ruin.
+
+    The single-trade tests above already assert equity 0.  They do NOT assert
+    the half that actually separated the two: what happens to the SECOND
+    signal.  Under the residue convention 40.4 goes on trading and the run
+    reports two trades and a different CAGR, Sharpe and drawdown -- with every
+    single-trade assertion still green.
+    """
+    n = 40
+    close = np.full(n, 100.0)
+    high = close.copy()
+    low = close.copy()
+    low[5] = 40.0                         # a wick a 5x long cannot survive
+
+    e = np.zeros(n, dtype=np.int8)
+    # entry[i] fills at close[i+1], so this is filled at 100 on bar 2 and the
+    # wick that kills it arrives three bars later.
+    e[1] = SIG_LONG
+    e[20] = SIG_LONG                      # the signal a residue would take
+    x = np.zeros(n, dtype=bool)
+    x[30] = True
+
+    spec = SignalSpec(capital=1_000.0, leverage=5.0, fee_bps=0.0, slippage_bps=0.0)
+    r = run_signals(close, high, low, e, x, spec, symbol="BTCUSDT")
+
+    assert r["n_liquidations"] == 1
+    assert r["trades"][0]["reason"] == "liquidation"
+    # The half no other test covers, asserted FIRST so a residue convention
+    # fails on the thing that separates it rather than on a number every
+    # single-trade test already checks.
+    assert r["n_trades"] == 1, "a liquidated account traded again"
+    assert r["final_equity"] == pytest.approx(0.0)
+
+
 def test_a_short_squeeze_liquidates_the_short_side():
     n = 30
     close = np.full(n, 100.0)
