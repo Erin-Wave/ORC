@@ -40,11 +40,36 @@ is noise in the one file that is supposed to widen the search.
   update schedules, settlement calendars, and market-maker inventory limits are
   constraints. "Retail is irrational" is not.
 - The payment is MEASURABLE from public market data on this venue. The project
-  holds 1-minute OHLCV bars for roughly 480 Binance USDs-M perpetual symbols
-  from 2019 to 2024, plus the funding rate history and a listing/delisting
-  table. If measuring your mechanism needs the order book, trade prints, open
-  interest, or anything else that is not in that list, say so in
-  `needs_data_we_lack` rather than pretending it is measurable.
+  holds:
+    - 1-minute OHLCV bars for roughly 480 Binance USDs-M perpetual symbols
+      from 2019 to 2024;
+    - the funding rate history;
+    - a listing/delisting table;
+    - and, for the nine symbols under research, POSITIONING at 5-minute
+      resolution from 2021-12 (BTCUSDT from 2020-09): open interest in
+      contracts and in USD, the long/short ratio by account and by position
+      for all accounts and for top accounts, and the taker buy/sell volume
+      ratio.
+
+  Open interest is the newest of these and it changes what is answerable. A
+  forced close and an aggressive open look identical in an OHLCV bar and are
+  opposite in open interest: closing REDUCES it, opening RAISES it. So a
+  mechanism whose flow is compulsory position-CLOSING is now partly testable
+  where before it was not.
+
+  Be careful how much you claim from it. It is not the liquidation stream. A
+  fall in open interest does not prove the closes were compulsory, because a
+  voluntary exit reduces it identically; what it supports cleanly is
+  REFUTATION, since a move on which open interest rises cannot be forced
+  deleveraging whatever the price did. Measured on the development window, the
+  median symbol had open interest falling on only 61% of its worst 1% of
+  hourly returns against a 50% baseline -- so four in ten of the largest drops
+  were not deleveraging at all.
+
+  If measuring your mechanism needs the order book, trade prints, the
+  liquidation or ADL stream, options data, or anything else not in the list
+  above, say so in `needs_data_we_lack` rather than pretending it is
+  measurable.
 - It is SOURCED. Give real URLs you actually read. Exchange documentation,
   regulatory filings, market-microstructure papers, and post-mortems of specific
   events are worth more than commentary. If your only source is your own prior
@@ -73,8 +98,10 @@ Each object has exactly these keys:
   payer                  who pays, one phrase, specific
   why_they_keep_paying   the constraint that makes it durable, two sentences max
   what_would_end_it      the change that would stop the payment
-  observable             what would be visible in 1-minute bars or funding
-                         history if this mechanism is real
+  observable             what would be visible in 1-minute bars, funding
+                         history, or the 5-minute positioning series (open
+                         interest, long/short ratios, taker buy/sell) if this
+                         mechanism is real
   needs_data_we_lack     data required that the project does not hold, or ""
   confidence             high, medium or low
   sources                list of URLs actually read, or ["no source read"]

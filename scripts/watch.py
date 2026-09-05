@@ -38,7 +38,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -101,7 +101,14 @@ def running_scripts(root: Path | None = None) -> list[dict] | None:
         # 모델 CLI는 트리 밖의 실행 파일이라 marker로 걸러지지 않는다.  그것이
         # 바로 감독자가 대부분의 시간을 기다리는 대상이므로, 부모가 ORC
         # 프로세스이면 남긴다 -- 사슬은 아래에서 붙인다.
-        is_model = Path(cmd.split()[0].strip('"')).stem.lower() in ("claude", "codex")
+        # PureWindowsPath, not Path. The line always comes from
+        # Get-CimInstance and is therefore always a Windows command line, but
+        # the SUITE runs on Linux, where Path treats a backslash as an ordinary
+        # character and `.stem` returns the whole path -- so the model CLI was
+        # dropped on the runner and kept here, which is a screen that behaves
+        # differently depending on who is looking at it.
+        exe = PureWindowsPath(cmd.split()[0].strip('"')).stem.lower()
+        is_model = exe in ("claude", "codex")
         if not cmd or (marker not in cmd.lower() and not is_model):
             continue
         # 스크립트 이름만 남긴다: 전체 명령줄은 인터프리터 경로가 대부분이다.
@@ -109,7 +116,7 @@ def running_scripts(root: Path | None = None) -> list[dict] | None:
                        for tok in cmd.split()
                        if tok.strip('"').lower().endswith(".py")), None)
         if script is None:
-            script = Path(cmd.split()[0].strip('"')).stem.lower() if is_model else "?"
+            script = exe if is_model else "?"
             args = ""
         else:
             args = cmd.split(script, 1)[1].strip().strip('"') if script in cmd else ""
