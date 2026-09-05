@@ -1,240 +1,27 @@
 {
   "results": [
     {
-      "hypothesis_id": "H0002",
-      "symbol": "ADAUSDT",
+      "hypothesis_id": "H0019",
+      "symbol": "XRPUSDT",
       "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
       "config": {
-        "symbol": "ADAUSDT",
-        "rule": "carry_funding",
-        "lookback_days": 21.0,
-        "enter_rate": 0.0002,
+        "symbol": "XRPUSDT",
+        "rule": "cci_mtf",
+        "lookback_days": 5.0,
+        "enter_rate": 0.00015,
         "exit_rate": 5e-05,
-        "timeframe_hours": 1.0,
+        "timeframe_hours": 4.0,
         "enter_level": 100.0,
-        "exit_level": 0.0,
-        "filter_timeframe_hours": null,
-        "filter_lookback_days": null,
-        "filter_level": 100.0,
-        "oi_drop": null,
-        "capital": 10000.0,
-        "leverage": 0.25,
-        "stop_loss": 0.1,
-        "take_profit": null,
-        "max_hold_days": 30.0,
-        "clock": "1h",
-        "fee_bps": 4.5,
-        "slippage_bps": 1.0,
-        "cost_multiplier": 1.0
-      },
-      "hourly": {
-        "clock": "1h",
-        "bars": 35776,
-        "cagr": -0.10302266058346865,
-        "max_drawdown": 0.614441139641855,
-        "calmar": -0.1676688846770879,
-        "sharpe": -0.5778972266309015,
-        "total_return": -0.3585481569048875,
-        "years": 4.083904109589041,
-        "n_trades": 23,
-        "n_liquidations": 0,
-        "funding_collected": 1005.9381650599322,
-        "final_equity": 6414.518430951125,
-        "exit_reasons": {
-          "signal": 13,
-          "stop": 10,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "minute": {
-        "clock": "1m",
-        "bars": 2139824,
-        "cagr": -0.08731159013600676,
-        "max_drawdown": 0.5926924606206474,
-        "calmar": -0.1473134820115259,
-        "sharpe": -0.4274011838958602,
-        "total_return": -0.3106098317653875,
-        "years": 4.0712005327245055,
-        "n_trades": 22,
-        "n_liquidations": 0,
-        "funding_collected": 1090.9584077616234,
-        "final_equity": 6893.901682346125,
-        "exit_reasons": {
-          "signal": 13,
-          "stop": 9,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "relative_drift": 0.13370121758070194,
-      "sign_agrees": true,
-      "passed": false
-    },
-    {
-      "hypothesis_id": "H0002",
-      "symbol": "AVAXUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
-      "config": {
-        "symbol": "AVAXUSDT",
-        "rule": "carry_funding",
-        "lookback_days": 60.0,
-        "enter_rate": 0.0002,
-        "exit_rate": 5e-05,
-        "timeframe_hours": 1.0,
-        "enter_level": 100.0,
-        "exit_level": 0.0,
-        "filter_timeframe_hours": null,
-        "filter_lookback_days": null,
-        "filter_level": 100.0,
-        "oi_drop": null,
-        "capital": 10000.0,
-        "leverage": 0.25,
-        "stop_loss": 0.1,
-        "take_profit": null,
-        "max_hold_days": null,
-        "clock": "1h",
-        "fee_bps": 4.5,
-        "slippage_bps": 1.0,
-        "cost_multiplier": 1.0
-      },
-      "hourly": {
-        "clock": "1h",
-        "bars": 30113,
-        "cagr": -0.021711079219634333,
-        "max_drawdown": 0.3548145396822362,
-        "calmar": -0.06118993668939914,
-        "sharpe": -0.1224547436622584,
-        "total_return": -0.0726763817044952,
-        "years": 3.437442922374429,
-        "n_trades": 5,
-        "n_liquidations": 0,
-        "funding_collected": 607.8331009962734,
-        "final_equity": 9273.236182955048,
-        "exit_reasons": {
-          "signal": 2,
-          "stop": 3,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "minute": {
-        "clock": "1m",
-        "bars": 1806340,
-        "cagr": -0.014654725029535576,
-        "max_drawdown": 0.3566524087238613,
-        "calmar": -0.04108965668273958,
-        "sharpe": -0.07934573821730011,
-        "total_return": -0.04947122102292956,
-        "years": 3.4367180365296806,
-        "n_trades": 5,
-        "n_liquidations": 0,
-        "funding_collected": 614.166559561701,
-        "final_equity": 9505.287789770704,
-        "exit_reasons": {
-          "signal": 2,
-          "stop": 3,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "relative_drift": 0.3192943861173313,
-      "sign_agrees": true,
-      "passed": false
-    },
-    {
-      "hypothesis_id": "H0002",
-      "symbol": "BNBUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
-      "config": {
-        "symbol": "BNBUSDT",
-        "rule": "carry_funding",
-        "lookback_days": 7.0,
-        "enter_rate": 0.0001,
-        "exit_rate": 5e-05,
-        "timeframe_hours": 1.0,
-        "enter_level": 100.0,
-        "exit_level": 0.0,
-        "filter_timeframe_hours": null,
-        "filter_lookback_days": null,
-        "filter_level": 100.0,
-        "oi_drop": null,
-        "capital": 10000.0,
-        "leverage": 0.25,
-        "stop_loss": null,
-        "take_profit": null,
-        "max_hold_days": null,
-        "clock": "1h",
-        "fee_bps": 4.5,
-        "slippage_bps": 1.0,
-        "cost_multiplier": 1.0
-      },
-      "hourly": {
-        "clock": "1h",
-        "bars": 35536,
-        "cagr": -0.07440563377687759,
-        "max_drawdown": 0.5957936233941084,
-        "calmar": -0.12488491124326687,
-        "sharpe": -0.2484520005203009,
-        "total_return": -0.2692221928141152,
-        "years": 4.056506849315069,
-        "n_trades": 17,
-        "n_liquidations": 0,
-        "funding_collected": 1312.2253439799301,
-        "final_equity": 7307.778071858848,
-        "exit_reasons": {
-          "signal": 17,
-          "stop": 0,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "minute": {
-        "clock": "1m",
-        "bars": 2131347,
-        "cagr": -0.07723397417695832,
-        "max_drawdown": 0.6346784563369199,
-        "calmar": -0.12168992567152549,
-        "sharpe": -0.23513659596977476,
-        "total_return": -0.2781550881534999,
-        "years": 4.055072298325723,
-        "n_trades": 17,
-        "n_liquidations": 0,
-        "funding_collected": 1331.0104994905616,
-        "final_equity": 7218.449118465001,
-        "exit_reasons": {
-          "signal": 17,
-          "stop": 0,
-          "take_profit": 0,
-          "liquidation": 0
-        }
-      },
-      "relative_drift": 0.03318038251605956,
-      "sign_agrees": true,
-      "passed": true
-    },
-    {
-      "hypothesis_id": "H0002",
-      "symbol": "BTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
-      "config": {
-        "symbol": "BTCUSDT",
-        "rule": "carry_funding",
-        "lookback_days": 21.0,
-        "enter_rate": 0.0002,
-        "exit_rate": 5e-05,
-        "timeframe_hours": 1.0,
-        "enter_level": 100.0,
-        "exit_level": 0.0,
-        "filter_timeframe_hours": null,
-        "filter_lookback_days": null,
-        "filter_level": 100.0,
+        "exit_level": 50.0,
+        "filter_timeframe_hours": 48.0,
+        "filter_lookback_days": 20.0,
+        "filter_level": 60.0,
         "oi_drop": null,
         "capital": 10000.0,
         "leverage": 1.0,
-        "stop_loss": null,
+        "stop_loss": 0.25,
         "take_profit": null,
-        "max_hold_days": 7.0,
+        "max_hold_days": 5.0,
         "clock": "1h",
         "fee_bps": 4.5,
         "slippage_bps": 1.0,
@@ -242,58 +29,58 @@
       },
       "hourly": {
         "clock": "1h",
-        "bars": 36504,
-        "cagr": 0.1550461397918077,
-        "max_drawdown": 0.5897245242442437,
-        "calmar": 0.2629128235602983,
-        "sharpe": 0.3610382890904275,
-        "total_return": 0.8232742243393087,
-        "years": 4.167009132420091,
-        "n_trades": 47,
+        "bars": 36376,
+        "cagr": 0.13484654344818248,
+        "max_drawdown": 0.3861250502846,
+        "calmar": 0.3492302386203422,
+        "sharpe": 0.3506714542282595,
+        "total_return": 0.6909112995035338,
+        "years": 4.152397260273973,
+        "n_trades": 127,
         "n_liquidations": 0,
-        "funding_collected": 4656.469398954087,
-        "final_equity": 18232.742243393088,
+        "funding_collected": 116.26920304163508,
+        "final_equity": 16909.11299503534,
         "exit_reasons": {
-          "signal": 47,
-          "stop": 0,
+          "signal": 124,
+          "stop": 3,
           "take_profit": 0,
           "liquidation": 0
         }
       },
       "minute": {
         "clock": "1m",
-        "bars": 2190096,
-        "cagr": 0.08029108376290317,
-        "max_drawdown": 0.682314314034931,
-        "calmar": 0.11767462899626736,
-        "sharpe": 0.17079575967113805,
-        "total_return": 0.37961961637079233,
-        "years": 4.1668474124809745,
-        "n_trades": 47,
+        "bars": 2182155,
+        "cagr": 0.1655131872719673,
+        "max_drawdown": 0.550381973409503,
+        "calmar": 0.3007242156690692,
+        "sharpe": 0.38035865220902826,
+        "total_return": 0.8886958096520092,
+        "years": 4.15173896499239,
+        "n_trades": 129,
         "n_liquidations": 0,
-        "funding_collected": 4194.478440786324,
-        "final_equity": 13796.196163707924,
+        "funding_collected": 173.11312172383475,
+        "final_equity": 18886.95809652009,
         "exit_reasons": {
-          "signal": 47,
-          "stop": 0,
+          "signal": 125,
+          "stop": 4,
           "take_profit": 0,
           "liquidation": 0
         }
       },
-      "relative_drift": 0.5388904387533286,
+      "relative_drift": 0.2862661390696561,
       "sign_agrees": true,
       "passed": false
     },
     {
       "hypothesis_id": "H0002",
       "symbol": "DOGEUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "unmeasurable": "ValueError: DOGEUSDT: 0.736% of 1m bars are missing (limit 0.5%); bar index is not a reliable clock"
     },
     {
       "hypothesis_id": "H0002",
       "symbol": "ETHUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ETHUSDT",
         "rule": "carry_funding",
@@ -364,7 +151,7 @@
     {
       "hypothesis_id": "H0002",
       "symbol": "LTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "LTCUSDT",
         "rule": "carry_funding",
@@ -435,7 +222,7 @@
     {
       "hypothesis_id": "H0002",
       "symbol": "SOLUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "SOLUSDT",
         "rule": "carry_funding",
@@ -506,7 +293,7 @@
     {
       "hypothesis_id": "H0002",
       "symbol": "XRPUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "XRPUSDT",
         "rule": "carry_funding",
@@ -577,7 +364,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "ADAUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ADAUSDT",
         "rule": "carry_funding_long",
@@ -648,7 +435,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "AVAXUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "AVAXUSDT",
         "rule": "carry_funding_long",
@@ -719,7 +506,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "BNBUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BNBUSDT",
         "rule": "carry_funding_long",
@@ -790,7 +577,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "BTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BTCUSDT",
         "rule": "carry_funding_long",
@@ -861,13 +648,13 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "DOGEUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "unmeasurable": "ValueError: DOGEUSDT: 0.736% of 1m bars are missing (limit 0.5%); bar index is not a reliable clock"
     },
     {
       "hypothesis_id": "H0006",
       "symbol": "ETHUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ETHUSDT",
         "rule": "carry_funding_long",
@@ -938,7 +725,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "LTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "LTCUSDT",
         "rule": "carry_funding_long",
@@ -1009,7 +796,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "SOLUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "SOLUSDT",
         "rule": "carry_funding_long",
@@ -1080,7 +867,7 @@
     {
       "hypothesis_id": "H0006",
       "symbol": "XRPUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "XRPUSDT",
         "rule": "carry_funding_long",
@@ -1151,7 +938,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "ADAUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ADAUSDT",
         "rule": "cci_breakout",
@@ -1222,7 +1009,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "AVAXUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "AVAXUSDT",
         "rule": "cci_breakout",
@@ -1293,7 +1080,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "BNBUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BNBUSDT",
         "rule": "cci_breakout",
@@ -1364,7 +1151,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "BTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BTCUSDT",
         "rule": "cci_breakout",
@@ -1435,13 +1222,13 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "DOGEUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "unmeasurable": "ValueError: DOGEUSDT: 0.736% of 1m bars are missing (limit 0.5%); bar index is not a reliable clock"
     },
     {
       "hypothesis_id": "H0017",
       "symbol": "ETHUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ETHUSDT",
         "rule": "cci_breakout",
@@ -1512,7 +1299,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "LTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "LTCUSDT",
         "rule": "cci_reversion",
@@ -1583,7 +1370,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "SOLUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "SOLUSDT",
         "rule": "cci_breakout",
@@ -1654,7 +1441,7 @@
     {
       "hypothesis_id": "H0017",
       "symbol": "XRPUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "XRPUSDT",
         "rule": "cci_breakout",
@@ -1725,7 +1512,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "ADAUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ADAUSDT",
         "rule": "cci_mtf",
@@ -1796,7 +1583,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "AVAXUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "AVAXUSDT",
         "rule": "cci_mtf",
@@ -1867,7 +1654,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "BNBUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BNBUSDT",
         "rule": "cci_mtf",
@@ -1938,7 +1725,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "BTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "BTCUSDT",
         "rule": "cci_mtf",
@@ -2009,13 +1796,13 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "DOGEUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "unmeasurable": "ValueError: DOGEUSDT: 0.736% of 1m bars are missing (limit 0.5%); bar index is not a reliable clock"
     },
     {
       "hypothesis_id": "H0019",
       "symbol": "ETHUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "ETHUSDT",
         "rule": "cci_mtf",
@@ -2086,7 +1873,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "LTCUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "LTCUSDT",
         "rule": "cci_mtf",
@@ -2157,7 +1944,7 @@
     {
       "hypothesis_id": "H0019",
       "symbol": "SOLUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "code_hash": "db2469078c543a9a2e637681be9002f1b115375b6a00cf738670e7a76f311be1",
       "config": {
         "symbol": "SOLUSDT",
         "rule": "cci_mtf",
@@ -2226,27 +2013,27 @@
       "passed": false
     },
     {
-      "hypothesis_id": "H0019",
-      "symbol": "XRPUSDT",
-      "code_hash": "f0595299314d495dbf02ffa36d93df47102cb35d9de28cb5fc8ccfe94516b359",
+      "hypothesis_id": "H0002",
+      "symbol": "ADAUSDT",
+      "code_hash": "e2b475bb06f65177bd74dc645471ed992be1b3e745fb9b7926a6d8f91a259210",
       "config": {
-        "symbol": "XRPUSDT",
-        "rule": "cci_mtf",
-        "lookback_days": 5.0,
-        "enter_rate": 0.00015,
+        "symbol": "ADAUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 21.0,
+        "enter_rate": 0.0002,
         "exit_rate": 5e-05,
-        "timeframe_hours": 4.0,
+        "timeframe_hours": 1.0,
         "enter_level": 100.0,
-        "exit_level": 50.0,
-        "filter_timeframe_hours": 48.0,
-        "filter_lookback_days": 20.0,
-        "filter_level": 60.0,
+        "exit_level": 0.0,
+        "filter_timeframe_hours": null,
+        "filter_lookback_days": null,
+        "filter_level": 100.0,
         "oi_drop": null,
         "capital": 10000.0,
-        "leverage": 1.0,
-        "stop_loss": 0.25,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
         "take_profit": null,
-        "max_hold_days": 5.0,
+        "max_hold_days": 30.0,
         "clock": "1h",
         "fee_bps": 4.5,
         "slippage_bps": 1.0,
@@ -2254,19 +2041,90 @@
       },
       "hourly": {
         "clock": "1h",
-        "bars": 36376,
-        "cagr": 0.13484654344818248,
-        "max_drawdown": 0.3861250502846,
-        "calmar": 0.3492302386203422,
-        "sharpe": 0.3506714542282595,
-        "total_return": 0.6909112995035338,
-        "years": 4.152397260273973,
-        "n_trades": 127,
+        "bars": 35776,
+        "cagr": -0.10302266058346865,
+        "max_drawdown": 0.614441139641855,
+        "calmar": -0.1676688846770879,
+        "sharpe": -0.5778972266309015,
+        "total_return": -0.3585481569048875,
+        "years": 4.083904109589041,
+        "n_trades": 23,
         "n_liquidations": 0,
-        "funding_collected": 116.26920304163508,
-        "final_equity": 16909.11299503534,
+        "funding_collected": 1005.9381650599322,
+        "final_equity": 6414.518430951125,
         "exit_reasons": {
-          "signal": 124,
+          "signal": 3,
+          "stop": 10,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "minute": {
+        "clock": "1m",
+        "bars": 2139824,
+        "cagr": -0.08731159013600676,
+        "max_drawdown": 0.5926924606206474,
+        "calmar": -0.1473134820115259,
+        "sharpe": -0.4274011838958602,
+        "total_return": -0.3106098317653875,
+        "years": 4.0712005327245055,
+        "n_trades": 22,
+        "n_liquidations": 0,
+        "funding_collected": 1090.9584077616234,
+        "final_equity": 6893.901682346125,
+        "exit_reasons": {
+          "signal": 3,
+          "stop": 9,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "relative_drift": 0.13370121758070194,
+      "sign_agrees": true,
+      "passed": false
+    },
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "AVAXUSDT",
+      "code_hash": "e2b475bb06f65177bd74dc645471ed992be1b3e745fb9b7926a6d8f91a259210",
+      "config": {
+        "symbol": "AVAXUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 60.0,
+        "enter_rate": 0.0002,
+        "exit_rate": 5e-05,
+        "timeframe_hours": 1.0,
+        "enter_level": 100.0,
+        "exit_level": 0.0,
+        "filter_timeframe_hours": null,
+        "filter_lookback_days": null,
+        "filter_level": 100.0,
+        "oi_drop": null,
+        "capital": 10000.0,
+        "leverage": 0.25,
+        "stop_loss": 0.1,
+        "take_profit": null,
+        "max_hold_days": null,
+        "clock": "1h",
+        "fee_bps": 4.5,
+        "slippage_bps": 1.0,
+        "cost_multiplier": 1.0
+      },
+      "hourly": {
+        "clock": "1h",
+        "bars": 30113,
+        "cagr": -0.021711079219634333,
+        "max_drawdown": 0.3548145396822362,
+        "calmar": -0.06118993668939914,
+        "sharpe": -0.1224547436622584,
+        "total_return": -0.0726763817044952,
+        "years": 3.437442922374429,
+        "n_trades": 5,
+        "n_liquidations": 0,
+        "funding_collected": 607.8331009962734,
+        "final_equity": 9273.236182955048,
+        "exit_reasons": {
+          "signal": 2,
           "stop": 3,
           "take_profit": 0,
           "liquidation": 0
@@ -2274,25 +2132,167 @@
       },
       "minute": {
         "clock": "1m",
-        "bars": 2182155,
-        "cagr": 0.1655131872719673,
-        "max_drawdown": 0.550381973409503,
-        "calmar": 0.3007242156690692,
-        "sharpe": 0.38035865220902826,
-        "total_return": 0.8886958096520092,
-        "years": 4.15173896499239,
-        "n_trades": 129,
+        "bars": 1806340,
+        "cagr": -0.014654725029535576,
+        "max_drawdown": 0.3566524087238613,
+        "calmar": -0.04108965668273958,
+        "sharpe": -0.07934573821730011,
+        "total_return": -0.04947122102292956,
+        "years": 3.4367180365296806,
+        "n_trades": 5,
         "n_liquidations": 0,
-        "funding_collected": 173.11312172383475,
-        "final_equity": 18886.95809652009,
+        "funding_collected": 614.166559561701,
+        "final_equity": 9505.287789770704,
         "exit_reasons": {
-          "signal": 125,
-          "stop": 4,
+          "signal": 2,
+          "stop": 3,
           "take_profit": 0,
           "liquidation": 0
         }
       },
-      "relative_drift": 0.2862661390696561,
+      "relative_drift": 0.3192943861173313,
+      "sign_agrees": true,
+      "passed": false
+    },
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "BNBUSDT",
+      "code_hash": "e2b475bb06f65177bd74dc645471ed992be1b3e745fb9b7926a6d8f91a259210",
+      "config": {
+        "symbol": "BNBUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 7.0,
+        "enter_rate": 0.0001,
+        "exit_rate": 5e-05,
+        "timeframe_hours": 1.0,
+        "enter_level": 100.0,
+        "exit_level": 0.0,
+        "filter_timeframe_hours": null,
+        "filter_lookback_days": null,
+        "filter_level": 100.0,
+        "oi_drop": null,
+        "capital": 10000.0,
+        "leverage": 0.25,
+        "stop_loss": null,
+        "take_profit": null,
+        "max_hold_days": null,
+        "clock": "1h",
+        "fee_bps": 4.5,
+        "slippage_bps": 1.0,
+        "cost_multiplier": 1.0
+      },
+      "hourly": {
+        "clock": "1h",
+        "bars": 35536,
+        "cagr": -0.07440563377687759,
+        "max_drawdown": 0.5957936233941084,
+        "calmar": -0.12488491124326687,
+        "sharpe": -0.2484520005203009,
+        "total_return": -0.2692221928141152,
+        "years": 4.056506849315069,
+        "n_trades": 17,
+        "n_liquidations": 0,
+        "funding_collected": 1312.2253439799301,
+        "final_equity": 7307.778071858848,
+        "exit_reasons": {
+          "signal": 17,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "minute": {
+        "clock": "1m",
+        "bars": 2131347,
+        "cagr": -0.07723397417695832,
+        "max_drawdown": 0.6346784563369199,
+        "calmar": -0.12168992567152549,
+        "sharpe": -0.23513659596977476,
+        "total_return": -0.2781550881534999,
+        "years": 4.055072298325723,
+        "n_trades": 17,
+        "n_liquidations": 0,
+        "funding_collected": 1331.0104994905616,
+        "final_equity": 7218.449118465001,
+        "exit_reasons": {
+          "signal": 17,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "relative_drift": 0.03318038251605956,
+      "sign_agrees": true,
+      "passed": true
+    },
+    {
+      "hypothesis_id": "H0002",
+      "symbol": "BTCUSDT",
+      "code_hash": "e2b475bb06f65177bd74dc645471ed992be1b3e745fb9b7926a6d8f91a259210",
+      "config": {
+        "symbol": "BTCUSDT",
+        "rule": "carry_funding",
+        "lookback_days": 21.0,
+        "enter_rate": 0.0002,
+        "exit_rate": 5e-05,
+        "timeframe_hours": 1.0,
+        "enter_level": 100.0,
+        "exit_level": 0.0,
+        "filter_timeframe_hours": null,
+        "filter_lookback_days": null,
+        "filter_level": 100.0,
+        "oi_drop": null,
+        "capital": 10000.0,
+        "leverage": 1.0,
+        "stop_loss": null,
+        "take_profit": null,
+        "max_hold_days": 7.0,
+        "clock": "1h",
+        "fee_bps": 4.5,
+        "slippage_bps": 1.0,
+        "cost_multiplier": 1.0
+      },
+      "hourly": {
+        "clock": "1h",
+        "bars": 36504,
+        "cagr": 0.1550461397918077,
+        "max_drawdown": 0.5897245242442437,
+        "calmar": 0.2629128235602983,
+        "sharpe": 0.3610382890904275,
+        "total_return": 0.8232742243393087,
+        "years": 4.167009132420091,
+        "n_trades": 47,
+        "n_liquidations": 0,
+        "funding_collected": 4656.469398954087,
+        "final_equity": 18232.742243393088,
+        "exit_reasons": {
+          "signal": 1,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "minute": {
+        "clock": "1m",
+        "bars": 2190096,
+        "cagr": 0.08029108376290317,
+        "max_drawdown": 0.682314314034931,
+        "calmar": 0.11767462899626736,
+        "sharpe": 0.17079575967113805,
+        "total_return": 0.37961961637079233,
+        "years": 4.1668474124809745,
+        "n_trades": 47,
+        "n_liquidations": 0,
+        "funding_collected": 4194.478440786324,
+        "final_equity": 13796.196163707924,
+        "exit_reasons": {
+          "signal": 1,
+          "stop": 0,
+          "take_profit": 0,
+          "liquidation": 0
+        }
+      },
+      "relative_drift": 0.5388904387533286,
       "sign_agrees": true,
       "passed": false
     }

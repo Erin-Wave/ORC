@@ -1549,7 +1549,8 @@ def test_a_panel_with_no_funding_history_refuses_rather_than_charging_zero(
     assert not p.has_funding()
 
 
-def test_a_final_test_cannot_read_positioning_from_before_the_seal(monkeypatch):
+def test_a_final_test_cannot_read_positioning_from_before_the_seal(tmp_path,
+                                                                   monkeypatch):
     """kernel_review 2026-09-05, also in an hour-old fix.
 
     load() refuses sealed_only together with development_only=False, so on the
@@ -1563,8 +1564,24 @@ def test_a_final_test_cannot_read_positioning_from_before_the_seal(monkeypatch):
     project and none has been used, so the sealed positioning path gets built
     when a candidate actually needs it.
     """
-    from orc import holdout
+    import polars as pl
+
+    from orc import config, holdout
     from orc.facts import panel as panel_mod
+
+    # A synthetic panel, not the real archive. The first version of this test
+    # loaded BTCUSDT and passed here and failed on the runner, which has no
+    # facts/ -- docs/PIPELINE.md section 4 item 1 warns about exactly that and
+    # I had not run the check it prescribes.
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    (tmp_path / "panel_1h").mkdir()
+    n = 120
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(60, "h")
+    ts = start + np.arange(n) * np.timedelta64(1, "h")
+    px = np.full(n, 100.0)
+    pl.DataFrame({"ts": ts.astype("datetime64[ms]"), "open": px, "high": px,
+                  "low": px, "close": px, "volume": np.ones(n)}
+                 ).write_parquet(tmp_path / "panel_1h" / "TESTUSDT.parquet")
 
     # Inside an open final test the seal gate passes and this check is what
     # stands between a stale column and an opening that cannot be taken back.
@@ -1572,7 +1589,8 @@ def test_a_final_test_cannot_read_positioning_from_before_the_seal(monkeypatch):
     monkeypatch.setattr(holdout, "note_sealed_read", lambda what: None)
 
     with pytest.raises(ValueError, match="not wired"):
-        panel_mod.load("BTCUSDT", "1h", sealed_only=True, with_positioning=True)
+        panel_mod.load("TESTUSDT", "1h", sealed_only=True,
+                       with_positioning=True, with_funding=False)
 
 
 def test_a_closed_family_does_not_get_the_wide_ceiling():
