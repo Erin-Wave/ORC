@@ -3157,3 +3157,39 @@ def test_the_read_only_steps_run_in_their_own_checkout():
     # A write inside a sandbox is ATTRIBUTED, not inferred -- that is the whole
     # difference, and the record has to say so.
     assert '"attribution": "attributed"' in src
+
+
+def test_every_scoring_path_loads_the_panel_the_rule_needs():
+    """scripts/diff_adversary.py, first real payload, 2026-09-05.
+
+    Every panel load in surface.py was positioning-blind, so a rule that reads
+    open interest produced a trial and then failed in every path that SCORES
+    it: the PBO split, the search-test null and the drawdown measurement. The
+    reviewer's worst case, in its words: "a recorded oi_confirmed_reversion
+    CAGR/Calmar presented alongside a PBO or search-test number computed for
+    other configurations, or retained from an earlier surface".
+
+    Found by codex reading a diff Claude had written and shipped that morning,
+    on a suite that was green. It is the first thing the gate caught and the
+    argument for having it.
+    """
+    from orc.orchestrator import surface
+
+    src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
+           / "surface.py").read_text(encoding="utf-8")
+
+    assert "_needs_positioning" in src
+    # The null panel cache must key on it too: two scorers in one worker asking
+    # for the same (symbol, clock) want different panels when one reads open
+    # interest, and a dict that ignored that would reintroduce the defect.
+    assert "key = (symbol, clock, positioning)" in src
+
+    class _C:
+        rule = "oi_confirmed_reversion"
+
+    class _D:
+        rule = "cci_reversion"
+
+    assert surface._needs_positioning([_D(), _C()]) is True
+    assert surface._needs_positioning([_D()]) is False
+    assert surface._needs_positioning([]) is False

@@ -128,6 +128,24 @@ def drawdown_for(cfg, p=None) -> float | None:
     return float(np.median(out["max_dd_total"]))
 
 
+
+def _needs_positioning(cfgs) -> bool:
+    """Does any configuration here read the open-interest series?
+
+    Every panel load in this module used to be positioning-blind, so a rule
+    that reads open interest could produce a trial and then fail in every path
+    that scores it: the PBO split, the search-test null and the drawdown
+    measurement all called panel.load without it. The result would have been a
+    recorded CAGR beside a PBO computed on other configurations or carried over
+    from an earlier surface.
+
+    Found by scripts/diff_adversary.py on its first real payload -- codex
+    reading a diff Claude had written and shipped that morning.
+    """
+    from orc.eval.signal_rules import POSITIONING_RULES
+    return any(getattr(c, "rule", None) in POSITIONING_RULES for c in cfgs)
+
+
 def surface_from_ledger(h: Hypothesis, metric: str | None = None) -> dict:
     """Assemble the metric over the hypothesis grid, per symbol.
 
@@ -328,6 +346,9 @@ def pbo_for_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
     Only the closed-form-evaluable configurations are used: they share an exact,
     dense start-date grid, which is what makes the columns comparable.
     """
+    # No with_positioning here and it is not an oversight: this path filters to
+    # `uses_analytic`, which is Track A only, and every rule that reads open
+    # interest is Track B.
     p = panel_mod.load(symbol, "1h", development_only=True)
     configs = [c for c in h.expand() if c.symbol == symbol and c.uses_analytic]
     if len(configs) < 2:
@@ -451,8 +472,9 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
     from orc.eval.signal import SignalSpec, run_signals
     from orc.eval.signal_rules import build_signals
 
-    p = panel_mod.load(symbol, "1h", development_only=True)
     configs = [c for c in h.expand() if c.symbol == symbol]
+    p = panel_mod.load(symbol, "1h", development_only=True,
+                       with_positioning=_needs_positioning(configs))
     if len(configs) < 2:
         return {"symbol": symbol, "status": "fewer than two configurations"}
 
@@ -514,10 +536,16 @@ def pbo_for_signal_hypothesis(h: Hypothesis, symbol: str, n_blocks: int = 10,
 _NULL_PANELS: dict[tuple[str, str], object] = {}
 
 
-def _null_panel(symbol: str, clock: str):
-    key = (symbol, clock)
+def _null_panel(symbol: str, clock: str, positioning: bool = False):
+    # `positioning` is part of the CACHE KEY, not just the load. Two scorers in
+    # one worker asking for the same (symbol, clock) want different panels when
+    # one of them reads open interest, and handing back the first one cached
+    # would give a positioning rule a panel with open_interest None -- which is
+    # the failure this whole change is about, reintroduced by a dict.
+    key = (symbol, clock, positioning)
     if key not in _NULL_PANELS:
-        _NULL_PANELS[key] = panel_mod.load(symbol, clock, development_only=True)
+        _NULL_PANELS[key] = panel_mod.load(symbol, clock, development_only=True,
+                                           with_positioning=positioning)
     return _NULL_PANELS[key]
 
 
@@ -541,7 +569,8 @@ class _TrackANullScorer:
 
     def __call__(self, close) -> float:
         from orc.orchestrator.runner import mwrr_q05_on_path
-        p = _null_panel(self.symbol, self.clock)
+        p = _null_panel(self.symbol, self.clock,
+                        _needs_positioning(self.configs))
         best = -np.inf
         for cfg in self.configs:
             v = mwrr_q05_on_path(cfg, p, close)
@@ -562,7 +591,8 @@ class _TrackBNullScorer:
         from orc.eval.signal_rules import build_signals
         from orc.kernel import metrics_fc
 
-        p = _null_panel(self.symbol, self.clock)
+        p = _null_panel(self.symbol, self.clock,
+                        _needs_positioning(self.configs))
         hi, lo = close * 1.0, close * 1.0            # a bootstrap has no wick
         best = -np.inf
         for cfg in self.configs:
@@ -625,7 +655,8 @@ def search_test_for(h: Hypothesis, symbol: str, observed_best: float) -> dict:
                           "cannot be annualised for all of them"}
     clock = clocks.pop()
 
-    p = panel_mod.load(symbol, clock, development_only=True)
+    p = panel_mod.load(symbol, clock, development_only=True,
+                       with_positioning=_needs_positioning(configs))
 
     # A scorer OBJECT rather than a closure, because best_of_g runs these on a
     # process pool and a closure cannot be pickled.  Neither holds the panel:
