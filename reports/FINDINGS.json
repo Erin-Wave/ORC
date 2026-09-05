@@ -3235,6 +3235,19 @@
       "first_seen_utc": "2026-09-05T08:52:17.215150+00:00",
       "last_seen_utc": "2026-09-05T08:52:17.215150+00:00",
       "disposition": ""
+    },
+    "235ef78bf88b": {
+      "file": "oracle/fuzz.py",
+      "line": 1,
+      "severity": "low",
+      "what": "All five first-run disagreements between run_signals and the codex reference trace to ONE unspecified semantic: what a liquidation leaves in the wallet. With no liquidation in the window the two agree exactly -- same trades, same bars, equity identical to 0.00e+00 relative -- and differ only in the label for the last open position at the end of the series (signal vs end) and for a max_hold exit. The apparent entry-timing differences (fast=57 ref=56) are downstream: a liquidation at a different bar frees a different bar for the next entry.",
+      "trigger": "30 bars, entries at 2/10/18, exits at 6/14, leverage 1, no liquidation: fast and ref both give [(3,7),(11,15),(19,29)] with max equity difference 0.00e+00.",
+      "fix": "Decide the liquidation residue (the high finding on oracle/BRIEF.md) and the two exit labels; the oracle should then be clean and can be made a hard gate instead of continue-on-error.",
+      "id": "235ef78bf88b",
+      "status": "open",
+      "first_seen_utc": "2026-09-05T09:10:07.593665+00:00",
+      "last_seen_utc": "2026-09-05T09:10:07.593665+00:00",
+      "disposition": ""
     }
   }
 }

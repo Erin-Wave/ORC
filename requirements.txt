@@ -6,3 +6,7 @@ pyarrow>=15.0
 scipy>=1.11
 requests>=2.31
 pytest>=8.0
+
+# Property-based tests: the suite catches the defect it was told about, and
+# these catch the class. hypothesis generates the inputs nobody thought of.
+hypothesis>=6.100

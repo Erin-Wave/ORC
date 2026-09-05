@@ -1626,3 +1626,102 @@ def test_a_start_cannot_be_valued_before_it_opens():
     assert ok["n_starts"] > 0
     assert np.all(ok["end_idx"] > ok["start_idx"])
     assert np.all(ok["end_idx"] < close.size)
+
+
+# --------------------------------------------------------------------------
+# properties, not examples — 2026-09-05
+#
+# Seventeen high findings were found on a green suite in one day, and every
+# test that now covers them was written AFTER a review said what was wrong. A
+# test written to a known defect proves nothing about the next one: it is a
+# lagging indicator by construction.
+#
+# These check a PROPERTY over generated inputs instead. The drawdown defect
+# (b29a2f5e1a0d) died to the second one below, which nobody had to know about
+# in advance -- that is the difference.
+# --------------------------------------------------------------------------
+from hypothesis import HealthCheck, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
+
+_PRICES = st.lists(st.floats(min_value=1.0, max_value=1e5,
+                             allow_nan=False, allow_infinity=False),
+                   min_size=30, max_size=200)
+
+_SLOW = settings(max_examples=60, deadline=None,
+                 suppress_health_check=[HealthCheck.too_slow])
+
+
+@_SLOW
+@given(_PRICES)
+def test_property_drawdown_never_shrinks_when_the_wick_is_added(px):
+    """A low below the close can only DEEPEN a drawdown, never lift it.
+
+    This is the property b29a2f5e1a0d violated: simulate marked drawdown on
+    close alone while reading low for liquidation, so a -40% wick that did not
+    liquidate scored 0.0000. Nobody had to know that to write this line.
+    """
+    from orc.eval import simulate as sim
+
+    close = np.asarray(px, dtype=np.float64)
+    spec = sim.SimSpec(contribution=100.0, stride_bars=1, n_contributions=1,
+                       hold_bars=len(close) - 2, leverage=1.0, fee_bps=0.0,
+                       slippage_bps=0.0, exit_fee_bps=0.0)
+    starts = np.array([0])
+
+    flat = sim.simulate(close, close, starts, spec)["max_dd_total"][0]
+    wicked = sim.simulate(close, close * 0.9, starts, spec)["max_dd_total"][0]
+    assert wicked >= flat - 1e-12, (
+        f"a lower low reduced the drawdown: {flat} -> {wicked}")
+
+    # `>=` alone is satisfied by EQUALITY, which is exactly what a
+    # close-only marking produces -- the first version of this property passed
+    # against the mutation it was written for. A low ten percent under every
+    # close means the position was ten percent under water at some point, so
+    # the drawdown on invested capital cannot be less than that.
+    assert wicked >= 0.10 - 1e-6, (
+        f"a low 10% below every close produced a drawdown of {wicked}; the "
+        "wick is not reaching the drawdown at all")
+
+
+@_SLOW
+@given(_PRICES, st.floats(min_value=0.0, max_value=50.0))
+def test_property_higher_costs_never_improve_a_result(px, fee):
+    """Charging more can only make an outcome worse. A cost path that ever
+    improves one is charging it with the wrong sign somewhere."""
+    from orc.eval.analytic import AnalyticSpec, evaluate
+
+    close = np.asarray(px, dtype=np.float64)
+    kw = dict(contribution=100.0, stride_bars=1, n_contributions=3,
+              hold_bars=5, slippage_bps=0.0, exit_fee_bps=0.0)
+    cheap = evaluate(close, AnalyticSpec(fee_bps=fee, **kw))
+    dear = evaluate(close, AnalyticSpec(fee_bps=fee + 10.0, **kw))
+    if not cheap.get("n_starts") or not dear.get("n_starts"):
+        return
+    a = np.nanmedian(cheap["terminal_multiple"])
+    b = np.nanmedian(dear["terminal_multiple"])
+    if np.isnan(a) or np.isnan(b):
+        return
+    assert b <= a + 1e-9, f"raising the fee improved the result: {a} -> {b}"
+
+
+@_SLOW
+@given(_PRICES)
+def test_property_a_development_load_never_reaches_the_seal(px):
+    """The seal, over generated panels rather than one hand-built example.
+
+    scripts/mutation.py deleted the truncation from panel.load on 2026-09-04
+    and all 248 tests stayed green.
+    """
+    import polars as pl
+
+    from orc import config, holdout
+
+    n = len(px)
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(n // 2, "h")
+    ts = start + np.arange(n) * np.timedelta64(1, "h")
+    df = pl.DataFrame({"ts": ts.astype("datetime64[ms]")})
+    dev = holdout.development_slice(df, "ts")
+    if dev.height:
+        holdout.assert_development_only(dev, "ts")
+        assert np.datetime64(dev["ts"].max(), "s") < np.datetime64(
+            str(config.HOLDOUT_START), "s")
