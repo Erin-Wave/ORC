@@ -2033,3 +2033,17 @@
 {"utc": "2026-09-05T08:09:25.244863+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T08:09:55.597600+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T08:10:25.937451+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:11:08.148751+00:00", "action": "survivorship", "detail": "exit 2:   never archived locally   : 1018  (100.0 % of the universe) |   currently listed         : 0 |   delisted (ever - live)   : 0 |   materialising 0 delisted symbols from the archive |   running the identical DCA on both groups |   not enough symbols in one of the groups to compare [committed and pushed]", "ok": false, "seconds": 10.9}
+{"utc": "2026-09-05T08:11:38.491857+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:12:08.845725+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:12:39.189379+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:13:09.541751+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:13:39.885029+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:14:10.231654+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:14:40.571548+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:15:10.910747+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:15:41.259356+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:16:11.597160+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:16:41.945439+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:17:12.284534+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T08:17:42.631857+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
