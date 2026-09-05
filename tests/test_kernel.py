@@ -1108,6 +1108,91 @@ def test_a_development_load_actually_truncates_at_the_seal(tmp_path, monkeypatch
         "a development load handed research a bar at or past the seal")
 
 
+def test_a_missing_code_hash_root_refuses_instead_of_hashing_nothing():
+    """kernel_review c6fe59d949ee, 2026-09-05, and worse than it was reported.
+
+    A missing root contributed nothing and raised nothing: is_file() is False
+    for a path that is not there, and rglob over a missing directory yields an
+    empty iterator. So a renamed root silently left the hash -- and with EVERY
+    root gone the function returned e3b0c44298fc..., the SHA-256 of nothing,
+    a perfectly well-formed digest computed over no code at all.
+
+    That is precisely the failure code_hash exists to prevent, made permanent:
+    a corrected evaluator would key on a constant, match its own old rows and
+    be discarded by INSERT OR IGNORE while printing "new 0". Three evaluator
+    corrections were landed on 2026-09-05 trusting this hash to move.
+    """
+    import hashlib
+
+    from orc import config
+    from orc.ledger import trials
+
+    kernel = config.ORC_ROOT / "orc" / "kernel"
+    assert trials.code_hash([kernel]), "the ordinary case must still work"
+
+    with pytest.raises(FileNotFoundError):
+        trials.code_hash([kernel, config.ORC_ROOT / "orc" / "NO_SUCH_DIR"])
+    with pytest.raises(FileNotFoundError):
+        trials.code_hash([config.ORC_ROOT / "orc" / "kernel" / "nope.py"])
+
+    # The specific value that used to come back when nothing was read.
+    assert hashlib.sha256().hexdigest().startswith("e3b0c44298fc")
+    with pytest.raises(FileNotFoundError):
+        trials.code_hash([config.ORC_ROOT / "orc" / "NO_SUCH_DIR"])
+
+
+def test_a_panel_starts_where_its_funding_record_starts(tmp_path, monkeypatch):
+    """kernel_review 9a9abb9c8d10, 2026-09-05, and LIVE.
+
+    Bars before the funding record began were filled with funding_rate 0.0 and
+    handed to research, while has_funding() answered True on the strength of
+    settlements later in the same panel. So "funding was zero here" and "there
+    is no funding record here" were the same panel -- and funding is the
+    dominant term for Track A, measured by KT-1 at 36% of contributed capital.
+
+    Measured over the nine researched symbols: BTCUSDT 2,739 such bars, 6.98%
+    of its development window, and ETHUSDT 832, 2.23%. Those bars were charged
+    nothing at all.
+
+    funding_settled cannot fix this downstream: funding settles every eight
+    hours, so False is the ordinary state of a bar and says nothing about
+    whether a record exists.
+    """
+    import polars as pl
+
+    from orc import config
+    from orc.facts import panel as panel_mod
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    (tmp_path / "panel_1h").mkdir()
+    (tmp_path / "funding").mkdir()
+
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(400, "h")
+    ts = start + np.arange(200) * np.timedelta64(1, "h")
+    px = np.full(200, 100.0)
+    pl.DataFrame({"ts": ts.astype("datetime64[ms]"), "open": px, "high": px,
+                  "low": px, "close": px, "volume": np.ones(200)}
+                 ).write_parquet(tmp_path / "panel_1h" / "TESTUSDT.parquet")
+
+    # Funding begins 100 bars in, and every settlement is a real cost.
+    fts = ts[100::8]
+    pl.DataFrame({"ts": fts.astype("datetime64[ms]"),
+                  "funding_rate": np.full(fts.size, 0.0001)}
+                 ).write_parquet(tmp_path / "funding" / "TESTUSDT.parquet")
+
+    with_f = panel_mod.load("TESTUSDT", "1h", development_only=True,
+                            with_funding=True)
+    assert len(with_f) == 100, \
+        "the 100 bars with no funding record were still handed to research"
+    assert with_f.ts.astype("datetime64[ms]").min() == ts[100].astype("datetime64[ms]")
+    assert with_f.has_funding()
+
+    # Asking for no funding is untouched: the whole span is still there.
+    without = panel_mod.load("TESTUSDT", "1h", development_only=True,
+                             with_funding=False)
+    assert len(without) == 200
+
+
 def test_a_wick_that_did_not_liquidate_still_counts_as_drawdown():
     """kernel_review b29a2f5e1a0d, 2026-09-05, and the one finding of the seven
     that was LIVE rather than latent.

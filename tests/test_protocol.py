@@ -1268,7 +1268,17 @@ def test_a_read_only_call_that_dirties_the_tree_is_recorded(monkeypatch, tmp_pat
 
     llm.ask.tree_violations.clear()
     assert llm.ask("prompt", cwd=tmp_path, provider="toy") == "a verdict"
-    assert llm.ask.tree_violations == [{"provider": "toy", "files": ["AGENTS.md"]}]
+    v = llm.ask.tree_violations
+    assert len(v) == 1
+    assert v[0]["provider"] == "toy" and v[0]["files"] == ["AGENTS.md"]
+    # The record must state an OBSERVATION, not an author. The supervisor runs
+    # on the same checkout a person edits, and on 2026-09-05 two of four
+    # recorded violations were the owner's own session editing surface.py and
+    # H0019_SURFACE.json while a pass was running. A log that names an innocent
+    # party is worse than no log, because its only purpose is deciding whether
+    # a model honoured --allowedTools.
+    assert v[0]["attribution"] == "unattributed"
+    assert "cannot be excluded" in v[0]["note"]
 
     # A call that leaves the tree alone records nothing.
     same = iter([" M orc/eval/signal.py\n", " M orc/eval/signal.py\n"])

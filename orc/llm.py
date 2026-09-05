@@ -263,10 +263,33 @@ def ask(prompt: str, *, model: str | None = None,
             b = {ln[3:] for ln in before.splitlines()}
             a = {ln[3:] for ln in after.splitlines()}
             touched = sorted({_named(e) for e in a - b}) or ["(a tracked file changed)"]
-            ask.tree_violations.append({"provider": provider, "files": touched})
-            print(f"WARNING: the {provider!r} call was read-only and changed the "
-                  f"working tree: {', '.join(touched)}. The answer is kept and "
-                  "the violation is recorded; nothing was reverted.",
+            # What is OBSERVED is that the tree changed between the two
+            # fingerprints. What used to be RECORDED is that this provider
+            # changed it, and those are not the same statement: the supervisor
+            # runs on the same working tree a person edits, so anything else
+            # writing during the call lands in this window.
+            #
+            # 2026-09-05 is the proof. The pass at 22:56Z recorded four
+            # violations by "claude", and two of them -- orc/orchestrator/
+            # surface.py and reports/H0019_SURFACE.json -- were the owner's
+            # session editing the same checkout at the same moment. A log that
+            # names an innocent party is worse than no log, because the whole
+            # point of it is to decide whether a model honoured `--allowedTools`.
+            #
+            # So the record says what was seen. Attribution needs the provider
+            # to have its own checkout, which is a change to how the pass is
+            # launched rather than to what it observes.
+            ask.tree_violations.append({
+                "provider": provider,
+                "files": touched,
+                "attribution": "unattributed",
+                "note": "the tree changed during this call; a concurrent "
+                        "writer on the same checkout cannot be excluded",
+            })
+            print(f"WARNING: the working tree changed during the {provider!r} "
+                  f"call, which was read-only: {', '.join(touched)}. The answer "
+                  "is kept and the observation is recorded; nothing was "
+                  "reverted, and nothing here establishes who wrote it.",
                   file=sys.stderr)
     return r.stdout.strip()
 

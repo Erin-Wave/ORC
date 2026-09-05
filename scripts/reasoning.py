@@ -567,14 +567,21 @@ def main() -> int:
         except llm.LLMUnavailable as exc:
             _log(f"{f.stem} SKIPPED: {exc}")
 
-    # A read-only step that changed the tree broke a documented invariant, so
+    # The tree changing during a read-only step may be a broken invariant, so
     # the fact belongs in the record rather than only on a console that nobody
     # reads. codex, under --sandbox read-only, wrote a copy of the constitution
     # into AGENTS.md during an adversary review.
+    #
+    # "May be", not "is": the supervisor runs on the same checkout a person
+    # edits, and on 2026-09-05 two of four recorded violations were the owner's
+    # own session. The key is kept for continuity and each entry now carries
+    # its own attribution, so a reader cannot take the count as a count of
+    # broken promises.
     if llm.ask.tree_violations:
         report["steps"]["tree_violations"] = list(llm.ask.tree_violations)
-        _log(f"WARNING: {len(llm.ask.tree_violations)} read-only call(s) changed "
-             "the working tree; see REASONING_LOG.json")
+        _log(f"WARNING: the tree changed during "
+             f"{len(llm.ask.tree_violations)} read-only call(s); "
+             "who wrote it is NOT established — see REASONING_LOG.json")
 
     (config.REPORTS / "REASONING_LOG.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")

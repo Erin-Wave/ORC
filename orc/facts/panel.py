@@ -186,6 +186,38 @@ def load(
     if with_funding and funding_path(symbol).exists():
         from orc.facts.fetch_vision import funding_rate_per_bar
         fund = pl.read_parquet(funding_path(symbol))
+
+        # Bars BEFORE the funding record begins used to be filled with
+        # funding_rate 0.0 and funding_settled False and handed to research
+        # unchanged, and has_funding() answered True because settlements exist
+        # later in the same panel. So "funding was zero here" and "there is no
+        # funding record here" were the same panel, and the difference is the
+        # dominant term for Track A: KT-1 measured the funding bill at 36% of
+        # contributed capital.
+        #
+        # Measured 2026-09-05 over the nine researched symbols: BTCUSDT had
+        # 2,739 such bars (6.98% of its development window) and ETHUSDT 832
+        # (2.23%). Seven had none. Those bars were being charged nothing.
+        #
+        # funding_settled cannot rescue this downstream. Funding settles every
+        # eight hours, so False is the ordinary state of a bar and carries no
+        # information about whether a record exists.
+        #
+        # The panel therefore STARTS where the funding record starts. That is
+        # not a loss of data, it is the end of the span this data can answer a
+        # funding question about, and it applies only when funding was asked
+        # for -- with_funding=False is untouched.
+        if fund.height:
+            first = fund["ts"].min()
+            keep = df["ts"] >= first
+            n_before = int(df.height - keep.sum())
+            if n_before:
+                df = df.filter(keep)
+                if df.height == 0:
+                    raise ValueError(
+                        f"{symbol}: the funding record starts at {first}, "
+                        f"after every bar in the {state} span")
+                _assert_bar_index_is_a_clock(df, symbol, clock)
         fr, settled = funding_rate_per_bar(df["ts"], fund)
 
     close = df["close"].to_numpy().astype(np.float64)

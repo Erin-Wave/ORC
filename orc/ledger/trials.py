@@ -173,7 +173,30 @@ def code_hash(paths: list[Path] | None = None) -> str:
     h = hashlib.sha256()
     for root in sorted(roots, key=str):
         root = Path(root)
-        for p in ([root] if root.is_file() else sorted(root.rglob("*.py"))):
+        # A root that is not there used to contribute nothing and raise
+        # nothing: `is_file()` is False for a missing path, and rglob over a
+        # missing directory yields an empty iterator. So a renamed or moved
+        # root silently left the hash, and with every root gone the function
+        # returned e3b0c44298fc... -- the SHA-256 of nothing, a perfectly
+        # well-formed digest computed over no code at all.
+        #
+        # The consequence is the exact failure this hash exists to prevent,
+        # made permanent: a corrected evaluator would key on a constant, match
+        # its own old rows, and be discarded by INSERT OR IGNORE while printing
+        # "new 0". Refusing is the only safe answer, because there is no digest
+        # that honestly represents code that was not read.
+        if not root.exists():
+            raise FileNotFoundError(
+                f"code_hash: {root} does not exist. A root that vanishes "
+                "leaves the hash silently, and every later correction to the "
+                "code it covered would be discarded as a duplicate. Fix "
+                "CODE_HASH_ROOTS or restore the path.")
+        files = [root] if root.is_file() else sorted(root.rglob("*.py"))
+        if not files:
+            raise FileNotFoundError(
+                f"code_hash: {root} contains no .py files; it cannot be "
+                "contributing to a hash that is supposed to identify code.")
+        for p in files:
             h.update(p.name.encode())
             # Normalise line endings before hashing.  git on this workstation
             # runs with core.autocrlf=true, so a checkout rewrites these files
