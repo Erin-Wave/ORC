@@ -1,16 +1,17 @@
 {
-  "generated_utc": "2026-09-04T07:34:02.566521+00:00",
+  "generated_utc": "2026-09-05T07:40:42.775207+00:00",
   "mutations": 18,
   "killed": 18,
   "survived": [],
   "baseline_deselected": [
-    "tests/test_runstate.py::test_the_real_schedule_points_at_the_real_repository"
+    "tests/test_kernel.py::test_a_final_test_cannot_read_positioning_from_before_the_seal",
+    "tests/test_runstate.py::test_the_map_exists_and_names_what_a_change_must_preserve"
   ],
   "never_allowed_to_kill": [
     "tests/test_protocol.py::test_every_mutation_still_applies_to_the_code_it_names"
   ],
   "only": null,
-  "seconds": 225.0,
+  "seconds": 385.1,
   "results": [
     {
       "id": "fill_bar_extremes",
@@ -23,7 +24,7 @@
         "tests/test_kernel.py::test_a_signal_is_filled_on_the_next_bar_never_its_own",
         "tests/test_kernel.py::test_stop_and_target_in_one_bar_resolve_against_us"
       ],
-      "seconds": 10.3
+      "seconds": 19.3
     },
     {
       "id": "funding_before_the_fill",
@@ -33,7 +34,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_a_settlement_before_the_fill_is_not_collected"
       ],
-      "seconds": 12.6
+      "seconds": 19.2
     },
     {
       "id": "target_wins_the_tie",
@@ -43,7 +44,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_stop_and_target_in_one_bar_resolve_against_us"
       ],
-      "seconds": 10.7
+      "seconds": 19.3
     },
     {
       "id": "higher_timeframe_lookahead",
@@ -53,7 +54,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_a_four_hour_reading_is_not_available_until_its_candle_closes"
       ],
-      "seconds": 10.3
+      "seconds": 19.2
     },
     {
       "id": "cci_scaled_by_stdev",
@@ -63,7 +64,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_cci_is_the_textbook_definition"
       ],
-      "seconds": 12.5
+      "seconds": 19.2
     },
     {
       "id": "cci_partial_window",
@@ -73,7 +74,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_a_window_longer_than_the_series_is_no_reading_rather_than_a_crash"
       ],
-      "seconds": 10.0
+      "seconds": 19.2
     },
     {
       "id": "carry_reads_the_bar_not_the_settlement",
@@ -85,7 +86,7 @@
         "tests/test_kernel.py::test_carry_reads_the_rate_per_settlement_not_per_bar",
         "tests/test_protocol.py::test_the_per_settlement_mean_counts_the_zero_rate_ones"
       ],
-      "seconds": 10.7
+      "seconds": 19.2
     },
     {
       "id": "drawdown_upside_down",
@@ -95,7 +96,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_max_drawdown_is_the_fall_from_the_peak_not_the_rise_to_it"
       ],
-      "seconds": 13.0
+      "seconds": 19.2
     },
     {
       "id": "the_seal_is_not_applied",
@@ -105,7 +106,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_a_development_load_actually_truncates_at_the_seal"
       ],
-      "seconds": 10.5
+      "seconds": 19.2
     },
     {
       "id": "the_two_evaluators_stop_agreeing",
@@ -118,7 +119,7 @@
         "tests/test_kernel.py::test_analytic_matches_simulator[168-12-500]",
         "tests/test_kernel.py::test_analytic_matches_simulator[1-50-0]"
       ],
-      "seconds": 10.3
+      "seconds": 19.2
     },
     {
       "id": "liquidation_is_not_recorded",
@@ -129,7 +130,7 @@
         "tests/test_kernel.py::test_leverage_produces_liquidations",
         "tests/test_kernel.py::test_a_wiped_out_path_reports_a_total_drawdown"
       ],
-      "seconds": 12.5
+      "seconds": 19.2
     },
     {
       "id": "a_registered_grid_can_be_edited",
@@ -140,7 +141,7 @@
         "tests/test_protocol.py::test_editing_the_grid_after_registration_is_refused",
         "tests/test_protocol.py::test_editing_the_claim_after_registration_is_refused"
       ],
-      "seconds": 10.5
+      "seconds": 19.3
     },
     {
       "id": "the_holdout_counter_resolves_downward",
@@ -148,10 +149,11 @@
       "why": "every way the opening count can be wrong makes it too SMALL, and each of those ways is a restored opening. Resolving downward hands back a look at the sealed data that was already spent.",
       "killed": true,
       "killed_by": [
+        "tests/test_kernel.py::test_an_unreadable_opening_counter_is_not_zero_openings",
         "tests/test_protocol.py::test_the_spend_count_is_the_ordinal_not_the_line_count",
         "tests/test_protocol.py::test_the_opening_counter_only_ever_resolves_upward"
       ],
-      "seconds": 11.1
+      "seconds": 19.3
     },
     {
       "id": "the_left_tail_is_dropped_silently",
@@ -161,7 +163,7 @@
       "killed_by": [
         "tests/test_kernel.py::test_a_left_tail_metric_says_how_many_paths_it_could_not_score"
       ],
-      "seconds": 12.8
+      "seconds": 19.3
     },
     {
       "id": "the_stop_condition_needs_only_one_half",
@@ -171,7 +173,7 @@
       "killed_by": [
         "tests/test_protocol.py::test_the_stop_condition_needs_both_halves"
       ],
-      "seconds": 10.1
+      "seconds": 19.3
     },
     {
       "id": "the_guard_stops_guarding",
@@ -184,7 +186,7 @@
         "tests/test_protocol.py::test_a_test_that_no_longer_runs_is_a_weakening",
         "tests/test_protocol.py::test_deleting_a_test_file_whole_is_caught"
       ],
-      "seconds": 10.0
+      "seconds": 19.3
     },
     {
       "id": "a_kernel_change_reuses_old_rows",
@@ -194,7 +196,7 @@
       "killed_by": [
         "tests/test_protocol.py::test_the_code_hash_covers_every_file_that_can_change_a_number"
       ],
-      "seconds": 12.6
+      "seconds": 19.2
     },
     {
       "id": "unmeasured_counts_as_passed",
@@ -205,9 +207,9 @@
         "tests/test_protocol.py::test_a_spike_is_not_a_finding_however_large",
         "tests/test_protocol.py::test_a_pbo_that_was_never_computed_is_not_a_pass",
         "tests/test_protocol.py::test_a_pbo_measured_on_other_cells_does_not_clear_this_one",
-        "tests/test_protocol.py::test_a_surviving_mutation_is_news"
+        "tests/test_protocol.py::test_the_committed_briefing_is_short_enough_to_be_read"
       ],
-      "seconds": 10.0
+      "seconds": 18.7
     }
   ]
 }
