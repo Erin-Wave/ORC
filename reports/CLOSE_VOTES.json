@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T22:56:19.386997+00:00",
+  "utc": "2026-09-05T02:15:53.729622+00:00",
   "providers": [
     "claude",
     "codex"
@@ -8,35 +8,28 @@
     "H0001": {
       "family": "unconditional_dca_spot_style",
       "votes": {
-        "claude": {
-          "verdict": "CONTINUE",
-          "clause": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
-          "clause_met": false,
-          "unevaluable_clauses": [],
-          "numbers": [
-            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298 (include_funding=false, n_contributions=52, stride_days=30.0)",
-            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731 (include_funding=false, n_contributions=52, stride_days=30.0)",
-            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884 (include_funding=false, n_contributions=156, stride_days=7.0)",
-            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576 (include_funding=true, n_contributions=156, stride_days=7.0)",
-            "XRPUSDT 0.9227769940078271, DOGEUSDT 0.8601961484914038, LTCUSDT 0.6868948254289569, AVAXUSDT 0.6183911094027328, ADAUSDT 0.5958112554492814 — all tm_q05 below 1.0"
-          ],
-          "reason": "조항이 지명한 지표는 tm_q05이며, scales 블록이 그것을 primary_metric_best로 명시하고 손익분기점을 1.0으로 못박고 있다. 조항은 '어떤 (symbol, stride, horizon) 셀도 1.0을 넘지 못하면 닫는다'는 존재 부정형이므로, 1.0을 넘는 셀 하나만 있어도 조항은 성립하지 않는다. ETHUSDT 3.6056116382051298, BTCUSDT 2.051039115127731, SOLUSDT 1.6619021758095884, BNBUSDT 1.1260625166054576 — 네 심볼의 보고된 셀이 1.0을 넘으므로 조항은 met이 아니다. 이 값들은 mwrr_q05로 순위를 매긴 셀에서 읽은 tm_q05이므로 각 심볼의 tm_q05 최대치가 아닐 수 있으나, 존재 부정형을 반증하는 데는 실재하는 셀 하나로 충분하고 최대치라면 더 높을 수만 있다. 순위 지표인 mwrr_q05(ETHUSDT 0.6789141697407873, ADAUSDT -0.31971005364131944 등)는 수익률 스케일이라 1.0 문턱에 대입하지 않았다. 별개로 search_test는 ETHUSDT p_value 0.725, SOLUSDT p_value 0.79로 두 심볼 모두 INDISTINGUISHABLE_FROM_SEARCH이고 survives_search=false이며, 네 심볼의 shape_diagnostic이 모두 SPIKE(BNBUSDT plateau_ratio -5.488498827971867, BTCUSDT -1.95256212525742, ETHUSDT -1.011937585161423, SOLUSDT -2.0691822590730427), independent_paths_best는 1.02~1.40, invested 기준 mdd는 DOGEUSDT 13.449197457031906까지 간다. 즉 이 표면에 선택 가능한 정보가 있다는 증거는 없다. 그러나 사전등록된 kill condition에는 그런 조항이 한 줄도 없으므로, 그것을 근거로 닫으면 사후 판단으로 닫는 것이 된다. 조항 그대로 읽으면 CONTINUE다."
-        },
         "codex": {
           "verdict": "CONTINUE",
           "clause": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
+            "ADAUSDT primary_metric_best (tm_q05): 0.5958112554492814",
+            "AVAXUSDT primary_metric_best (tm_q05): 0.6183911094027328",
             "BNBUSDT primary_metric_best (tm_q05): 1.1260625166054576",
             "BTCUSDT primary_metric_best (tm_q05): 2.051039115127731",
+            "DOGEUSDT primary_metric_best (tm_q05): 0.8601961484914038",
             "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
-            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
+            "LTCUSDT primary_metric_best (tm_q05): 0.6868948254289569",
+            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884",
+            "XRPUSDT primary_metric_best (tm_q05): 0.9227769940078271"
           ],
-          "reason": "The clause requires that no cell have tm_q05 above 1.0. It is not met because BNBUSDT reaches 1.1260625166054576, BTCUSDT reaches 2.051039115127731, ETHUSDT reaches 3.6056116382051298, and SOLUSDT reaches 1.6619021758095884; each is above 1.0."
+          "reason": "The clause applies only if no cell has tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT reaches 2.051039115127731, ETHUSDT reaches 3.6056116382051298, and SOLUSDT reaches 1.6619021758095884. Therefore the pre-registered close condition is not met."
         }
       },
-      "unreachable": {},
+      "unreachable": {
+        "claude": "exit 1: "
+      },
       "decision": "CONTINUE"
     }
   }

@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-04T22:56:19.351571+00:00",
+  "utc": "2026-09-05T02:15:53.696806+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,51 +7,7 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": [
-      "H0022.json"
-    ],
-    "adversary": [
-      {
-        "file": "H0022.json",
-        "verdict": "KILL",
-        "reason": "[codex] This is a finer grid over the already-registered CCI rule forms: it changes only `lookback_days`, a parameter of `cci_breakout` and `cci_reversion`, while the alleged BLVT flow is neither measured nor encoded as a different rule shape. Renaming the payer cannot reopen the CCI family established in section 7b.",
-        "payer_is_structural": true,
-        "kill_condition_is_falsifiable": true,
-        "configurations": 90,
-        "killed_by": "adversary:codex",
-        "reviewed_by": [
-          "claude",
-          "codex"
-        ]
-      }
-    ],
-    "surfaces": "written",
-    "tree_violations": [
-      {
-        "provider": "claude",
-        "files": [
-          "configs/proposed/"
-        ]
-      },
-      {
-        "provider": "claude+codex",
-        "files": [
-          "h0022_res.json"
-        ],
-        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "orc/orchestrator/surface.py"
-        ]
-      },
-      {
-        "provider": "claude",
-        "files": [
-          "reports/H0019_SURFACE.json"
-        ]
-      }
-    ]
+    "propose": "skipped: exit 1: ",
+    "surfaces": "skipped: exit 1: "
   }
 }
