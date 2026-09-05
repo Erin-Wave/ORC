@@ -94,10 +94,18 @@ def worktree(label: str = "provider"):
     try:
         r = _git("worktree", "add", "--detach", "-q", str(tree), "HEAD")
         if r.returncode != 0:
-            # No worktree is not a reason to skip the step. The caller falls
-            # back to the real tree and the honest violation record, which is
-            # what it had before this file existed.
-            raise RuntimeError(f"git worktree add failed: {r.stderr.strip()[:200]}")
+            # No worktree is not a reason to skip the step, and this used to
+            # RAISE while the comment beside it said it fell back -- a
+            # docstring describing behaviour the code did not have, which the
+            # suite caught immediately: a test whose ORC_ROOT is a tmp_path is
+            # not a git repository and every sandboxed step died.
+            #
+            # The caller gets the real tree and the honest "unattributed"
+            # record, which is exactly what it had before this file existed.
+            # Degrading to the previous behaviour is not a silent failure; it
+            # is the previous behaviour.
+            yield config.ORC_ROOT
+            return
         made = True
 
         for rel in dirty_paths():

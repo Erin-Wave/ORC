@@ -56,7 +56,7 @@ except (AttributeError, OSError):                                  # pragma: no 
     pass
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from orc import config, llm, runstate                             # noqa: E402
+from orc import config, sandbox, llm, runstate                             # noqa: E402
 
 PROPOSED = config.CONFIGS / "proposed"
 KILLED = config.CONFIGS / "killed"
@@ -236,7 +236,20 @@ def review(path: Path) -> dict:
     # them can refuse -- so all of them have to be asked either way, and asking
     # them in turn made the pass pay the sum of two model calls for a decision
     # that needs the maximum of them.
-    verdicts, unreachable = llm.ask_json_many(prompt, ready, cwd=config.ORC_ROOT)
+    # The adversary is read-only and is the step that most needs to be: it
+    # runs the evaluator on a proposal at zero ledger rows, and on 2026-09-05
+    # that left _probe1..13.py, _fuzz.py, _ref.py and a stray ledger/trials.db
+    # in the repository root. In a sandbox those land where nothing reads them
+    # and `sandbox.wrote()` names them without inferring who.
+    with sandbox.worktree("adversary") as _tree:
+        verdicts, unreachable = llm.ask_json_many(prompt, ready, cwd=_tree)
+        _wrote = sandbox.wrote(_tree)
+    if _wrote:
+        llm.ask.tree_violations.append({
+            "provider": "adversary batch", "files": _wrote,
+            "attribution": "attributed",
+            "note": "written inside the step's own worktree, so nothing else "
+                    "could have; discarded with it"})
     if not verdicts:
         raise llm.LLMUnavailable(
             "; ".join(f"{k}: {v}" for k, v in unreachable.items()))
@@ -261,9 +274,22 @@ def review(path: Path) -> dict:
 
 
 def research(claim: str) -> dict:
-    """Does the named payer actually exist, according to sources?"""
-    return llm.ask_json(llm.load_prompt("mechanism", claim=claim),
-                        tools=RESEARCH_TOOLS, cwd=config.ORC_ROOT)
+    """Does the named payer actually exist, according to sources?
+
+    Sandboxed like the adversary: it is the one step allowed out to the network
+    and it reads with WebSearch, so whatever it decides to write down goes
+    somewhere the research never reads.
+    """
+    with sandbox.worktree("mechanism") as tree:
+        out = llm.ask_json(llm.load_prompt("mechanism", claim=claim),
+                           tools=RESEARCH_TOOLS, cwd=tree)
+        wrote = sandbox.wrote(tree)
+    if wrote:
+        llm.ask.tree_violations.append({
+            "provider": "mechanism", "files": wrote,
+            "attribution": "attributed",
+            "note": "written inside the step's own worktree"})
+    return out
 
 
 def close_votes() -> dict:
@@ -344,7 +370,14 @@ def close_votes() -> dict:
             kill_condition=h.kill_condition,
             surface=json.dumps(trimmed, ensure_ascii=False, default=str))
 
-        votes, unreachable = llm.ask_json_many(prompt, ready, cwd=config.ORC_ROOT)
+        with sandbox.worktree("close_vote") as _tree:
+            votes, unreachable = llm.ask_json_many(prompt, ready, cwd=_tree)
+            _wrote = sandbox.wrote(_tree)
+        if _wrote:
+            llm.ask.tree_violations.append({
+                "provider": "close_vote batch", "files": _wrote,
+                "attribution": "attributed",
+                "note": "written inside the step's own worktree"})
         for name, v in votes.items():
             # A vote that says CONTINUE while reporting a met clause is
             # self-contradictory; it is recorded and not counted.

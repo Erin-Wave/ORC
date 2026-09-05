@@ -3131,3 +3131,29 @@ def test_yielding_to_the_owner_actually_changes_the_priority():
         st._restore_priority(before)
     assert st.owner_priority() == before, \
         "best_of_g restores the caller's priority; so must this test"
+
+
+def test_the_read_only_steps_run_in_their_own_checkout():
+    """Finding 414c6a8cb6e1. The supervisor runs on the checkout a person
+    edits, so llm.tree_fingerprint's before/after comparison could not tell a
+    provider's write from the owner's -- on 2026-09-05 it named "claude" for
+    two files that were the owner's session.
+
+    The three steps that only READ now get a private git worktree. propose() is
+    deliberately NOT one of them: it writes into configs/proposed/ and that is
+    its job."""
+    src = (Path(__file__).resolve().parents[1] / "scripts"
+           / "reasoning.py").read_text(encoding="utf-8")
+
+    for step in ('sandbox.worktree("adversary")',
+                 'sandbox.worktree("close_vote")',
+                 'sandbox.worktree("mechanism")'):
+        assert step in src, f"{step} no longer runs in its own checkout"
+
+    # The proposer must keep the real tree: it has Write and configs/proposed/
+    # is where its output belongs.
+    assert "llm.ask(prompt, tools=PROPOSER_TOOLS, cwd=config.ORC_ROOT)" in src
+
+    # A write inside a sandbox is ATTRIBUTED, not inferred -- that is the whole
+    # difference, and the record has to say so.
+    assert '"attribution": "attributed"' in src
