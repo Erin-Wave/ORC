@@ -213,6 +213,7 @@ python scripts/briefing.py                      # 한글 브리핑: 돌고 있�
 python scripts/health.py                        # is it running, producing, stuck?
 python scripts/watch.py                         # 지금 이 초에 무엇이 돌고 있나
 python scripts/watch.py --interval 10           # 10초마다 갱신
+python scripts/dashboard.py                     # reports/DASHBOARD.html: 브라우저로 보는 현황판
 python scripts/forever.py                       # the 24h supervisor (never exits)
 python scripts/forever.py --dry-run             # what it would do right now
 python scripts/scout.py                         # web + 2nd vendor -> SCOUT.jsonl

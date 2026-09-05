@@ -640,6 +640,36 @@ def _land_locked(action: str, paths: list) -> str:
 
 
 # ---------------------------------------------------------------------------
+# The one screen the owner actually reads, and until now it was a command
+# nobody ran.  scripts/dashboard.py rebuilds reports/DASHBOARD.html from the
+# reports in about a second; left to a manual invocation it showed whatever
+# minute it was last run in, which for a page whose whole job is "is it moving"
+# is worse than no page -- a stale screen reporting a healthy loop is exactly
+# the failure the lock heartbeat exists to stop, moved one level up.
+#
+# A subprocess rather than an import, because a defect in the display must not
+# be able to stop the research: this returns a string either way and never
+# raises.
+DASHBOARD_TIMEOUT_S = 60
+
+
+def refresh_dashboard() -> str:
+    """Rebuild the owner's screen.  Never raises, never blocks for long."""
+    if os.environ.get("GITHUB_ACTIONS"):
+        # The runner's copy is gitignored and nobody can open it.
+        return "skipped on the runner"
+    try:
+        r = subprocess.run(
+            [sys.executable, str(config.ORC_ROOT / "scripts" / "dashboard.py")],
+            cwd=config.ORC_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=DASHBOARD_TIMEOUT_S)
+    except Exception as exc:                                       # noqa: BLE001
+        return f"failed: {type(exc).__name__}: {exc}"
+    if r.returncode != 0:
+        return f"exit {r.returncode}: {(r.stderr or '').strip()[-160:]}"
+    return "refreshed"
+
+
 def tick(dry_run: bool = False, skip: set[str] | None = None) -> tuple[str, int]:
     """One decision and, unless dry, one action.  Returns (action, sleep_s)."""
     # skip goes INTO the decision, not around it.  Declining the answer
@@ -776,6 +806,13 @@ def main(argv: list[str]) -> int:
                 runstate.record_activity(
                     "tick_failed", f"{type(exc).__name__}: {exc}")
                 nap = IDLE_SLEEP_S
+            if not dry:
+                # After the action, not before: the screen should show what
+                # just happened.  Outside the try above on purpose -- the tick
+                # the owner most needs to see is the one that failed.
+                said = refresh_dashboard()
+                if said != "refreshed":
+                    log(f"dashboard: {said}")
             if once:
                 return 0
             if deadline is not None:

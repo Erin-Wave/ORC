@@ -1201,3 +1201,57 @@ def test_a_blocking_finding_stops_only_what_it_can_invalidate(sandbox, monkeypat
     action, _ = runstate.next_action(now,
                                      skip=set(runstate.BLOCKED_STILL_ALLOWED))
     assert action == "blocked"
+
+
+def test_a_broken_dashboard_cannot_stop_the_research(monkeypatch):
+    """The owner's screen refreshes every tick, and never at the loop's expense.
+
+    Two claims, and the second is the one that matters. reports/DASHBOARD.html
+    is the page the owner opens to answer "is it moving"; before this it was
+    rebuilt only when someone typed the command, so it showed whatever minute
+    it was last run in -- a stale screen reporting a healthy loop, which is the
+    same failure the lock heartbeat exists to stop, moved up one level.
+
+    Wiring a display into the supervisor is a new way for a display bug to stop
+    research, so refresh_dashboard() runs it as a subprocess and returns a
+    string on every path. If it can raise, main()'s loop dies on a broken chart
+    and the research stops for a picture.
+    """
+    import forever
+
+    # It must not raise, whatever the subprocess does.
+    def explode(*a, **k):
+        raise OSError("the display blew up")
+
+    monkeypatch.setattr(forever.subprocess, "run", explode)
+    said = forever.refresh_dashboard()
+    assert isinstance(said, str) and "failed" in said, said
+
+    class NonZero:
+        returncode = 7
+        stdout = ""
+        stderr = "Traceback: ValueError"
+
+    monkeypatch.setattr(forever.subprocess, "run", lambda *a, **k: NonZero())
+    said = forever.refresh_dashboard()
+    assert isinstance(said, str) and "exit 7" in said, said
+
+    # A timeout is the failure a screen build is most likely to have, and the
+    # one that would hang the supervisor if it were not bounded.
+    import subprocess as sp
+
+    def slow(*a, **k):
+        raise sp.TimeoutExpired(cmd="dashboard.py", timeout=k.get("timeout"))
+
+    monkeypatch.setattr(forever.subprocess, "run", slow)
+    assert "failed" in forever.refresh_dashboard()
+    assert forever.DASHBOARD_TIMEOUT_S > 0
+
+    # And it is actually called once per tick -- including after a tick that
+    # FAILED, which is the tick the owner most needs to see. Asserted on the
+    # source rather than by running main(), which never returns.
+    src = (Path(forever.__file__)).read_text(encoding="utf-8")
+    body = src[src.index("def main("):]
+    assert "refresh_dashboard()" in body, "main() does not refresh the screen"
+    assert body.index("tick_failed") < body.index("refresh_dashboard()"), (
+        "the refresh sits inside the try, so a failed tick shows a stale screen")

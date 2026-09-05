@@ -30,3 +30,9 @@ logs/
 # The differential oracle's scratch. ref_signal.py IS committed -- it is the
 # check -- but the raw provider output it was cut from is not.
 oracle/_raw.py
+
+# The dashboard is generated, not written by hand -- scripts/dashboard.py
+# rebuilds it from the reports. Committing it would put a snapshot of one
+# minute into the history of every commit that follows.
+reports/DASHBOARD.html
+oracle/_raw*.py
