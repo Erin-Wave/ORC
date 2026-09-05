@@ -1,27 +1,35 @@
 {
-  "run_id": "ff0596984af4",
-  "started_utc": "2026-09-05T04:19:22.069338+00:00",
-  "finished_utc": "2026-09-05T05:41:33.848820+00:00",
+  "run_id": "2676cae28735",
+  "started_utc": "2026-09-05T05:41:40.257913+00:00",
+  "finished_utc": "2026-09-05T07:03:42.762232+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
   "hypotheses_run": [
-    "H0001"
+    "H0023"
   ],
-  "trials_before": 7122,
+  "trials_before": 7230,
   "trials_after": 7230,
-  "trials_added": 108,
+  "trials_added": 0,
   "results": [
     {
-      "hypothesis_id": "H0001",
-      "family": "unconditional_dca_spot_style",
-      "run_id": "ff0596984af4",
-      "configurations": 162,
-      "evaluated": 108,
-      "new_trials": 108,
-      "skipped": 54,
+      "hypothesis_id": "H0023",
+      "family": "oi_refuted_cci_reversion",
+      "run_id": "2676cae28735",
+      "configurations": 45,
+      "evaluated": 0,
+      "new_trials": 0,
+      "skipped": 45,
       "skip_reasons": {
-        "horizon_exceeds_history": 54
+        "ADAUSDT: no open-interest series on this panel. ": 5,
+        "AVAXUSDT: no open-interest series on this panel.": 5,
+        "BNBUSDT: no open-interest series on this panel. ": 5,
+        "BTCUSDT: no open-interest series on this panel. ": 5,
+        "DOGEUSDT: no open-interest series on this panel.": 5,
+        "ETHUSDT: no open-interest series on this panel. ": 5,
+        "LTCUSDT: no open-interest series on this panel. ": 5,
+        "SOLUSDT: no open-interest series on this panel. ": 5,
+        "XRPUSDT: no open-interest series on this panel. ": 5
       },
       "ledger_total_trials": 7230
     }
