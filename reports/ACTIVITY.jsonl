@@ -1974,3 +1974,4 @@
 {"utc": "2026-09-05T07:32:46.719325+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T07:33:17.060388+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T07:33:47.411516+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:40:43.753701+00:00", "action": "mutation", "detail": "exit 0:   KILLED   the_left_tail_is_dropped_silently  test_a_left_tail_metric_says_how_many_paths_it_could_not_score |   KILLED   the_stop_condition_needs_only_one_half test_the_stop_condition_needs_both_halves |   KILLED   the_guard_stops_guarding           test_a_deleted_test_needs_a_sentence_in_the_message |   KILLED   a_kernel_change_reuses_old_rows    test_the_code_hash_covers_every_file_that", "ok": true, "seconds": 385.1}
