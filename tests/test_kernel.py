@@ -1108,6 +1108,57 @@ def test_a_development_load_actually_truncates_at_the_seal(tmp_path, monkeypatch
         "a development load handed research a bar at or past the seal")
 
 
+def test_positioning_is_sealed_by_the_same_door_the_panels_are(tmp_path, monkeypatch):
+    """A new data source is a new way to breach the seal.
+
+    orc/facts/positioning.py adds open interest and taker flow, which is the
+    observable section 7b says the project lacks -- and every argument in
+    section 2 applies to it unchanged. The store holds the FULL history, sealed
+    days included, exactly as the panels do, so `load()` is the only thing
+    standing between research and the sealed period. That is the line this
+    pins, for the same reason the panel version above exists: the mutation
+    harness showed on 2026-09-04 that deleting a truncation broke nothing.
+    """
+    import polars as pl
+
+    from orc import config, holdout
+    from orc.facts import positioning
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+
+    # 40 days of five-minute rows straddling the seal, written to the store the
+    # way fetch() writes them -- untruncated.
+    seal = np.datetime64(str(config.HOLDOUT_START), "s")
+    ts = (seal - np.timedelta64(20 * 288 * 5, "m")
+          + np.arange(40 * 288) * np.timedelta64(5, "m"))
+    n = ts.size
+    d = positioning.store()
+    d.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame({
+        "ts": ts.astype("datetime64[us]"),
+        "open_interest": np.linspace(1000.0, 2000.0, n),
+        "open_interest_usd": np.linspace(1e6, 2e6, n),
+        "toptrader_accounts_ls": np.ones(n),
+        "toptrader_positions_ls": np.ones(n),
+        "accounts_ls": np.ones(n),
+        "taker_buy_sell": np.ones(n),
+    }).write_parquet(positioning.path_for("TESTUSDT"))
+
+    df = positioning.load("TESTUSDT")
+    assert df.height == 20 * 288, "half the file is on the sealed side"
+    assert np.datetime64(df["ts"].max(), "s") < seal, \
+        "a development load handed research a row at or past the seal"
+
+    # And the sealed side is not reachable by asking politely.
+    with pytest.raises(holdout.HoldoutViolation):
+        positioning.load("TESTUSDT", development_only=False)
+
+    # A missing symbol says so rather than returning an empty frame that would
+    # read downstream as "this symbol had no open interest".
+    with pytest.raises(FileNotFoundError):
+        positioning.load("NOSUCHUSDT")
+
+
 def test_max_drawdown_is_the_fall_from_the_peak_not_the_rise_to_it():
     """Half of the stop condition, pinned to a number computed by hand.
 

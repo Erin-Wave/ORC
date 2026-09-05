@@ -3,6 +3,11 @@
 facts/panel_1m/
 facts/panel_1h/
 facts/funding/
+# Open interest and taker flow, rebuilt by `python -m orc.facts.positioning`.
+# Listed for the same reason as the panels, and for one more: the store holds
+# the FULL history including the sealed side, because positioning.load() is
+# what truncates. A committed copy would put sealed bars in every checkout.
+facts/positioning/
 dist/
 
 # The token that opens the sealed holdout is a deliberate local act.  Committing
