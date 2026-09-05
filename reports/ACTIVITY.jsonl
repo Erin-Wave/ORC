@@ -1975,3 +1975,27 @@
 {"utc": "2026-09-05T07:33:17.060388+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T07:33:47.411516+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
 {"utc": "2026-09-05T07:40:43.753701+00:00", "action": "mutation", "detail": "exit 0:   KILLED   the_left_tail_is_dropped_silently  test_a_left_tail_metric_says_how_many_paths_it_could_not_score |   KILLED   the_stop_condition_needs_only_one_half test_the_stop_condition_needs_both_halves |   KILLED   the_guard_stops_guarding           test_a_deleted_test_needs_a_sentence_in_the_message |   KILLED   a_kernel_change_reuses_old_rows    test_the_code_hash_covers_every_file_that", "ok": true, "seconds": 385.1}
+{"utc": "2026-09-05T07:41:17.503239+00:00", "action": "robustness", "detail": "exit 1: H0001  unconditional_dca_spot_style  (nothing cleared; gating the best cell for the record) |   ETHUSDT    FAIL: cost  UNMEASURED: regime, execution |       cost x2   +nan -> +nan |       walk        in +1.6801  out +1.1169 |       regime      the cell could not be scored in rising and falling |       execution   no minute panel here; certification has to happen locally |     best = max(re", "ok": false, "seconds": 2.4}
+{"utc": "2026-09-05T07:41:47.848023+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:42:18.199471+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:42:48.545354+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:43:18.892295+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:43:49.245405+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:44:19.589361+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:44:49.944847+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:45:20.292196+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:45:50.644626+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:46:20.994512+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:46:51.354102+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:47:21.699662+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:47:52.056119+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:48:22.401931+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:48:52.758417+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:49:23.102811+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:49:53.461321+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:50:23.808030+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:50:54.164810+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:51:24.509823+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:51:54.864998+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:52:25.209624+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
+{"utc": "2026-09-05T07:52:55.556963+00:00", "action": "execution_realism", "detail": "not applicable right now", "ok": true, "seconds": 0.0}
