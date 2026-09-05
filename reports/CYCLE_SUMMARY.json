@@ -1,7 +1,7 @@
 {
-  "run_id": "2676cae28735",
-  "started_utc": "2026-09-05T05:41:40.257913+00:00",
-  "finished_utc": "2026-09-05T07:03:42.762232+00:00",
+  "run_id": "7ea3ab125220",
+  "started_utc": "2026-09-05T12:32:10.401709+00:00",
+  "finished_utc": "2026-09-05T14:10:03.360450+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
@@ -15,21 +15,13 @@
     {
       "hypothesis_id": "H0023",
       "family": "oi_refuted_cci_reversion",
-      "run_id": "2676cae28735",
+      "run_id": "7ea3ab125220",
       "configurations": 45,
       "evaluated": 0,
       "new_trials": 0,
       "skipped": 45,
       "skip_reasons": {
-        "ADAUSDT: no open-interest series on this panel. ": 5,
-        "AVAXUSDT: no open-interest series on this panel.": 5,
-        "BNBUSDT: no open-interest series on this panel. ": 5,
-        "BTCUSDT: no open-interest series on this panel. ": 5,
-        "DOGEUSDT: no open-interest series on this panel.": 5,
-        "ETHUSDT: no open-interest series on this panel. ": 5,
-        "LTCUSDT: no open-interest series on this panel. ": 5,
-        "SOLUSDT: no open-interest series on this panel. ": 5,
-        "XRPUSDT: no open-interest series on this panel. ": 5
+        "panel:FileNotFoundError": 9
       },
       "ledger_total_trials": 7230
     }

@@ -1,6 +1,6 @@
 # ORC cycle report
 
-- run `2676cae28735` finished 2026-09-05T07:03:42.762232+00:00
+- run `7ea3ab125220` finished 2026-09-05T14:10:03.360450+00:00
 - trials in project: **7230** (+0 this cycle)
 - holdout sealed from **2024-03-01**, final tests used 0/3
 - primary metric per track: `tm_q05` for accumulation (5th-percentile terminal multiple across start dates), `calmar` for signal positions (return over deepest drawdown)
