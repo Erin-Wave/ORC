@@ -2519,16 +2519,17 @@
     },
     "31aba5ea7f71": {
       "id": "31aba5ea7f71",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T04:16:40.026408+00:00",
       "last_seen_utc": "2026-09-05T04:16:40.026408+00:00",
-      "disposition": "",
+      "disposition": "load(with_funding=True) refuses a symbol with no funding parquet rather than charging zero. test_a_panel_with_no_funding_history_refuses_rather_than_charging_zero",
       "file": "orc/facts/panel.py",
       "line": 186,
       "severity": "high",
       "what": "펀딩 parquet이 아예 없는 심볼은 funding_rate 전부 0.0 / funding_settled 전부 False로 반환되어 '펀딩이 0이었다'와 '펀딩 기록이 없다'가 다시 같은 패널이 되고, run_dca_trial은 has_funding()을 확인하지 않으므로 Track A 셀이 펀딩을 한 푼도 물지 않은 채 정상 시행으로 기록된다.",
       "trigger": "실측: config.FACTS/panel_1h 아래 325개 패널 중 38개에 펀딩 parquet이 없음(LUNAUSDT, BTCSTUSDT, BZRXUSDT, EOSUSDT, AUDIOUSDT 등 — 다수가 KT-3가 막 열어준 상장폐지 심볼). run_dca_trial(TrialConfig(symbol='AUDIOUSDT', stride_days=7.0, n_contributions=52, include_funding=True))를 실행하면 evaluator=simulate, tm_q05=0.3646, funding_frac_q50=0.00000000이 나온다. 같은 패널을 run_signal_trial에 넣으면 runner.py:220의 has_funding() 검사가 UnsupportedConfig('no funding history; ...')로 거부한다 — 두 트랙이 동일 패널에서 갈린다.",
-      "why_silent": "panel.py:190-209 주석이 바로 이 혼동을 다루면서 '펀딩 기록 시작 이전 선행 바'만 잘라내고 '심볼 전체에 기록이 없는 경우'는 남겨두었다. 결과 행은 완전하고 정합적이다: funding_frac_q50=0.0은 '펀딩이 없었다'는 측정으로 읽히고, 빠진 양은 KT-1이 납입원금의 36 %로 측정한 바로 그 항이다. include_funding=True가 config_hash에 그대로 들어가므로 원장 행은 '펀딩 포함'이라고 주장한다."
+      "why_silent": "panel.py:190-209 주석이 바로 이 혼동을 다루면서 '펀딩 기록 시작 이전 선행 바'만 잘라내고 '심볼 전체에 기록이 없는 경우'는 남겨두었다. 결과 행은 완전하고 정합적이다: funding_frac_q50=0.0은 '펀딩이 없었다'는 측정으로 읽히고, 빠진 양은 KT-1이 납입원금의 36 %로 측정한 바로 그 항이다. include_funding=True가 config_hash에 그대로 들어가므로 원장 행은 '펀딩 포함'이라고 주장한다.",
+      "decided_utc": "2026-09-05T04:26:45.382938+00:00"
     },
     "1206ba3cfaa1": {
       "id": "1206ba3cfaa1",
@@ -2727,16 +2728,17 @@
     },
     "27ee0ce57d47": {
       "id": "27ee0ce57d47",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T04:16:40.026408+00:00",
       "last_seen_utc": "2026-09-05T04:16:40.026408+00:00",
-      "disposition": "",
+      "disposition": "sealed_only with_positioning is refused; the sealed positioning path gets built when a final test needs it. test_a_final_test_cannot_read_positioning_from_before_the_seal",
       "file": "orc/facts/panel.py",
       "line": 250,
       "severity": "high",
       "what": "On the sealed path the bars come from the sealed span but the positioning column is loaded development-only and then forward-filled, so a final test measures the out-of-sample period against a frozen 2024-02-29 open-interest reading.",
       "trigger": "Inside `holdout.final_test(...)`, call `panel.load(\"BTCUSDT\", \"1h\", sealed_only=True, with_positioning=True)`. Line 177 refuses `sealed_only=True` together with `development_only=False`, so `development_only` is necessarily True and is passed straight through to `positioning.load(symbol, development_only=development_only)` at line 250, which truncates at the seal. `first = pos[\"ts\"].min()` is then a 2021 timestamp, `keep = df[\"ts\"] >= first` drops nothing, and the `join_asof(..., strategy=\"backward\")` at line 267 matches every one of the ~21,505 sealed bars to the last development row, giving a constant open_interest column for the whole sealed span.",
-      "why_silent": "join_asof backward always finds a match, so there is no null, `np.all(np.isfinite(oi))` passes, the frame is labelled SEALED_ONLY, and the panel returns the right number of sealed bars with an open-interest series that is merely flat rather than absent. Any rule reading an OI level or its change sees a plausible, quiet series, and the error lands on one of three measurements that can never be repeated."
+      "why_silent": "join_asof backward always finds a match, so there is no null, `np.all(np.isfinite(oi))` passes, the frame is labelled SEALED_ONLY, and the panel returns the right number of sealed bars with an open-interest series that is merely flat rather than absent. Any rule reading an OI level or its change sees a plausible, quiet series, and the error lands on one of three measurements that can never be repeated.",
+      "decided_utc": "2026-09-05T04:26:51.444908+00:00"
     },
     "e9391b9dd624": {
       "id": "e9391b9dd624",

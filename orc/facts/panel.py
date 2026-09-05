@@ -200,6 +200,25 @@ def load(
 
     fr = np.zeros(df.height, dtype=np.float64)
     settled = np.zeros(df.height, dtype=bool)
+    if with_funding and not funding_path(symbol).exists():
+        # kernel_review 2026-09-05. The earlier fix covered a funding table
+        # that starts LATE and left the one that is absent entirely: 38 of the
+        # 325 hourly panels have no funding parquet at all, and many are the
+        # delisted symbols KT-3 has just made admissible. Those came back with
+        # funding_rate all 0.0, and run_dca_trial does not check has_funding()
+        # -- so AUDIOUSDT recorded tm_q05=0.3646 with funding_frac_q50 exactly
+        # 0.00000000 as an ordinary trial. KT-1 measured that bill at 36% of
+        # contributed capital.
+        #
+        # `with_funding=True` is the default, so this refuses rather than
+        # returning zeros: a caller that genuinely does not need funding says
+        # so, and a grid point that cannot be evaluated is information about
+        # the grid rather than a cheap version of the trade.
+        raise FileNotFoundError(
+            f"{symbol}: no funding history, and with_funding=True would charge "
+            "the position nothing at all -- which is not a conservative error. "
+            "Fetch it (`python -m orc.facts.fetch_vision {symbol}`) or pass "
+            "with_funding=False and say why in the claim.")
     if with_funding and funding_path(symbol).exists():
         from orc.facts.fetch_vision import funding_rate_per_bar
         fund = pl.read_parquet(funding_path(symbol))
@@ -238,6 +257,23 @@ def load(
         fr, settled = funding_rate_per_bar(df["ts"], fund)
 
     oi = None
+    if with_positioning and sealed_only:
+        # kernel_review 2026-09-05, in code written an hour earlier. Line 177
+        # refuses sealed_only together with development_only=False, so
+        # development_only is necessarily True here and was passed straight to
+        # positioning.load -- which truncates at the seal. The bars would come
+        # from the sealed span and the open-interest column from before it,
+        # forward-filled, so a final test would measure the out-of-sample
+        # period against a frozen 2024-02-29 reading.
+        #
+        # Refused rather than wired, because there are three openings for the
+        # life of the project and none has been used: the right time to build
+        # the sealed positioning path is when a candidate actually needs it,
+        # with the numbers in front of whoever is spending the opening.
+        raise ValueError(
+            "sealed_only with_positioning is not wired: the positioning store "
+            "would be read development-only and forward-filled across the "
+            "sealed span. Build the sealed path when a final test needs it.")
     if with_positioning:
         # Same rule as funding above, for the same reason: the positioning
         # store starts 2021-12 for most symbols and 2020-09 for BTCUSDT, while

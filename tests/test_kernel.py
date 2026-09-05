@@ -1512,3 +1512,64 @@ def test_a_window_longer_than_the_series_is_no_reading_rather_than_a_crash():
     mean, mad = _rolling_mean_and_mad(x, period=5)
     assert np.isnan(mean[:4]).all()
     assert mean[4] == pytest.approx(2.0)
+
+
+def test_a_panel_with_no_funding_history_refuses_rather_than_charging_zero(
+        tmp_path, monkeypatch):
+    """kernel_review 2026-09-05, in the fix that landed an hour earlier.
+
+    That fix covered a funding table starting LATE and left the one that is
+    absent entirely: 38 of the 325 hourly panels have no funding parquet, many
+    of them the delisted symbols KT-3 has just made admissible. They came back
+    with funding_rate all zero, and run_dca_trial does not check has_funding(),
+    so AUDIOUSDT recorded tm_q05=0.3646 with funding_frac_q50 exactly
+    0.00000000 as an ordinary trial. KT-1 measured that bill at 36% of
+    contributed capital.
+    """
+    import polars as pl
+
+    from orc import config
+    from orc.facts import panel as panel_mod
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    (tmp_path / "panel_1h").mkdir()
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(200, "h")
+    ts = start + np.arange(100) * np.timedelta64(1, "h")
+    px = np.full(100, 100.0)
+    pl.DataFrame({"ts": ts.astype("datetime64[ms]"), "open": px, "high": px,
+                  "low": px, "close": px, "volume": np.ones(100)}
+                 ).write_parquet(tmp_path / "panel_1h" / "NOFUNDUSDT.parquet")
+
+    with pytest.raises(FileNotFoundError, match="no funding history"):
+        panel_mod.load("NOFUNDUSDT", "1h")
+
+    # Asking without funding is the honest way to read such a symbol.
+    p = panel_mod.load("NOFUNDUSDT", "1h", with_funding=False)
+    assert len(p) == 100
+    assert not p.has_funding()
+
+
+def test_a_final_test_cannot_read_positioning_from_before_the_seal(monkeypatch):
+    """kernel_review 2026-09-05, also in an hour-old fix.
+
+    load() refuses sealed_only together with development_only=False, so on the
+    sealed path development_only is necessarily True -- and it was passed
+    straight to positioning.load, which truncates at the seal. The bars would
+    come from the sealed span and the open-interest column from before it,
+    forward-filled, so a final test would measure the out-of-sample period
+    against a frozen 2024-02-29 reading.
+
+    Refused rather than wired: there are three openings for the life of the
+    project and none has been used, so the sealed positioning path gets built
+    when a candidate actually needs it.
+    """
+    from orc import holdout
+    from orc.facts import panel as panel_mod
+
+    # Inside an open final test the seal gate passes and this check is what
+    # stands between a stale column and an opening that cannot be taken back.
+    monkeypatch.setattr(holdout, "sealed_reads_permitted", lambda: True)
+    monkeypatch.setattr(holdout, "note_sealed_read", lambda what: None)
+
+    with pytest.raises(ValueError, match="not wired"):
+        panel_mod.load("BTCUSDT", "1h", sealed_only=True, with_positioning=True)
