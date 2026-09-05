@@ -1725,3 +1725,154 @@ def test_property_a_development_load_never_reaches_the_seal(px):
         holdout.assert_development_only(dev, "ts")
         assert np.datetime64(dev["ts"].max(), "s") < np.datetime64(
             str(config.HOLDOUT_START), "s")
+
+
+@_SLOW
+@given(_PRICES, st.integers(min_value=0, max_value=2 ** 31 - 1))
+def test_property_no_trade_is_filled_and_closed_on_one_bar(px, seed):
+    """A trade whose entry_bar equals its exit_bar was filled at a price that
+    decided the fill. That is the lookahead this evaluator's first convention
+    forbids, and it is checkable without knowing anything else about the rule.
+
+    Found by the differential oracle, which is the point worth recording: the
+    codex reference produced exactly that trade -- (83, 83) on an 84-bar panel,
+    identical to run_signals on all thirteen trades before it -- because the
+    brief left "the last bar has no i+1" implicit. run_signals was right; the
+    property is here so that stays true without a second implementation to ask.
+    """
+    from orc.eval.signal import FLAT, LONG, SHORT, SignalSpec, run_signals
+
+    close = np.asarray(px, dtype=np.float64)
+    n = close.size
+    rng = np.random.default_rng(seed)
+    entry = rng.choice([LONG, SHORT, FLAT], size=n, p=[.2, .2, .6]).astype(np.int8)
+    exit_ = rng.random(n) < 0.2
+    spec = SignalSpec(capital=1000.0, leverage=1.0, fee_bps=0.0,
+                      slippage_bps=0.0)
+
+    r = run_signals(close, close, close, entry, exit_, spec)
+    for t in r.get("trades") or []:
+        assert t["exit_bar"] > t["entry_bar"], (
+            f"a trade opened and closed on bar {t['entry_bar']}: it was filled "
+            "at a price that decided the fill")
+        assert t["entry_bar"] < n, "a trade filled past the end of the panel"
+
+
+def test_a_filter_that_flips_sign_ends_the_regime():
+    """kernel_review e41917fcfecc, 2026-09-05.
+
+    cci_mtf's exit had two clauses and a comment saying the pair was complete:
+    "because the filter has to pass through the band to change sign, a flip is
+    always caught by that clause before the signed one can be read against the
+    wrong side". `filt` is a STEP function carried from slow candles, so two
+    consecutive slow candles can cross the whole band with no bar between them
+    where |filt| < filter_level.
+
+    Reproduced on the shape H0019 registers: filt +150 -> -150 leaves |filt| at
+    150 throughout, trend_gone never fires, and `sign(filt) * base` is then
+    measured along the OPPOSITE direction from the one the trade opened in --
+    the position is held through the exit its own rule specifies.
+
+    A sign flip IS the regime ending, whether or not a visible bar sat inside
+    the band while it happened.
+    """
+    from orc.eval.signal_rules import cci_mtf
+
+    n = 12
+    base = np.concatenate([np.full(5, -120.0), np.full(n - 5, 80.0)])
+    filt = np.concatenate([np.full(5, 150.0), np.full(n - 5, -150.0)])
+
+    _, exit_ = cci_mtf(base, filt, enter_level=100.0, exit_level=50.0,
+                       filter_level=100.0)
+    assert bool(exit_[5]), \
+        "the filter crossed the whole band between two bars and nothing exited"
+
+    # A filter that stays on one side must NOT be treated as a flip, or every
+    # position closes on the first bar and the rule stops being a rule.
+    steady = np.full(n, 150.0)
+    _, no_flip = cci_mtf(base, steady, enter_level=100.0, exit_level=50.0,
+                         filter_level=100.0)
+    assert not no_flip[1], "a steady filter was read as a regime change"
+
+
+def test_a_negative_hold_is_refused_by_the_simulator_too():
+    """kernel_review 0aca36a29e24, 2026-09-05.
+
+    analytic.py got `ends0 > starts0` for exactly this earlier the same day and
+    simulate did not. `Panel.bars(days)` passes a negative straight through and
+    nothing between the grid and the evaluator checks it, so a negative
+    hold_days silently truncated the REGISTERED deposit schedule:
+
+        SimSpec(contribution=100, stride_bars=10, n_contributions=5,
+                hold_bars=-30)   ->  invested 200 against a registered 500
+
+    and at hold_bars=-100 the horizon went negative, the loop ran no bars, and
+    a complete result dict came back with close[starts + H] read from the END
+    of the array -- a price from the future. hold_days is a free grid axis and
+    H0009 and H0011 both enumerated it.
+    """
+    from orc.eval import simulate as sim
+
+    kw = dict(contribution=100.0, stride_bars=10, n_contributions=5)
+    assert sim.SimSpec(**kw, hold_bars=0).horizon_bars == 40
+    assert sim.SimSpec(**kw, hold_bars=7).horizon_bars == 47
+
+    for bad in (-1, -30, -100):
+        with pytest.raises(ValueError, match="negative"):
+            sim.SimSpec(**kw, hold_bars=bad)
+
+
+def test_one_sealed_load_does_not_cover_a_whole_grid(tmp_path, monkeypatch):
+    """kernel_review 2f35b441492d, 2026-09-05.
+
+    holdout.py's own module comment says the counter exists because "one
+    opening could cover a 972-cell grid and the log would say 1" -- and then it
+    went on counting LOADS. `run_trial(cfg, p=...)` takes an already-loaded
+    panel, so the review scored 83 cells against a single recorded read.
+
+    There are three openings for the life of the project. The log has to say
+    what each one actually looked at.
+    """
+    import json
+
+    import polars as pl
+
+    from orc import config, holdout
+    from orc.facts import panel as panel_mod
+    from orc.orchestrator.runner import run_trial
+    from orc.orchestrator.spec import TrialConfig
+
+    monkeypatch.setattr(config, "FACTS", tmp_path)
+    monkeypatch.setattr(holdout, "TOKEN_FILE", tmp_path / "TOK")
+    monkeypatch.setattr(holdout, "LOG_FILE", tmp_path / "led" / "LOG.jsonl")
+    monkeypatch.setattr(holdout, "READS_FILE", tmp_path / "led" / "READS.jsonl")
+    (tmp_path / "panel_1h").mkdir()
+    (tmp_path / "led").mkdir()
+
+    n = 400
+    start = np.datetime64(str(config.HOLDOUT_START), "h") - np.timedelta64(n // 2, "h")
+    ts = start + np.arange(n) * np.timedelta64(1, "h")
+    px = np.linspace(100.0, 200.0, n)
+    pl.DataFrame({"ts": ts.astype("datetime64[ms]"), "open": px, "high": px,
+                  "low": px, "close": px, "volume": np.ones(n)}
+                 ).write_parquet(tmp_path / "panel_1h" / "BTCUSDT.parquet")
+    holdout.TOKEN_FILE.write_text(holdout.TOKEN_TEXT, encoding="utf-8")
+
+    scored = 0
+    with holdout.final_test({"id": "H0002"}, "the one measurement"):
+        p = panel_mod.load("BTCUSDT", "1h", sealed_only=True, with_funding=False)
+        for k in range(2, 40):
+            try:
+                run_trial(TrialConfig(symbol="BTCUSDT", stride_days=1.0,
+                                      n_contributions=k, include_funding=False),
+                          p=p)
+                scored += 1
+            except Exception:                                      # noqa: BLE001
+                pass
+
+    rec = json.loads(holdout.READS_FILE.read_text(encoding="utf-8").strip())
+    assert scored > 1, "this test needs more than one cell to mean anything"
+    assert rec["n_sealed_reads"] == 1, "the panel was loaded once"
+    assert rec["n_sealed_measurements"] >= scored, (
+        f"{scored} cells were scored on sealed bars and the log recorded "
+        f"{rec['n_sealed_measurements']} measurements")

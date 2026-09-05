@@ -28,6 +28,7 @@ from orc.eval.simulate import (SimSpec, gate_below_sma, gate_below_trailing_peak
 from orc.eval.signal import SignalSpec, run_signals
 from orc.eval.signal_rules import (FUNDING_RULES, POSITIONING_RULES,
                                    build_signals)
+from orc import holdout
 from orc.facts import panel as panel_mod
 from orc.facts.panel import Panel
 from orc.kernel import metrics_fc
@@ -291,6 +292,13 @@ def run_signal_trial(cfg: "SignalTrialConfig", p: Panel | None = None) -> TrialO
 
 def run_trial(cfg, p: Panel | None = None) -> TrialOutcome:
     """Dispatch on what kind of thing the configuration describes."""
+    # One MEASUREMENT on sealed bars, recorded here rather than at the loader.
+    # panel.load counts loads, and a caller that passes `p=` loads once and
+    # scores a whole grid against it -- the kernel review scored 83 cells under
+    # a single recorded read. There are three openings for the life of the
+    # project and the log has to say what each one actually looked at.
+    if p is not None and p.holdout_state != panel_mod.DEVELOPMENT:
+        holdout.note_sealed_measurement(f"{cfg.symbol}/{type(cfg).__name__}")
     if isinstance(cfg, SignalTrialConfig):
         return run_signal_trial(cfg, p)
     return run_dca_trial(cfg, p)

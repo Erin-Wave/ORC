@@ -70,6 +70,25 @@ class SimSpec:
         # Track B expresses shorts properly: orc/eval/signal.py carries
         # LONG, SHORT, FLAT and liquidation_level() solves both sides, with the
         # short's unbounded loss called out. A short belongs there.
+        # analytic.py got `ends0 > starts0` for exactly this on 2026-09-05 and
+        # simulate did not. `Panel.bars(days)` passes a negative straight
+        # through and nothing between the grid and here checks it, so a
+        # negative hold_days silently truncated the registered deposit
+        # schedule: SimSpec(contribution=100, stride_bars=10,
+        # n_contributions=5, hold_bars=-30) executed TWO of the five and
+        # reported invested=200 against a registered 500. At hold_bars=-100 the
+        # horizon went negative, the loop ran no bars, and a complete result
+        # dict came back with `close[starts + H]` read from the END of the
+        # array -- a price from the future.
+        if self.hold_bars < 0:
+            raise ValueError(
+                f"hold_bars={self.hold_bars} is negative: a position cannot be "
+                "held for less than no time. It silently truncates the deposit "
+                "schedule and reads the exit price from the end of the series.")
+        if self.horizon_bars < 0:
+            raise ValueError(
+                f"horizon_bars={self.horizon_bars} is negative; the window ends "
+                "before it starts")
         if self.leverage <= 0.0:
             raise ValueError(
                 f"simulate is long-only and leverage={self.leverage} is not a "

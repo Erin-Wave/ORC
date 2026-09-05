@@ -2849,16 +2849,17 @@
     },
     "e41917fcfecc": {
       "id": "e41917fcfecc",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T05:15:22.002289+00:00",
       "last_seen_utc": "2026-09-05T05:15:22.002289+00:00",
-      "disposition": "",
+      "disposition": "a sign flip of the slow filter is a regime end; trend_gone now fires on it. test_a_filter_that_flips_sign_ends_the_regime",
       "file": "orc/eval/signal_rules.py",
       "line": 495,
       "severity": "high",
       "what": "cci_mtf's exit clause `resolved = ok & (np.sign(filt) * base >= exit_level)` re-reads sign(filt) at every bar, but the side of an open trade was fixed by sign(filt) at the entry bar, so once the slow filter jumps from one side of the band to the other the exit condition is evaluated against the wrong side and the position is held through the exit its own rule specifies.",
       "trigger": "Registered hypothesis H0019 exactly: rule=cci_mtf, timeframe_hours=4.0, lookback_days=5.0, filter_lookback_days=20.0, enter_level=100, exit_level=50, leverage=1.0, stop_loss=0.25, max_hold_days=5.0, clock=1h. `filt` is a step function carried from slow candles, so consecutive slow candles can cross the whole band with no base bar inside it, and the comment at lines 491-493 ('the filter has to pass through the band to change sign, a flip is always caught by that clause') is false. Measured on the development window, filter_lookback_days=20.0: BTCUSDT filter_timeframe_hours=48/filter_level=60 has 9 such flips and all 9 land inside an open trade (of 114 trades); SOLUSDT 48/60 has 7 of 96; SOLUSDT 24/120 has 1 of 8. Minimal hand input: filt=[150]*4+[-150]*8, base=[-120,-120,-120,-120,-10,20,60,90,120,120,120,120], enter=100, exit=50, filter_level=100 -> a LONG is signalled at bar 0 and `exit_` is False on every one of the 12 bars, even though base reaches +60 at bar 6 and the rule says exit at +50. Re-running H0019's grid with the side pinned at entry: SOLUSDT ftf=48/flvl=60 final_equity 13,156 as-is vs 5,728 corrected (+129.65%); BTCUSDT ftf=24/flvl=60 7,148 vs 5,156 (+38.65%); BTCUSDT ftf=48/flvl=60 4,293 vs 5,152 (-16.68%).",
-      "why_silent": "The corrupted trade is structurally identical to a correct one - it has an entry, an exit price, a funding leg and a pnl that reconciles - so run_signals' two RuntimeError invariants both pass. It also does not fail loudly at the flip: `trend_gone` is False there because |filt| is still at or beyond filter_level, so nothing marks the bar. And because a changed exit bar re-phases every subsequent entry, a handful of wrong exits moves the whole equity curve, which is then reported as an ordinary CAGR/Calmar for the cell."
+      "why_silent": "The corrupted trade is structurally identical to a correct one - it has an entry, an exit price, a funding leg and a pnl that reconciles - so run_signals' two RuntimeError invariants both pass. It also does not fail loudly at the flip: `trend_gone` is False there because |filt| is still at or beyond filter_level, so nothing marks the bar. And because a changed exit bar re-phases every subsequent entry, a handful of wrong exits moves the whole equity curve, which is then reported as an ordinary CAGR/Calmar for the cell.",
+      "decided_utc": "2026-09-05T11:18:25.782951+00:00"
     },
     "ad3292a02ef3": {
       "id": "ad3292a02ef3",
@@ -2914,16 +2915,17 @@
     },
     "0aca36a29e24": {
       "id": "0aca36a29e24",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T05:15:22.002289+00:00",
       "last_seen_utc": "2026-09-05T05:15:22.002289+00:00",
-      "disposition": "",
+      "disposition": "SimSpec refuses a negative hold_bars and a negative horizon_bars at construction, matching the analytic guard. test_a_negative_hold_is_refused_by_the_simulator_too",
       "file": "orc/eval/simulate.py",
       "line": 112,
       "severity": "high",
       "what": "경계 검사가 `starts.max() + H >= N`과 `starts.min() < 0`만 보고 `H` 자체의 부호를 보지 않아, 음수 `hold_bars`가 들어오면 시뮬레이터가 등록된 입금 스케줄을 조용히 잘라내거나(부분) 아예 0개 바를 돌고도 완결된 결과 dict를 반환하며(전면), 종료 처리에서 `close[starts + H]`를 음수 인덱스로 읽어 배열 끝(미래)의 가격을 집는다 — analytic.py는 2026-09-05 kernel_review에서 정확히 이 결함(hold_bars=-168)에 대해 `ends0 > starts0` 가드를 받았으나 simulate는 받지 않았다.",
       "trigger": "`hold_days`는 등록 hypothesis JSON의 자유 그리드 축이고(H0009, H0011이 실제로 열거함), `Panel.bars(days) = int(round(days*bars_per_day))`는 음수를 그대로 통과시키며, runner.py:302/surface.py:111 어디에도 비음수 검사가 없다. 재현: `SimSpec(contribution=100, stride_bars=10, n_contributions=5, hold_bars=-30)` → `horizon_bars=10`, 등록된 5회 입금 중 2회만 집행되어 `invested=200` / `nominal_invested=500`, `terminal_multiple=0.9989`. `hold_bars=-100` → `horizon_bars=-60`, 루프가 한 번도 돌지 않고 `n_starts=50`, `terminal_multiple` 전부 0.0, `liquidation_rate=0.0`, `exit_bar=-60`, 그리고 255행이 `close[starts-60]`을 실행. 동일 스펙을 analytic에 넣으면 `n_starts=360`으로 전혀 다른 답이 나온다.",
-      "why_silent": "예외가 없고 NaN도 없다. 부분 절단 케이스는 tm 0.9989라는 완벽하게 그럴듯한 숫자를 내고, runner가 `n_real = round(invested/contribution)`로 실제 입금 수에 맞춰 IRR을 재계산하기 때문에 하류에서 '등록된 것보다 적게 입금했다'는 사실이 드러날 지점이 없다. 전면 케이스도 `n_starts`가 0이 아니라 50이라 runner의 `no_admissible_start_dates` 가드를 통과하고, tm 0.0 / liquidation_rate 0.0 / max_dd 0.0은 '완전히 실패한 셀'로 읽힌다. 두 평가기가 같은 스펙에 다른 답을 내는데도 `test_analytic_matches_simulator`는 hold_bars >= 0 형태만 교차검증하므로 초록색으로 남는다. 결과 행은 append-only 원장에 영구히 들어간다."
+      "why_silent": "예외가 없고 NaN도 없다. 부분 절단 케이스는 tm 0.9989라는 완벽하게 그럴듯한 숫자를 내고, runner가 `n_real = round(invested/contribution)`로 실제 입금 수에 맞춰 IRR을 재계산하기 때문에 하류에서 '등록된 것보다 적게 입금했다'는 사실이 드러날 지점이 없다. 전면 케이스도 `n_starts`가 0이 아니라 50이라 runner의 `no_admissible_start_dates` 가드를 통과하고, tm 0.0 / liquidation_rate 0.0 / max_dd 0.0은 '완전히 실패한 셀'로 읽힌다. 두 평가기가 같은 스펙에 다른 답을 내는데도 `test_analytic_matches_simulator`는 hold_bars >= 0 형태만 교차검증하므로 초록색으로 남는다. 결과 행은 append-only 원장에 영구히 들어간다.",
+      "decided_utc": "2026-09-05T11:18:26.189679+00:00"
     },
     "4b6249ea453e": {
       "id": "4b6249ea453e",
@@ -3110,16 +3112,17 @@
     },
     "2f35b441492d": {
       "id": "2f35b441492d",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T05:15:22.002289+00:00",
       "last_seen_utc": "2026-09-05T05:15:22.002289+00:00",
-      "disposition": "",
+      "disposition": "run_trial records a sealed MEASUREMENT per cell; the reads file counts loads and measurements apart. test_one_sealed_load_does_not_cover_a_whole_grid",
       "file": "orc/holdout.py",
       "line": 99,
       "severity": "high",
       "what": "`n_sealed_reads` counts calls to `note_sealed_read()`, i.e. panel LOADS, not measurements — and `run_trial(cfg, p=...)`/`drawdown_for(cfg, p=...)` take an already-loaded panel, so one recorded read can cover an entire grid, which is exactly the failure the module comment at lines 55-60 claims to have fixed.",
       "trigger": "Executed just now against a synthetic archive straddling the seal, with TOKEN_FILE/LOG_FILE/READS_FILE redirected to tmp: `with holdout.final_test({'id':'H0002'}, 'the one measurement'): p = panel.load('BTCUSDT','1h',sealed_only=True,with_funding=False); [run_trial(TrialConfig(symbol='BTCUSDT',stride_days=1.0,n_contributions=n,include_funding=False), p=p) for n in range(2,200)]`. 83 cells were measured on the sealed span; `FINAL_TEST_READS.jsonl` recorded `{\"n_sealed_reads\": 1, \"sealed_reads\": [\"BTCUSDT/1h sealed\"]}`. `note_sealed_read` sits inside `panel.load` (orc/facts/panel.py:186), and `runner.py:430-445` is already built to load each (symbol, clock) once and hand the same Panel to every configuration, so this is the ordinary call shape, not a contrived one.",
-      "why_silent": "The audit line is syntactically perfect and its number is a true count of loads, so nothing distinguishes 'one load, one measurement' from 'one load, 83 measurements'. The comment at lines 55-60 says the pre-fix counter 'measured how many times someone had filled in the form... One opening could cover a 972-cell grid and the log would say 1'; the post-fix counter would say 1 for that same grid whenever the panel is loaded once and reused. The record therefore reads as evidence that the one irreversible out-of-sample measurement was one measurement, when it was a selection over the whole grid — and there are three of these for the life of the project."
+      "why_silent": "The audit line is syntactically perfect and its number is a true count of loads, so nothing distinguishes 'one load, one measurement' from 'one load, 83 measurements'. The comment at lines 55-60 says the pre-fix counter 'measured how many times someone had filled in the form... One opening could cover a 972-cell grid and the log would say 1'; the post-fix counter would say 1 for that same grid whenever the panel is loaded once and reused. The record therefore reads as evidence that the one irreversible out-of-sample measurement was one measurement, when it was a selection over the whole grid — and there are three of these for the life of the project.",
+      "decided_utc": "2026-09-05T11:18:26.603677+00:00"
     },
     "5fa2c1ad93d3": {
       "id": "5fa2c1ad93d3",

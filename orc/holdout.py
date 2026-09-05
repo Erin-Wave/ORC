@@ -65,6 +65,23 @@ def sealed_reads_permitted() -> bool:
     return _sealed_reads is not None
 
 
+def note_sealed_measurement(what: str) -> None:
+    """Called by an evaluator for each MEASUREMENT taken on sealed bars.
+
+    note_sealed_read below counts LOADS, and the module comment above already
+    says why that is not enough -- "one opening could cover a 972-cell grid and
+    the log would say 1". It then went on counting loads anyway, because
+    `run_trial(cfg, p=...)` takes an already-loaded panel: the kernel review
+    demonstrated 83 cells scored against ONE recorded read.
+
+    Silent outside a final test. A development panel is measured thousands of
+    times a day and none of it is a look at the sealed period; raising here
+    would make every ordinary trial pay for a check about the seal.
+    """
+    if _sealed_reads is not None:
+        _sealed_reads.append(f"measure:{what}")
+
+
 def note_sealed_read(what: str) -> None:
     """Called by the loader before it hands back sealed bars."""
     if _sealed_reads is None:
@@ -96,7 +113,13 @@ def final_test(candidate: dict, reason: str):
             fh.write(json.dumps({
                 "opening": record["opening"],
                 "candidate_sha256": record["candidate_sha256"],
-                "n_sealed_reads": len(reads),
+                # Loads and measurements counted apart, because they answer
+                # different questions and the first was standing in for the
+                # second: one load can cover a whole grid.
+                "n_sealed_reads": sum(1 for r in reads
+                                      if not r.startswith("measure:")),
+                "n_sealed_measurements": sum(1 for r in reads
+                                             if r.startswith("measure:")),
                 "sealed_reads": reads,
             }) + chr(10))
 

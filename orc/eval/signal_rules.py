@@ -488,10 +488,27 @@ def cci_mtf(base: np.ndarray, filt: np.ndarray, enter_level: float,
     # sign of the filter at the entry bar, so `sign(filter) * base` is the
     # reading measured along the direction of the trade, and the clause says
     # the pullback has resolved in the permitted direction.  The other way out
-    # is the regime itself ending, and because the filter has to pass through
-    # the band to change sign, a flip is always caught by that clause before
-    # the signed one can be read against the wrong side.
-    trend_gone = (~ok) | (np.abs(filt) < filter_level)
+    # is the regime itself ending.
+    #
+    # That used to be written as "because the filter has to pass through the
+    # band to change sign, a flip is always caught before the signed clause can
+    # be read against the wrong side" -- a comment describing behaviour this
+    # code did not have. `filt` is a STEP function carried from slow candles,
+    # so two consecutive slow candles can cross the whole band with no bar
+    # between them where |filt| < filter_level. Demonstrated on the shape H0019
+    # registers: filt +150 -> -150 leaves |filt| at 150 throughout, trend_gone
+    # never fires, and `sign(filt) * base` is then measured along the OPPOSITE
+    # direction from the one the trade was opened in. The position is held
+    # through the exit its own rule specifies.
+    #
+    # A sign flip IS the regime ending, whether or not a visible bar sat inside
+    # the band while it happened. Comparing each bar's sign to the previous
+    # one is stateless, which is what keeps these generators ignorant of their
+    # own positions.
+    sgn = np.sign(filt)
+    flipped = np.zeros(filt.size, dtype=bool)
+    flipped[1:] = (sgn[1:] != sgn[:-1]) & (sgn[1:] != 0) & (sgn[:-1] != 0)
+    trend_gone = (~ok) | (np.abs(filt) < filter_level) | flipped
     resolved = ok & (np.sign(filt) * base >= exit_level)
     return entry, trend_gone | resolved
 
