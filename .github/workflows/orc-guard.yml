@@ -56,6 +56,33 @@ jobs:
       - name: The suite must be green
         run: python -m pytest tests -q
 
+      # The Track B evaluator has had ONE implementation since it was written
+      # and every Track B number the project reports comes out of it. Section 5
+      # gives Track A two that check each other and says what a disagreement
+      # means: every result is void. oracle/ref_signal.py is the second one,
+      # written by codex from semantics alone so that a defect has to be a
+      # mistake BOTH vendors make.
+      #
+      # It runs here rather than only on the workstation because this is the
+      # machine the agent does not control -- the same reason the suite runs
+      # here. `continue-on-error` while the first disagreements are still being
+      # triaged: two are classified and one of those is a specification gap
+      # rather than a defect in either implementation, so a hard failure today
+      # would block every commit on a question nobody has decided yet.
+      - name: Do the two Track B evaluators agree?
+        continue-on-error: true
+        run: python oracle/fuzz.py --cases 400
+
+      # Types are the only check here that makes a defect UNREPRESENTABLE
+      # rather than detectable. Scoped to the kernel and the evaluators because
+      # that is where a wrong number comes from, and advisory while the
+      # annotations are still being added.
+      - name: Types, where a wrong number would come from
+        continue-on-error: true
+        run: |
+          pip install --quiet mypy
+          python -m mypy --ignore-missing-imports orc/kernel orc/eval || true
+
 
       # Mutation testing is the only check here that measures the CHECKS: it
       # breaks the kernel on purpose and asks whether any test notices. Three

@@ -267,6 +267,37 @@ def check_message(message: str) -> list[str]:
     return problems
 
 
+# The one check whose reviewer is not this machine.
+# --------------------------------------------------------------------------
+# Every other refusal here is code I wrote judging code I wrote. On 2026-09-05
+# that combination passed seventeen high findings, two of them inside fixes
+# landed an hour before the review that caught them, on a suite that was green
+# for all of them.
+#
+# So a change to the research path is read by the OTHER vendor before it lands.
+# Off by default because it costs a model call per commit and a person editing
+# a docstring should not wait for one; ORC_DIFF_ADVERSARY=1 turns it on, and
+# the supervisor sets it because the supervisor is the author this exists for.
+DIFF_ADVERSARY_ENV = "ORC_DIFF_ADVERSARY"
+
+
+def check_diff_adversary(rows) -> list[str]:
+    if os.environ.get(DIFF_ADVERSARY_ENV, "").strip() not in ("1", "true", "yes"):
+        return []
+    import diff_adversary
+
+    diff = diff_adversary.staged_diff()
+    if not diff_adversary.touches_research(diff):
+        return []
+    v = diff_adversary.judge(diff, author=os.environ.get("ORC_AUTHOR", "claude"))
+    if v.get("verdict") == "PASS":
+        print(f"diff adversary [{v.get('reviewer','-')}]: PASS")
+        return []
+    return [f"the diff adversary ({v.get('reviewer','-')}) refused this change: "
+            f"{v.get('why','')}"
+            + (f"  Worst case: {v['worst_case']}" if v.get("worst_case") else "")]
+
+
 def main(argv: list[str]) -> int:
     if "--install" in argv:
         for name, body in (("pre-commit", HOOK), ("commit-msg", MSG_HOOK)):
@@ -307,7 +338,7 @@ def main(argv: list[str]) -> int:
     if not rows:
         return 0
     problems = (check_conflict_markers(rows) + check_new_files(rows)
-                + check_ledger(rows) + check_tests())
+                + check_ledger(rows) + check_tests() + check_diff_adversary(rows))
     if not problems:
         return 0
     print("\nthe commit was refused:\n", file=sys.stderr)
