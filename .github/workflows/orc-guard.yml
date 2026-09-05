@@ -65,13 +65,21 @@ jobs:
       #
       # It runs here rather than only on the workstation because this is the
       # machine the agent does not control -- the same reason the suite runs
-      # here. `continue-on-error` while the first disagreements are still being
-      # triaged: two are classified and one of those is a specification gap
-      # rather than a defect in either implementation, so a hard failure today
-      # would block every commit on a question nobody has decided yet.
+      # here.
+      #
+      # HARD as of 2026-09-05, and the condition for that was written down
+      # before it was met: a clean fuzz. Seven specification gaps were closed
+      # to get there and the final state is 7,500 cases over four seeds with
+      # zero disagreements. Section 5 says a Track A disagreement voids every
+      # result in the project; Track B now has the same statement and the same
+      # consequence.
+      #
+      # Two seeds, because 400 cases on ONE seed reported clean and a different
+      # seed then found a real gap at case 1,267.
       - name: Do the two Track B evaluators agree?
-        continue-on-error: true
-        run: python oracle/fuzz.py --cases 400
+        run: |
+          python oracle/fuzz.py --cases 800 --seed 20260905
+          python oracle/fuzz.py --cases 800 --seed 777
 
       # Types are the only check here that makes a defect UNREPRESENTABLE
       # rather than detectable. Scoped to the kernel and the evaluators because

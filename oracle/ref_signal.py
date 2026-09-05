@@ -27,218 +27,263 @@ def ref_run_signals(
     high = np.asarray(high, dtype=np.float64)
     low = np.asarray(low, dtype=np.float64)
     entry = np.asarray(entry, dtype=np.int8)
-    exit_ = np.asarray(exit_, dtype=bool)
+    exit_ = np.asarray(exit_, dtype=np.bool_)
 
-    n = close.size
+    if close.ndim != 1:
+        raise ValueError("inputs must be one-dimensional")
     if high.shape != close.shape or low.shape != close.shape:
-        raise ValueError("close, high, and low must have the same shape")
+        raise ValueError("close, high, and low must have identical shapes")
     if entry.shape != close.shape or exit_.shape != close.shape:
-        raise ValueError("entry and exit_ must have one value per bar")
-    if not np.all(np.isin(entry, (SHORT, FLAT, LONG))):
-        raise ValueError("entry values must be LONG, SHORT, or FLAT")
-    if not np.all(np.isfinite(close)):
-        raise ValueError("close contains non-finite values")
-    if not np.all(np.isfinite(high)):
-        raise ValueError("high contains non-finite values")
-    if not np.all(np.isfinite(low)):
-        raise ValueError("low contains non-finite values")
-    if np.any(close <= 0.0) or np.any(high <= 0.0) or np.any(low <= 0.0):
-        raise ValueError("prices must be positive")
-    if np.any(high < low):
-        raise ValueError("high must not be below low")
+        raise ValueError("signals must have one value per bar")
+    if np.any((entry != LONG) & (entry != SHORT) & (entry != FLAT)):
+        raise ValueError("entry must contain only LONG, SHORT, or FLAT")
+
+    n_bars = close.size
 
     if funding_rate is None:
-        rates = np.zeros(n, dtype=np.float64)
+        funding_rate = np.zeros(n_bars, dtype=np.float64)
     else:
-        rates = np.asarray(funding_rate, dtype=np.float64)
-        if rates.shape != close.shape:
+        funding_rate = np.asarray(funding_rate, dtype=np.float64)
+        if funding_rate.shape != close.shape:
             raise ValueError("funding_rate must have one value per bar")
-        if not np.all(np.isfinite(rates)):
-            raise ValueError("funding_rate contains non-finite values")
 
-    if n == 0:
+    equity = np.full(n_bars, float(spec.capital), dtype=np.float64)
+    trades = []
+    funding_collected = 0.0
+    n_liquidations = 0
+
+    if n_bars == 0:
         return {
-            "equity": np.empty(0, dtype=np.float64),
+            "equity": equity,
+            "final_equity": float(spec.capital),
             "n_trades": 0,
-            "trades": [],
+            "trades": trades,
             "n_liquidations": 0,
             "funding_collected": 0.0,
-            "final_equity": float(spec.capital),
         }
 
     if table is None:
         table = tier_table_for(symbol)
 
-    cost = (float(spec.fee_bps) + float(spec.slippage_bps)) / 1e4
+    cost_rate = (
+        float(spec.fee_bps) + float(spec.slippage_bps)
+    ) / 10_000.0
     leverage = float(spec.leverage)
+
     wallet = float(spec.capital)
-
-    equity = np.empty(n, dtype=np.float64)
-    equity[0] = wallet
-
-    trades = []
-    n_liquidations = 0
-    funding_collected = 0.0
+    ruined = False
 
     side = FLAT
     entry_bar = -1
     entry_price = 0.0
-    entry_wallet = 0.0
-    qty = 0.0
+    quantity = 0.0
     trade_funding = 0.0
 
-    def fill_price(price, order_side):
-        if order_side == LONG:
-            return price * (1.0 + cost)
-        return price * (1.0 - cost)
+    first_eligible_signal_bar = 0
 
-    def mark_equity(price):
-        if side == FLAT:
-            return wallet
-        return wallet + side * qty * (price - entry_price)
+    def entry_fill(raw_price, position_side):
+        if position_side == LONG:
+            return float(raw_price) * (1.0 + cost_rate)
+        return float(raw_price) * (1.0 - cost_rate)
 
-    def close_position(bar, reason, raw_price):
+    def exit_fill(raw_price, position_side):
+        if position_side == LONG:
+            return float(raw_price) * (1.0 - cost_rate)
+        return float(raw_price) * (1.0 + cost_rate)
+
+    def finish_trade(bar, reason, raw_exit_price):
         nonlocal wallet
+        nonlocal ruined
         nonlocal side
         nonlocal entry_bar
         nonlocal entry_price
-        nonlocal entry_wallet
-        nonlocal qty
+        nonlocal quantity
         nonlocal trade_funding
+        nonlocal funding_collected
         nonlocal n_liquidations
+        nonlocal first_eligible_signal_bar
 
-        exit_order_side = SHORT if side == LONG else LONG
-        exit_price = fill_price(float(raw_price), exit_order_side)
-        gross = side * qty * (exit_price - entry_price)
-        pnl = gross + trade_funding
-        wallet = entry_wallet + pnl
+        closed_side = side
+        closed_entry_bar = entry_bar
+        closed_entry_price = entry_price
+        closed_quantity = quantity
+        closed_funding = trade_funding
+
+        if reason == "liquidation":
+            actual_exit_price = float(raw_exit_price)
+            price_pnl = -wallet
+            wallet = 0.0
+            ruined = True
+            n_liquidations += 1
+        else:
+            actual_exit_price = exit_fill(raw_exit_price, closed_side)
+            price_pnl = (
+                float(closed_side)
+                * closed_quantity
+                * (actual_exit_price - closed_entry_price)
+            )
+            wallet += price_pnl
+
+        funding_collected += closed_funding
 
         trades.append(
             {
-                "entry_bar": entry_bar,
+                "entry_bar": int(closed_entry_bar),
                 "exit_bar": int(bar),
-                "side": int(side),
-                "entry_price": float(entry_price),
-                "exit_price": float(exit_price),
-                "bars_held": int(bar - entry_bar),
+                "bars_held": int(bar - closed_entry_bar),
+                "side": int(closed_side),
+                "entry_price": float(closed_entry_price),
+                "exit_price": float(actual_exit_price),
                 "reason": reason,
-                "gross": float(gross),
-                "funding": float(trade_funding),
-                "pnl": float(pnl),
+                "funding": float(closed_funding),
+                "pnl": float(price_pnl + closed_funding),
             }
         )
-
-        if reason == "liquidation":
-            n_liquidations += 1
 
         side = FLAT
         entry_bar = -1
         entry_price = 0.0
-        entry_wallet = 0.0
-        qty = 0.0
+        quantity = 0.0
         trade_funding = 0.0
 
-    for bar in range(1, n):
-        if side == FLAT:
-            requested_side = int(entry[bar - 1])
-            if requested_side != FLAT and wallet != 0.0:
-                notional = abs(wallet) * leverage
-                allowed_leverage = table.leverage_at(notional)
-                if leverage > allowed_leverage:
-                    raise ValueError(
-                        f"leverage {leverage} exceeds tier maximum "
-                        f"{allowed_leverage} for notional {notional}"
-                    )
+        # The position was still open while this bar's signal was observed.
+        first_eligible_signal_bar = bar + 1
 
-                side = requested_side
-                entry_bar = bar
-                entry_wallet = wallet
-                entry_price = fill_price(close[bar], side)
-                qty = notional / entry_price
-                trade_funding = 0.0
-
-            equity[bar] = mark_equity(close[bar])
+    for bar in range(n_bars):
+        if ruined:
+            equity[bar] = 0.0
             continue
 
-        funding = -side * qty * close[bar] * rates[bar]
-        wallet += funding
-        trade_funding += funding
-        funding_collected += funding
+        opened_here = False
 
-        reason = None
-        raw_exit_price = None
+        # A final-bar fill would have to be closed on its entry bar. Since no
+        # trade may enter and exit on one bar, the last possible fill is n-2.
+        if side == FLAT and 1 <= bar < n_bars - 1:
+            signal_bar = bar - 1
 
-        if wallet <= 0.0:
-            reason = "liquidation"
-            raw_exit_price = close[bar]
-        else:
-            liq = liquidation_level(
+            if signal_bar >= first_eligible_signal_bar:
+                requested_side = int(entry[signal_bar])
+
+                if requested_side != FLAT:
+                    side = requested_side
+                    entry_bar = bar
+                    entry_price = entry_fill(close[bar], side)
+                    quantity = wallet * leverage / entry_price
+                    trade_funding = 0.0
+                    opened_here = True
+
+        if side == FLAT:
+            equity[bar] = wallet
+            continue
+
+        mark_price = float(close[bar])
+
+        # The fill is at this bar's close. This bar's extremes and funding
+        # precede the fill and therefore cannot affect the new position.
+        if opened_here:
+            equity[bar] = (
+                wallet
+                + float(side) * quantity * (mark_price - entry_price)
+            )
+            continue
+
+        liquidation_price = float(
+            liquidation_level(
                 side,
                 wallet,
-                qty,
+                quantity,
                 entry_price,
                 table,
             )
-            if side == LONG and low[bar] <= liq:
-                reason = "liquidation"
-                raw_exit_price = liq
-            elif side == SHORT and high[bar] >= liq:
-                reason = "liquidation"
-                raw_exit_price = liq
+        )
 
-        if reason is None and spec.stop_loss is not None:
-            stop_distance = entry_price * float(spec.stop_loss) / leverage
-            stop_price = entry_price - side * stop_distance
-            if side == LONG and low[bar] <= stop_price:
-                reason = "stop"
-                raw_exit_price = stop_price
-            elif side == SHORT and high[bar] >= stop_price:
-                reason = "stop"
-                raw_exit_price = stop_price
+        if side == LONG:
+            liquidation_hit = float(low[bar]) <= liquidation_price
+        else:
+            liquidation_hit = float(high[bar]) >= liquidation_price
 
-        if reason is None and spec.take_profit is not None:
-            target_distance = entry_price * float(spec.take_profit) / leverage
-            target_price = entry_price + side * target_distance
-            if side == LONG and high[bar] >= target_price:
-                reason = "take_profit"
-                raw_exit_price = target_price
-            elif side == SHORT and low[bar] <= target_price:
-                reason = "take_profit"
-                raw_exit_price = target_price
+        if liquidation_hit:
+            trade_funding += (
+                -float(side)
+                * quantity
+                * mark_price
+                * float(funding_rate[bar])
+            )
+            finish_trade(bar, "liquidation", liquidation_price)
+            equity[bar] = 0.0
+            continue
 
-        if reason is None and exit_[bar - 1]:
-            reason = "signal"
-            raw_exit_price = close[bar]
+        funding_cashflow = (
+            -float(side)
+            * quantity
+            * mark_price
+            * float(funding_rate[bar])
+        )
+        wallet += funding_cashflow
+        trade_funding += funding_cashflow
 
-        if (
-            reason is None
-            and spec.max_hold_bars is not None
-            and bar - entry_bar >= int(spec.max_hold_bars)
-        ):
-            reason = "max_hold"
-            raw_exit_price = close[bar]
+        if wallet <= 0.0:
+            finish_trade(bar, "liquidation", mark_price)
+            equity[bar] = 0.0
+            continue
 
-        if reason is not None:
-            close_position(bar, reason, raw_exit_price)
+        if spec.stop_loss is not None:
+            stop_distance = float(spec.stop_loss) / leverage
 
-        equity[bar] = mark_equity(close[bar])
+            if side == LONG:
+                stop_price = entry_price * (1.0 - stop_distance)
+                stop_hit = float(low[bar]) <= stop_price
+            else:
+                stop_price = entry_price * (1.0 + stop_distance)
+                stop_hit = float(high[bar]) >= stop_price
 
-    if side != FLAT:
-        close_position(n - 1, "end", close[-1])
-        equity[-1] = wallet
+            if stop_hit:
+                finish_trade(bar, "stop", stop_price)
+                equity[bar] = wallet
+                continue
 
-    pnl_total = wallet - float(spec.capital)
-    gross_collected = sum(trade["gross"] for trade in trades)
-    wins = sum(trade["pnl"] > 0.0 for trade in trades)
+        if spec.take_profit is not None:
+            target_distance = float(spec.take_profit) / leverage
+
+            if side == LONG:
+                target_price = entry_price * (1.0 + target_distance)
+                target_hit = float(high[bar]) >= target_price
+            else:
+                target_price = entry_price * (1.0 - target_distance)
+                target_hit = float(low[bar]) <= target_price
+
+            if target_hit:
+                finish_trade(bar, "take_profit", target_price)
+                equity[bar] = wallet
+                continue
+
+        if spec.max_hold_bars is not None:
+            if bar - entry_bar >= int(spec.max_hold_bars):
+                finish_trade(bar, "max_hold", mark_price)
+                equity[bar] = wallet
+                continue
+
+        # The exit signal from the preceding bar fills at this bar's close.
+        if bool(exit_[bar - 1]):
+            finish_trade(bar, "signal", mark_price)
+            equity[bar] = wallet
+            continue
+
+        if bar == n_bars - 1:
+            finish_trade(bar, "signal", mark_price)
+            equity[bar] = wallet
+            continue
+
+        equity[bar] = (
+            wallet
+            + float(side) * quantity * (mark_price - entry_price)
+        )
 
     return {
         "equity": equity,
+        "final_equity": float(equity[-1]),
         "n_trades": len(trades),
         "trades": trades,
-        "n_liquidations": n_liquidations,
+        "n_liquidations": int(n_liquidations),
         "funding_collected": float(funding_collected),
-        "gross_collected": float(gross_collected),
-        "pnl_total": float(pnl_total),
-        "final_equity": float(wallet),
-        "win_rate": float(wins / len(trades)) if trades else 0.0,
     }

@@ -1782,7 +1782,12 @@ def test_the_panel_cache_is_keyed_on_the_clock_as_well_as_the_symbol():
     src = (Path(__file__).resolve().parents[1] / "orc" / "orchestrator"
            / "runner.py").read_text(encoding="utf-8")
     assert "panels: dict[tuple[str, str], Panel]" in src
-    assert "key = (cfg.symbol, cfg.clock)" in src
+    # UPDATED 2026-09-05: positioning joined the key. A grid mixing a rule that
+    # reads open interest with one that does not would otherwise hand the
+    # second whichever panel arrived first -- the same defect this test was
+    # written for, one field along.
+    assert "key = (cfg.symbol, cfg.clock, wants_oi)" in src
+    assert "with_positioning=wants_oi" in src
     assert "if cfg.symbol not in panels" not in src
 
 

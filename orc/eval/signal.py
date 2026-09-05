@@ -361,7 +361,18 @@ def run_signals(
     # so the contradiction never met itself.
     booked = float(sum(t["pnl"] for t in trades))
     moved = float(cash) - spec.capital
-    if abs(booked - moved) > max(1e-6, 1e-9 * spec.capital):
+    # The tolerance follows the MAGNITUDE being compared, not the capital. It
+    # was max(1e-6, 1e-9 * capital) -- an absolute bound -- and two float64
+    # sums of the same money cannot agree to 1e-6 once the money is large. A
+    # property test found it at 3.6e16, where the difference was 8 and the ULP
+    # is about 4: a legitimate path (a symbol up 35x at leverage) raised
+    # RuntimeError out of the evaluator.
+    #
+    # The check is worth keeping and worth keeping tight: the defect it caught
+    # was a clamp booking -22,200 against a 10,000 wallet, which is a relative
+    # error of 1.2, not of 1e-9.
+    scale = max(abs(booked), abs(moved), float(spec.capital))
+    if abs(booked - moved) > max(1e-6, 1e-9 * scale):
         raise RuntimeError(
             f"the trade log does not reconcile with the equity curve: trades "
             f"book {booked:,.2f} and the curve moved {moved:,.2f}")

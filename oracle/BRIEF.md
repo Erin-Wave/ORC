@@ -122,8 +122,26 @@ disagree about a word rather than about a number.
    fill at P*(1+c)" and the reference read it the other way, which is how this
    paragraph came to exist.
 
-9. A LIQUIDATED TRADE reports the funding it actually accrued up to the
-   liquidation bar, not the funding of the full intended holding period.
+9. A LIQUIDATED TRADE reports the funding it ACTUALLY ACCRUED up to the
+   liquidation bar -- and that is not zero.
+
+   Concretely, because the first version of this brief said only "not the
+   funding of the full intended holding period" and the reference read that as
+   "report nothing". A position opened at bar a and liquidated at bar L was
+   charged or paid funding on every bar from a+1 to L, and `trade["funding"]`
+   is that sum. Whatever the liquidation then destroys is a PRICE loss and
+   belongs on the price leg, not on the coupon.
+
+   The two must reconcile: `funding_collected` is the sum of every trade's
+   `funding`, liquidated ones included. A short liquidated after collecting 45
+   reports 45, not 0 -- reporting 0 makes the coupon and the price leg
+   disagree about where the money went, and this project has a finding on
+   record for exactly that (6641f54ee642).
+
+   Note the shape of the disagreement this produced: equity agreed to 1.07e-15
+   across the whole panel and only the REPORTED total differed. A number that
+   is right in the account and wrong in the report is still wrong -- it is a
+   recorded metric.
 
 10. NO CLAMP AT ZERO. If funding drives the wallet through zero the position is
     liquidated by rule 5; the equity path must not be floored with max(x, 0).

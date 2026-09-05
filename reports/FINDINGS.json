@@ -3044,16 +3044,17 @@
     },
     "3a01f9cf0087": {
       "id": "3a01f9cf0087",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T05:15:22.002289+00:00",
       "last_seen_utc": "2026-09-05T05:15:22.002289+00:00",
-      "disposition": "",
+      "disposition": "run_hypothesis keys its panel cache on (symbol, clock, wants_oi) and passes with_positioning. H0023 went from 0 evaluated to 45",
       "file": "orc/orchestrator/runner.py",
       "line": 434,
       "severity": "high",
       "what": "run_hypothesis pre-loads and caches every panel with panel_mod.load(symbol, clock, development_only=True) and never passes with_positioning, so run_signal_trial's positioning-aware load at line 223 is dead code on the only path that ever writes to the ledger, and every oi_confirmed_reversion cell is turned into a skip.",
       "trigger": "configs/queue/H0023.json, queued right now: rule='oi_confirmed_reversion', 9 symbols x 5 oi_drop levels. Verified on the live tree: run_signal_trial(cfg, panel_mod.load('BTCUSDT','1h',development_only=True)) -- exactly the object run_hypothesis hands it -- raises ValueError('BTCUSDT: no open-interest series on this panel...') from _build_oi_confirmed, while run_signal_trial(cfg, None) returns calmar -0.44051 on 180 trades. All 45 cells hit the except (UnsupportedConfig, ValueError) arm at runner.py:457 and are counted as skipped; zero rows are written. The same omission repeats at surface.py:454 and surface.py:520, so the PBO and the search test cannot run for this rule either.",
-      "why_silent": "Nothing raises: the ValueError lands in the skip bucket that legitimate inexpressible cells use, and skip_reasons prints 'no open-interest series on this panel', which reads as a fact about the universe rather than a loader bug. The surface then has no rows for the family, indistinguishable from a family that has not been run. H0023's own pre-registered kill condition says a cell that does not record 'counts as FAILING every clause it appears in and never as passing one' -- so all five clauses fire and a family that was never measured gets closed and published as a FAIL, on data (30,648 open-interest bars for BTCUSDT) that is present on disk and loads fine."
+      "why_silent": "Nothing raises: the ValueError lands in the skip bucket that legitimate inexpressible cells use, and skip_reasons prints 'no open-interest series on this panel', which reads as a fact about the universe rather than a loader bug. The surface then has no rows for the family, indistinguishable from a family that has not been run. H0023's own pre-registered kill condition says a cell that does not record 'counts as FAILING every clause it appears in and never as passing one' -- so all five clauses fire and a family that was never measured gets closed and published as a FAIL, on data (30,648 open-interest bars for BTCUSDT) that is present on disk and loads fine.",
+      "decided_utc": "2026-09-05T09:49:07.646693+00:00"
     },
     "240fc878910b": {
       "id": "240fc878910b",
@@ -3232,10 +3233,11 @@
       "trigger": "close=[100,100,50,...], leverage=5, entry at bar 0 and bar 5. fast: 1 trade, equity 0.0 from bar 2. ref: 2 trades, equity 40.4.",
       "fix": "Decide it and write it into the brief AND the evaluator docstring, with the venue behaviour it claims to model. KT-2 reads liquidation_rate and treats a liquidation as total loss, which argues for the zero; a Binance USD-M liquidation taking the full position margin argues the same. Neither is currently written down anywhere.",
       "id": "6c3546058ebe",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T08:52:17.215150+00:00",
       "last_seen_utc": "2026-09-05T08:52:17.215150+00:00",
-      "disposition": ""
+      "disposition": "decided: a liquidation leaves ZERO. Written into orc/eval/signal.py's conventions and oracle/BRIEF.md rule 5, and the oracle is clean over 7,500 cases on four seeds",
+      "decided_utc": "2026-09-05T09:49:07.250351+00:00"
     },
     "235ef78bf88b": {
       "file": "oracle/fuzz.py",

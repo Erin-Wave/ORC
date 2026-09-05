@@ -428,11 +428,22 @@ def run_hypothesis(
         print(f"{h.hypothesis_id}  {h.family}  {len(configs)} configurations")
 
     for cfg in configs:
-        key = (cfg.symbol, cfg.clock)
+        # Positioning is part of the KEY, not just the load. This cache had it
+        # neither way: every panel came back without open interest, so a rule
+        # that reads it produced UnsupportedConfig for the whole grid and the
+        # hypothesis recorded as skipped -- H0023 was in the queue when the
+        # kernel review found it (3a01f9cf0087).
+        #
+        # And keying on (symbol, clock) alone would be the same defect one
+        # layer down: a grid mixing positioning and non-positioning rules on
+        # one symbol would hand the second one whichever panel arrived first.
+        wants_oi = cfg.rule in POSITIONING_RULES if hasattr(cfg, "rule") else False
+        key = (cfg.symbol, cfg.clock, wants_oi)
         if key not in panels:
             try:
                 panels[key] = panel_mod.load(cfg.symbol, cfg.clock,
-                                             development_only=True)
+                                             development_only=True,
+                                             with_positioning=wants_oi)
             except (FileNotFoundError, ValueError) as exc:
                 panels[key] = None                           # type: ignore[assignment]
                 failures[f"panel:{type(exc).__name__}"] = failures.get(
