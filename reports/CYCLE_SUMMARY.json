@@ -1,41 +1,29 @@
 {
-  "run_id": "f83b0eaf389a",
-  "started_utc": "2026-09-04T22:53:40.066235+00:00",
-  "finished_utc": "2026-09-04T23:18:41.193619+00:00",
+  "run_id": "ff0596984af4",
+  "started_utc": "2026-09-05T04:19:22.069338+00:00",
+  "finished_utc": "2026-09-05T05:41:33.848820+00:00",
   "holdout_start": "2024-03-01",
   "final_tests_used": 0,
   "panels": 253,
   "hypotheses_run": [
-    "H0001",
-    "H0019"
+    "H0001"
   ],
-  "trials_before": 7010,
-  "trials_after": 7122,
-  "trials_added": 112,
+  "trials_before": 7122,
+  "trials_after": 7230,
+  "trials_added": 108,
   "results": [
     {
       "hypothesis_id": "H0001",
       "family": "unconditional_dca_spot_style",
-      "run_id": "f83b0eaf389a",
+      "run_id": "ff0596984af4",
       "configurations": 162,
-      "evaluated": 112,
-      "new_trials": 112,
-      "skipped": 50,
+      "evaluated": 108,
+      "new_trials": 108,
+      "skipped": 54,
       "skip_reasons": {
-        "horizon_exceeds_history": 50
+        "horizon_exceeds_history": 54
       },
-      "ledger_total_trials": 7122
-    },
-    {
-      "hypothesis_id": "H0019",
-      "family": "cci_mtf_regime_pullback",
-      "run_id": "f83b0eaf389a",
-      "configurations": 72,
-      "evaluated": 72,
-      "new_trials": 0,
-      "skipped": 0,
-      "skip_reasons": {},
-      "ledger_total_trials": 7122
+      "ledger_total_trials": 7230
     }
   ]
 }

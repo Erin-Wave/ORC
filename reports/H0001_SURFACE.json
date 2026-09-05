@@ -5,11 +5,11 @@
   "claim": "Baseline. Accumulating a major perpetual with equal deposits and no timing rule. Nobody is structurally paying us here; this exists to be the number every conditional rule must beat.",
   "kill_condition": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
   "prereg_hash": "16461da7e4b64a4935b0c553786719c1a793a9d2f2e155710ea26dbfd85f5d05",
-  "generated_utc": "2026-09-04T23:18:19.382322+00:00",
+  "generated_utc": "2026-09-05T05:41:33.847370+00:00",
   "metric": "mwrr_q05",
   "holdout_start": "2024-03-01",
-  "trials_in_family": 1344,
-  "trials_in_project": 7122,
+  "trials_in_family": 1452,
+  "trials_in_project": 7230,
   "surfaces": {
     "ADAUSDT": {
       "axes": [
@@ -83,8 +83,9 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 9736,
       "independent_paths_best": 1.37,
@@ -104,7 +105,7 @@
       "headline": {
         "return_pa": -0.31971005364131944,
         "return_pa_median": -0.008274274879996657,
-        "mdd": 4.188287848680771,
+        "mdd": 4.24171550660585,
         "mdd_kind": "invested"
       }
     },
@@ -180,8 +181,9 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 4073,
       "independent_paths_best": 1.16,
@@ -201,7 +203,7 @@
       "headline": {
         "return_pa": -0.2985760826081987,
         "return_pa_median": 0.277038243291185,
-        "mdd": 3.1104963249707556,
+        "mdd": 3.1174341346817194,
         "mdd_kind": "invested"
       }
     },
@@ -284,8 +286,9 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 396,
       "independent_paths_best": 1.36,
@@ -297,7 +300,7 @@
       "horizon_days_best": 1085.0,
       "cagr_best": null,
       "max_drawdown_best": null,
-      "dd_q50_best": 2.7186634661249833,
+      "dd_q50_best": 2.747848137856581,
       "sharpe_best": null,
       "n_trades_best": null,
       "n_liquidations_best": null,
@@ -305,7 +308,7 @@
       "headline": {
         "return_pa": 0.08149180566627995,
         "return_pa_median": 0.503102192318899,
-        "mdd": 2.7186634661249833,
+        "mdd": 2.747848137856581,
         "mdd_kind": "invested"
       }
     },
@@ -334,35 +337,35 @@
       "grid": [
         [
           [
-            -0.961276952825893,
-            -0.706010612631689,
+            -0.966582491687249,
+            -0.7119615277731849,
             0.3615816385553472
           ],
           [
-            -0.8996604300550796,
-            -0.5267469997685399,
+            -0.8977192548636077,
+            -0.5294857143706867,
             NaN
           ],
           [
-            -0.7950544507064445,
-            -0.055357742387571685,
+            -0.7935716868477495,
+            -0.05115886042027153,
             NaN
           ]
         ],
         [
           [
-            -0.9651277241131074,
-            -0.7360872480643031,
+            -0.9681587515027846,
+            -0.7381462085692425,
             0.13858938971785362
           ],
           [
-            -0.9238438013153673,
-            -0.6917618919449335,
+            -0.9187160365342055,
+            -0.6969098999230796,
             NaN
           ],
           [
-            -0.8529409256891796,
-            -0.7533562444106382,
+            -0.8528976974557305,
+            -0.6154737334473083,
             NaN
           ]
         ]
@@ -382,14 +385,15 @@
           0,
           2
         ],
-        "neighbour_mean": -0.706010612631689,
-        "plateau_ratio": -1.95256212525742,
+        "neighbour_mean": -0.7119615277731849,
+        "plateau_ratio": -1.9690201377971939,
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 5,
+        "cells_off_grid": 0
       },
       "n_starts_best": 2523,
       "independent_paths_best": 1.07,
@@ -409,7 +413,7 @@
       "headline": {
         "return_pa": 0.3615816385553472,
         "return_pa_median": 0.42193768761835704,
-        "mdd": 1.9341115827478386,
+        "mdd": null,
         "mdd_kind": "invested"
       }
     },
@@ -485,8 +489,9 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 5871,
       "independent_paths_best": 1.23,
@@ -506,7 +511,7 @@
       "headline": {
         "return_pa": -0.0988066126163582,
         "return_pa_median": 0.4830447612277601,
-        "mdd": 13.449197457031906,
+        "mdd": 13.492396429226632,
         "mdd_kind": "invested"
       }
     },
@@ -535,35 +540,35 @@
       "grid": [
         [
           [
-            -0.9855550700346672,
-            -0.6870187654593647,
+            -0.9866318239011628,
+            -0.6893102603351418,
             0.6789141697407873
           ],
           [
-            -0.9146885245254169,
-            -0.3697188918932227,
+            -0.9119443875305512,
+            -0.37173193563255175,
             NaN
           ],
           [
-            -0.8364297995508259,
-            0.03323870901831194,
+            -0.8408702432551006,
+            0.029725590320258254,
             NaN
           ]
         ],
         [
           [
-            -0.984548691388498,
-            -0.7116144569438517,
+            -0.9859581436043845,
+            -0.7139175330857329,
             -1.0
           ],
           [
-            -0.9260860666008502,
-            -0.5709462506363702,
+            -0.9187774423128122,
+            -0.5746915698018705,
             NaN
           ],
           [
-            -0.8512955902841486,
-            -1.0,
+            -0.8552073603199755,
+            -0.19547448011102572,
             NaN
           ]
         ]
@@ -583,14 +588,15 @@
           0,
           2
         ],
-        "neighbour_mean": -0.6870187654593647,
-        "plateau_ratio": -1.011937585161423,
+        "neighbour_mean": -0.6893102603351418,
+        "plateau_ratio": -1.0153128201733126,
         "n_neighbours": 1,
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 5,
+        "cells_off_grid": 0
       },
       "n_starts_best": 616,
       "independent_paths_best": 1.02,
@@ -610,7 +616,7 @@
       "headline": {
         "return_pa": 0.6789141697407873,
         "return_pa_median": 0.7500426413546053,
-        "mdd": 4.815366523898309,
+        "mdd": null,
         "mdd_kind": "invested"
       }
     },
@@ -686,8 +692,9 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 10264,
       "independent_paths_best": 1.39,
@@ -707,7 +714,7 @@
       "headline": {
         "return_pa": -0.23739920078441465,
         "return_pa_median": -0.06955329111148184,
-        "mdd": 1.305562845777864,
+        "mdd": 1.3071045916161101,
         "mdd_kind": "invested"
       }
     },
@@ -790,8 +797,9 @@
         "shape": "SPIKE"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 4289,
       "independent_paths_best": 1.16,
@@ -811,7 +819,7 @@
       "headline": {
         "return_pa": 0.3726884486782851,
         "return_pa_median": 0.9683629406627341,
-        "mdd": 8.49677819282286,
+        "mdd": 8.516524538333895,
         "mdd_kind": "invested"
       }
     },
@@ -887,8 +895,9 @@
         "unmeasurable": "the peak is not positive; the ratio has no meaning"
       },
       "assembled_from": {
-        "code_revisions": 12,
-        "panel_revisions": 4
+        "code_revisions": 13,
+        "panel_revisions": 4,
+        "cells_off_grid": 0
       },
       "n_starts_best": 10336,
       "independent_paths_best": 1.4,
@@ -908,7 +917,7 @@
       "headline": {
         "return_pa": -0.05335045602927216,
         "return_pa_median": 0.03920185603346249,
-        "mdd": 1.3907801792863541,
+        "mdd": 1.4250717169448672,
         "mdd_kind": "invested"
       }
     }
@@ -925,15 +934,39 @@
     "BTCUSDT": {
       "symbol": "BTCUSDT",
       "status": "fewer than two configurations share a horizon"
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "XRPUSDT": {
+      "symbol": "XRPUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "DOGEUSDT": {
+      "symbol": "DOGEUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "LTCUSDT": {
+      "symbol": "LTCUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "AVAXUSDT": {
+      "symbol": "AVAXUSDT",
+      "status": "fewer than two configurations share a horizon"
+    },
+    "ADAUSDT": {
+      "symbol": "ADAUSDT",
+      "status": "fewer than two configurations share a horizon"
     }
   },
   "search_test": {
     "ETHUSDT": {
       "status": "ok",
       "observed_best": 0.6789141697407873,
-      "null_mean": 1.3579178902178168,
-      "null_q95": 3.222142676009439,
-      "p_value": 0.725,
+      "null_mean": 0.9389122370092758,
+      "null_q95": 2.8380037169867114,
+      "p_value": 0.54,
       "n_null": 199,
       "n_configs": 18,
       "block_bars": 24,
@@ -946,6 +979,90 @@
       "null_mean": 2.4729213165729464,
       "null_q95": 8.130358758740423,
       "p_value": 0.79,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "BTCUSDT": {
+      "status": "ok",
+      "observed_best": 0.3615816385553472,
+      "null_mean": 0.41656424088291666,
+      "null_q95": 1.5184835211257148,
+      "p_value": 0.455,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "BNBUSDT": {
+      "status": "ok",
+      "observed_best": 0.08149180566627995,
+      "null_mean": 0.9205324422884005,
+      "null_q95": 3.6516333376153502,
+      "p_value": 0.745,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "XRPUSDT": {
+      "status": "ok",
+      "observed_best": -0.05335045602927216,
+      "null_mean": 0.15873205721907296,
+      "null_q95": 1.914563735253565,
+      "p_value": 0.465,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "DOGEUSDT": {
+      "status": "ok",
+      "observed_best": -0.0988066126163582,
+      "null_mean": 1.6423020869167209,
+      "null_q95": 5.473265568171564,
+      "p_value": 0.755,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "LTCUSDT": {
+      "status": "ok",
+      "observed_best": -0.23739920078441465,
+      "null_mean": -0.025112587331657908,
+      "null_q95": 1.1748273902122093,
+      "p_value": 0.57,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "AVAXUSDT": {
+      "status": "ok",
+      "observed_best": -0.2985760826081987,
+      "null_mean": 1.2142838189936245,
+      "null_q95": 4.872748037712373,
+      "p_value": 0.835,
+      "n_null": 199,
+      "n_configs": 18,
+      "block_bars": 24,
+      "verdict": "INDISTINGUISHABLE_FROM_SEARCH",
+      "survives_search": false
+    },
+    "ADAUSDT": {
+      "status": "ok",
+      "observed_best": -0.31971005364131944,
+      "null_mean": 0.643113495165239,
+      "null_q95": 3.2750689340066383,
+      "p_value": 0.85,
       "n_null": 199,
       "n_configs": 18,
       "block_bars": 24,
