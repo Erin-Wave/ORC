@@ -130,6 +130,23 @@ disagree about a word rather than about a number.
 
 11. max_hold_bars, if set, closes the position that many bars after the fill.
 
+## When a gap is found, ask for an EDIT, not a rewrite
+
+Each round of this brief was handed to the provider fresh and it wrote the
+whole file again. Six rounds went 400 clean, then a REGRESSION -- the
+intra-bar-ordering round broke a stop that five rounds had got right. A full
+rewrite per fix means every fix carries a new implementation with new variance,
+and the oracle then reports disagreements about the newest rewrite instead of
+about the specification.
+
+So after the first version exists, fix it by handing the provider ITS OWN
+previous file and asking for the smallest edit. That keeps the vendor split
+intact -- what must never be shown is `orc/eval/signal.py`, not the provider's
+own output -- and it removes the variance.
+
+The reference is still never edited by hand. A human patch would make it the
+same author as the implementation and the whole device would be checking itself.
+
 ## What to hand back
 
 One Python file. Standard library plus numpy. No imports from orc except
