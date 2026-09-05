@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-05T02:15:53.729622+00:00",
+  "utc": "2026-09-05T04:01:25.741112+00:00",
   "providers": [
     "claude",
     "codex"
@@ -8,28 +8,39 @@
     "H0001": {
       "family": "unconditional_dca_spot_style",
       "votes": {
+        "claude": {
+          "verdict": "CONTINUE",
+          "clause": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
+          "clause_met": false,
+          "unevaluable_clauses": [],
+          "numbers": [
+            "ETHUSDT primary_metric_best (tm_q05) = 3.6056116382051298",
+            "BTCUSDT primary_metric_best (tm_q05) = 2.051039115127731",
+            "SOLUSDT primary_metric_best (tm_q05) = 1.6619021758095884",
+            "BNBUSDT primary_metric_best (tm_q05) = 1.1260625166054576",
+            "XRPUSDT primary_metric_best (tm_q05) = 0.9227769940078271",
+            "DOGEUSDT primary_metric_best (tm_q05) = 0.8601961484914038",
+            "LTCUSDT primary_metric_best (tm_q05) = 0.6868948254289569",
+            "AVAXUSDT primary_metric_best (tm_q05) = 0.6183911094027328",
+            "ADAUSDT primary_metric_best (tm_q05) = 0.5958112554492814"
+          ],
+          "reason": "조항이 지명한 지표는 5th-percentile terminal multiple, 즉 scales 블록이 primary_metric_best로 라벨한 tm_q05이며 손익분기점은 1.0이다. 이 값은 아홉 심볼 모두에 존재하므로 조항은 평가 가능하다. 종료 조건은 '어떤 (symbol, stride, horizon) 셀도 1.0을 넘지 못할 때' 닫으라고 쓰여 있는데, ETHUSDT 3.6056, BTCUSDT 2.0510, SOLUSDT 1.6619, BNBUSDT 1.1261 네 심볼의 보고된 셀이 이미 1.0을 초과한다. primary_metric_best는 mwrr_q05로 랭크된 셀의 tm_q05이므로 그리드 전체 최대값의 하한일 뿐이지만, 하한만으로도 1.0을 넘는 셀의 존재가 확정되어 조항의 전제('no cell')가 성립하지 않는다. 랭킹 지표인 mwrr_q05(ETHUSDT 0.6789, ADAUSDT -0.3197 등)는 수익률 스케일이라 손익분기 0.0이며, 이 조항의 1.0 임계값에 대입해서는 안 된다. 참고로 조항 밖의 사실로서 search_test는 ETHUSDT p=0.725, SOLUSDT p=0.79로 둘 다 INDISTINGUISHABLE_FROM_SEARCH이고, 양수 피크를 가진 네 심볼의 shape는 모두 SPIKE이며, stride_days=30.0 열은 대부분 NaN이고 independent_paths_best는 1.02~1.40에 불과하다. 그러나 이 중 어느 것도 사전 등록된 문장에 들어 있지 않으므로 종료 근거가 될 수 없다."
+        },
         "codex": {
           "verdict": "CONTINUE",
           "clause": "Closed if no (symbol, stride, horizon) cell reaches a 5th-percentile terminal multiple above 1.0 across start dates.",
           "clause_met": false,
           "unevaluable_clauses": [],
           "numbers": [
-            "ADAUSDT primary_metric_best (tm_q05): 0.5958112554492814",
-            "AVAXUSDT primary_metric_best (tm_q05): 0.6183911094027328",
             "BNBUSDT primary_metric_best (tm_q05): 1.1260625166054576",
             "BTCUSDT primary_metric_best (tm_q05): 2.051039115127731",
-            "DOGEUSDT primary_metric_best (tm_q05): 0.8601961484914038",
             "ETHUSDT primary_metric_best (tm_q05): 3.6056116382051298",
-            "LTCUSDT primary_metric_best (tm_q05): 0.6868948254289569",
-            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884",
-            "XRPUSDT primary_metric_best (tm_q05): 0.9227769940078271"
+            "SOLUSDT primary_metric_best (tm_q05): 1.6619021758095884"
           ],
-          "reason": "The clause applies only if no cell has tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT reaches 2.051039115127731, ETHUSDT reaches 3.6056116382051298, and SOLUSDT reaches 1.6619021758095884. Therefore the pre-registered close condition is not met."
+          "reason": "The clause requires that no cell have tm_q05 above 1.0. BNBUSDT reaches 1.1260625166054576, BTCUSDT 2.051039115127731, ETHUSDT 3.6056116382051298, and SOLUSDT 1.6619021758095884. Because these primary_metric_best values are above 1.0, the clause is not met."
         }
       },
-      "unreachable": {
-        "claude": "exit 1: "
-      },
+      "unreachable": {},
       "decision": "CONTINUE"
     }
   }

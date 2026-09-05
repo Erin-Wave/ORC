@@ -1,5 +1,5 @@
 {
-  "utc": "2026-09-05T02:15:53.696806+00:00",
+  "utc": "2026-09-05T04:01:25.709980+00:00",
   "steps": {
     "close_votes": {
       "H0001": {
@@ -7,7 +7,126 @@
         "family": "unconditional_dca_spot_style"
       }
     },
-    "propose": "skipped: exit 1: ",
-    "surfaces": "skipped: exit 1: "
+    "propose": [
+      "H0023.json"
+    ],
+    "adversary": [
+      {
+        "file": "H0023.json",
+        "verdict": "REGISTER",
+        "reason": "[claude] Not a finer grid: `oi_confirmed_reversion` is a distinct rule in orc/eval/signal_rules.py with zero ledger rows, `oi_drop` exists on no other rule, and it reads the open-interest series no rule in the project has read — the entry set changes on exogenous evidence rather than the exits being re-priced, which is the ground H0020/H0021/H0022 died on. I ran all 45 cells off-ledger before judging: every one records (53–216 trades per cell, no liquidations, no skips), so the 0.08 arm the claim could not assert live is live, clauses 1–5 are all decidable on the recorded surface, and clause 1 in fact fires (best single level reaches calmar > 0 on only 2 of 9) — a publishable close of the relaxation half at 0.6 % of N, with the honest window confound and the missing continuation-side instrument both declared in advance. | [codex] This is a distinct rule shape: the open-interest condition changes the entry array using a previously unread series, and all five ordinal levels can plausibly alter admissibility rather than merely re-price an existing rule. The structural liquidation payer is unchanged and honestly disclosed, while the frozen clauses specify concrete closing numbers without padded axes.",
+        "payer_is_structural": true,
+        "kill_condition_is_falsifiable": true,
+        "configurations": 45,
+        "reviewed_by": [
+          "claude",
+          "codex"
+        ]
+      }
+    ],
+    "mechanism": [
+      {
+        "hypothesis_id": "H0023",
+        "payer_exists": true,
+        "confidence": "high",
+        "who": "A leveraged Binance USD-M holder whose margin balance breaches maintenance margin at the mark price, closed by Binance's own risk engine with an Immediate-or-Cancel order — paying a Liquidation Clearance Fee on notional to Binance and its Futures Insurance Fund, forfeiting any residual above the bankruptcy price to that fund, and paying the execution slippage of the IOC print to whoever fills it.",
+        "why_they_keep_paying": "Maintenance margin is a rule evaluated against the mark price, not a decision: once the ratio crosses, the venue submits the order regardless of price or timing, and the fee is charged on notional whether the fill is good or bad. They keep doing it because leverage is the entire product distinction of a perpetual over spot, Binance's fee schedule and insurance fund are underwritten on that leveraged base, and the base has demonstrably rebuilt after every flush in this period — open interest reconstitutes within weeks of even the largest cascades.",
+        "what_would_end_it": "Replacing market-executed liquidation with a mechanism that never touches the book — a backstop vault or auction taking the position at the liquidation price (Hyperliquid's HLP is the existing proof this is a design choice, not a necessity), universal ADL, or a maintenance-margin regime with leverage capped low enough that breaches stop being routine. Binance has already moved partway along this axis without ending it: partial liquidation before full closure, mark-price rather than last-price triggering, and the 125x-to-20x cap sequence of July 2021.",
+        "sources": [
+          "https://www.binance.com/en/support/faq/binance-futures-liquidation-protocols-360033525271",
+          "https://www.binance.com/en/support/faq/introduction-to-futures-insurance-funds-360033525371",
+          "https://www.binance.com/en/blog/futures/how-a-liquidation-order-is-executed-liquidation-price-vs-bankruptcy-price-3319141945917512624",
+          "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Liquidation-Order-Streams",
+          "https://developers.binance.com/docs/derivatives/change-log",
+          "https://www.binance.com/en/support/announcement/updates-on-rules-of-binance-futures-leverage-for-new-accounts-2021-07-27-d6457e23eb2e42f2b9c3ce44f46f9a6d",
+          "https://www.coindesk.com/markets/2021/07/26/binance-says-its-cutting-leverage-limit-to-20x-a-day-after-ftx-announces-the-same",
+          "https://www.okx.com/en-us/help/liquidation-faq",
+          "https://www.bitmex.com/blog/insurance-fund-changes",
+          "https://eco.com/support/en/articles/15247705-hyperliquid-liquidations-explained-margin-calls-and-insurance-fund",
+          "https://arxiv.org/html/2607.27070",
+          "https://blog.amberdata.io/leverage-liquidations-the-31b-deleveraging",
+          "https://docs.tardis.dev/historical-data-details/binance-futures"
+        ],
+        "notes": "The payer is real and documented in the venue's own rulebook, and the same construction exists on OKX, Bybit, BitMEX and Hyperliquid, so it is structural rather than a Binance artefact. Four things contradict or narrow the claim as written. (1) MOST OF THE PAYMENT IS NOT PAID TO THE MARKET. The clearance fee is a rate on notional paid to Binance, and any surplus above the bankruptcy price is retained by the Insurance Fund rather than returned to the trader; the only part that reaches a market participant is the slippage of the IOC print, and Binance's design — mark-price triggering, partial liquidation attempted first, a maintenance-margin buffer sitting above the bankruptcy price — is explicitly built to shrink exactly that part. A payer existing is not the same as a transfer being available on the book. (2) THE OPEN-INTEREST INFERENCE IS NOT THE IDENTITY THE CLAIM ASSERTS. Open interest falls by one only when BOTH sides of a contract close; if the counterparty filling the forced order is opening, OI is unchanged, and if new leverage is being added elsewhere in the same window OI can rise while a cascade is running. So 'open interest rose over the window, therefore not a cascade' is a noisy filter with genuine false negatives, not a clean refutation — and it is applied here over a five-day window, which is orders of magnitude longer than the seconds-to-minutes over which a liquidation IOC order actually lives. The claim concedes the false-positive direction (voluntary exits reduce OI identically) but not this one. (3) EVEN THE VENUE'S OWN LIQUIDATION FEED UNDER-MEASURES THE FLOW. The forceOrder stream stopped pushing real-time orders and now emits at most one snapshot per symbol per 1000 ms — only the largest/latest order in the interval — so the stream the archive lacks would not have been a full measurement of compulsion either. This strengthens the proposal's stated caveat rather than weakening it. (4) THE PAYMENT IS NOT STATIONARY ACROSS 2019–2024. Max leverage was cut from 125x/100x to 20x for new accounts on 2021-07-19 and extended to existing users the following week under regulatory pressure; risk-limit tiers, the mark-price/index construction and the partial-liquidation protocol all changed in the same period. The size and frequency of the payment therefore differ between the early and late parts of the window, which is a confound for any per-symbol comparison across a shortened history and is separate from the window-truncation confound the claim already declares. Nothing found supports or refutes the specific quantitative premise that OI fell on 61 % of the worst 1 % of hourly returns; that is the proposer's own measurement and was not independently checked here."
+      }
+    ],
+    "surfaces": "written",
+    "tree_violations": [
+      {
+        "provider": "claude",
+        "files": [
+          "_probe1.py",
+          "_probe2.py",
+          "_probe3.py",
+          "_probe4.py",
+          "_probe5.py",
+          "_probe6.py",
+          "configs/proposed/",
+          "reports/EXECUTION_REALISM.json",
+          "reports/ROBUSTNESS.json"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      },
+      {
+        "provider": "claude+codex",
+        "files": [
+          "_fuzz.py",
+          "_probe7.json",
+          "_probe7.py",
+          "_ref.py"
+        ],
+        "note": "concurrent batch; the tree changed while these providers were running and the edit cannot be attributed to one of them"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "_probe10.py",
+          "_probe11.py",
+          "_probe12.py",
+          "_probe8.py",
+          "_probe9.py",
+          "ledger/trials.db",
+          "reports/SCOUT.jsonl"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "_probe13.py"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "reports/ACTIVITY.jsonl",
+          "reports/FINDINGS.json",
+          "reports/KERNEL_REVIEW.json",
+          "reports/KERNEL_REVIEW.md"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "reports/ACTIVITY.jsonl"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      },
+      {
+        "provider": "claude",
+        "files": [
+          "reports/ACTIVITY.jsonl"
+        ],
+        "attribution": "unattributed",
+        "note": "the tree changed during this call; a concurrent writer on the same checkout cannot be excluded"
+      }
+    ]
   }
 }

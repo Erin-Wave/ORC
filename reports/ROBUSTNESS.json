@@ -2,17 +2,20 @@
   "results": [
     {
       "passed": false,
-      "failed": [],
+      "failed": [
+        "cost"
+      ],
       "unmeasured": [
-        "regime"
+        "regime",
+        "execution"
       ],
       "checks": [
         {
           "check": "cost",
           "multiplier": 2.0,
-          "base": 3.6056116382051298,
-          "stressed": 3.6016476432021394,
-          "passed": true
+          "base": NaN,
+          "stressed": NaN,
+          "passed": false
         },
         {
           "check": "walk_forward",
@@ -34,9 +37,9 @@
             "slippage_bps": 1.0,
             "cost_multiplier": 1.0
           },
-          "in_sample": 1.7284592280720057,
-          "out_of_sample": 0.9916317042239609,
-          "retention": 0.573708472909753,
+          "in_sample": 1.680059081090902,
+          "out_of_sample": 1.116942013725047,
+          "retention": 0.6648230566985717,
           "passed": true
         },
         {
@@ -49,11 +52,8 @@
         },
         {
           "check": "execution",
-          "hourly_return": 2.6056116382051298,
-          "minute_return": 2.6153177585502414,
-          "relative_drift": 0.003725083279025299,
-          "sign_agrees": true,
-          "passed": true
+          "passed": null,
+          "reason": "UnsupportedConfig: horizon_exceeds_history (36720 bars needed, 36504 available)"
         }
       ],
       "hypothesis_id": "H0001",
