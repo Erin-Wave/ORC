@@ -1573,3 +1573,56 @@ def test_a_final_test_cannot_read_positioning_from_before_the_seal(monkeypatch):
 
     with pytest.raises(ValueError, match="not wired"):
         panel_mod.load("BTCUSDT", "1h", sealed_only=True, with_positioning=True)
+
+
+def test_a_closed_family_does_not_get_the_wide_ceiling():
+    """kernel_review 2026-09-05. probe_ceiling's docstring conditions the
+    2000-cell width on 'tested and not closed' and the code checked only
+    'tested', so a new id could spend the widest grid in the project re-asking
+    a question already on record as settled -- the noise mining section 6
+    exists to stop. Verified by the reviewer: probe_ceiling on a family closed
+    the day before returned 2000.
+
+    The layer under it was the same mistake twice: closed_families() is keyed
+    by hypothesis id with the family on the VALUE, so reading its keys compares
+    a family name against "H0017" and matches nothing.
+    """
+    from orc import config
+    from orc.orchestrator.spec import closed_families, probe_ceiling
+
+    closed = {v.get("family") for v in closed_families().values()}
+    assert closed, "no family is closed; this test has nothing to check"
+    for fam in closed:
+        assert probe_ceiling(fam) == config.MAX_PROBE_CONFIGURATIONS, fam
+
+    assert probe_ceiling("a family nobody has ever run") == \
+        config.MAX_PROBE_CONFIGURATIONS
+    # Tested and still open keeps the width it earned.
+    assert probe_ceiling("unconditional_dca_spot_style") == \
+        config.MAX_CONFIGURATIONS_PER_HYPOTHESIS
+
+
+def test_a_start_cannot_be_valued_before_it_opens():
+    """kernel_review 2026-09-05. `fits = ends0 < N` bounded the valuation index
+    only from above, so a negative horizon produced negative end indices that
+    numpy read from the END of the array -- every early start date valued at a
+    price years in its own future, reported as an ordinary answer with
+    n_starts 36,480.
+
+    Bounding at zero is not enough either: that still admits an end BEFORE its
+    own start, which is a position valued on a bar earlier than the one it was
+    opened on. It left 36,336 of them.
+    """
+    from orc.eval.analytic import AnalyticSpec, evaluate
+
+    close = np.linspace(100.0, 200.0, 4000)
+    bad = evaluate(close, AnalyticSpec(contribution=100.0, stride_bars=24,
+                                       n_contributions=2, hold_bars=-168))
+    assert bad.get("n_starts") == 0, \
+        "a horizon that ends before it starts was still evaluated"
+
+    ok = evaluate(close, AnalyticSpec(contribution=100.0, stride_bars=24,
+                                      n_contributions=10, hold_bars=0))
+    assert ok["n_starts"] > 0
+    assert np.all(ok["end_idx"] > ok["start_idx"])
+    assert np.all(ok["end_idx"] < close.size)

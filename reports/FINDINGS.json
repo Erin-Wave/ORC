@@ -2624,16 +2624,17 @@
     },
     "b0954d789b98": {
       "id": "b0954d789b98",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T04:16:40.026408+00:00",
       "last_seen_utc": "2026-09-05T04:16:40.026408+00:00",
-      "disposition": "",
+      "disposition": "probe_ceiling requires tested AND not closed; closed_families is read by family, not by key. test_a_closed_family_does_not_get_the_wide_ceiling",
       "file": "orc/orchestrator/spec.py",
       "line": 348,
       "severity": "high",
       "what": "probe_ceiling() grants the 2000-cell ceiling to any family with rows in the ledger, including a family that has been tested and CLOSED, although its own docstring conditions that width on 'tested and not closed'.",
       "trigger": "Drop a queue file with \"family\": \"cci_forced_flow_duel\" (closed 2026-09-04 after 90 rows, marker at configs/closed/H0017.json) under a new id H0021 with a 900-cell grid. Verified by running: probe_ceiling('cci_forced_flow_duel') -> 2000, probe_ceiling('funding_carry_short') -> 2000, probe_ceiling('a_brand_new_family') -> 96. closed_families() is keyed by hypothesis_id ('H0002','H0006','H0007','H0017','H0019'), so load_registry only blocks the same ID from re-running; probe_ceiling never consults it and led.families() only knows the family had rows.",
-      "why_silent": "Nothing raises. intake_queue accepts the registration, prints 'registered H0021 ... 900 configurations', and the worker books 900 permanent rows against N for a family whose kill condition has already fired. The gate is the one section 6 calls 'enforced at intake, not advised', so its silence reads as approval, and N can only grow -- this is the H0002 accounting (73 % of N held by a closed family) repeating through the check meant to prevent it."
+      "why_silent": "Nothing raises. intake_queue accepts the registration, prints 'registered H0021 ... 900 configurations', and the worker books 900 permanent rows against N for a family whose kill condition has already fired. The gate is the one section 6 calls 'enforced at intake, not advised', so its silence reads as approval, and N can only grow -- this is the H0002 accounting (73 % of N held by a closed family) repeating through the check meant to prevent it.",
+      "decided_utc": "2026-09-05T04:31:33.208867+00:00"
     },
     "86d516c24f1d": {
       "id": "86d516c24f1d",
@@ -2807,16 +2808,17 @@
     },
     "3a77a095d417": {
       "id": "3a77a095d417",
-      "status": "open",
+      "status": "fixed",
       "first_seen_utc": "2026-09-05T04:16:40.026408+00:00",
       "last_seen_utc": "2026-09-05T04:16:40.026408+00:00",
-      "disposition": "",
+      "disposition": "fits requires ends0 > starts0, so an end before its own start is refused. test_a_start_cannot_be_valued_before_it_opens",
       "file": "orc/eval/analytic.py",
       "line": 111,
       "severity": "high",
       "what": "The admissible-start filter `fits = ends0 < N` bounds the valuation index only from above, so a negative `horizon_bars` produces negative `end_idx` values that pass the filter and then index `close[ends]` and `W[ends + 1]` from the END of the array, valuing an early start date at a price years in its own future.",
       "trigger": "Run on the real BTCUSDT development panel: `evaluate(panel.load('BTCUSDT','1h').close, AnalyticSpec(contribution=100.0, stride_bars=24, n_contributions=2, hold_bars=-168))`. horizon_bars is -144; the result carries n_starts 36480 with start_idx [0,1,2] and end_idx [-144,-143,-142], final_price [50917.2, 50614.8, 50833.9] and terminal_multiple [7.074, 7.023, 7.050]. The start date is 2020-01-01 and the bar it is valued on is 2024-02-24. Reachable from a registered grid: nothing in Hypothesis.verify(), TrialConfig, AnalyticSpec or evaluate() rejects a negative hold_days, and runner.run_dca_trial's only horizon guard is `horizon >= len(p)`, which a negative horizon passes. run_dca_trial happens to die later with an IndexError inside lump_sum_reference, but surface.pbo_for_hypothesis, robustness._tm_q05_over_mask and kt3_survivorship call evaluate() without it and get the wrapped number silently.",
-      "why_silent": "Negative numpy indices are legal, so no bounds error is raised; the wrapped price is a real price from the same series, so the terminal multiple is finite, positive and of ordinary magnitude, and n_starts reports the full unreduced count. The only visible tell is a negative horizon_days in the metrics, which nothing asserts on."
+      "why_silent": "Negative numpy indices are legal, so no bounds error is raised; the wrapped price is a real price from the same series, so the terminal multiple is finite, positive and of ordinary magnitude, and n_starts reports the full unreduced count. The only visible tell is a negative horizon_days in the metrics, which nothing asserts on.",
+      "decided_utc": "2026-09-05T04:31:33.614278+00:00"
     },
     "62d2af93aae2": {
       "id": "62d2af93aae2",

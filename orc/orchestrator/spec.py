@@ -332,7 +332,8 @@ class Hypothesis:
         return h
 
 
-def probe_ceiling(family: str, tested: set[str] | None = None) -> int:
+def probe_ceiling(family: str, tested: set[str] | None = None,
+                  closed: set[str] | None = None) -> int:
     """How many configurations this family may enumerate on its first outing.
 
     A mechanism with no rows in the ledger has survived nothing, so it gets a
@@ -351,7 +352,24 @@ def probe_ceiling(family: str, tested: set[str] | None = None) -> int:
                 tested = {f for f, _ in led.families()}
         except Exception:                                          # noqa: BLE001
             tested = set()
-    return (config.MAX_CONFIGURATIONS_PER_HYPOTHESIS if family in tested
+    # "tested and not closed", which is what the docstring above promises and
+    # what the code did not check. A CLOSED family had already answered its
+    # question; granting it the full 2000-cell ceiling lets a new id spend the
+    # widest possible grid re-asking one that is on record as settled, which is
+    # the noise mining section 6 exists to stop. kernel_review 2026-09-05
+    # verified it: probe_ceiling('cci_forced_flow_duel') returned 2000 for a
+    # family closed the day before.
+    if closed is None:
+        try:
+            # closed_families() is keyed by hypothesis id and the FAMILY is a
+            # field on the value. Reading its keys would have compared a family
+            # name against "H0017" and matched nothing, which is the defect
+            # this fix is for, one layer down.
+            closed = {v.get("family") for v in closed_families().values()}
+        except Exception:                                          # noqa: BLE001
+            closed = set()
+    wide = family in tested and family not in closed
+    return (config.MAX_CONFIGURATIONS_PER_HYPOTHESIS if wide
             else config.MAX_PROBE_CONFIGURATIONS)
 
 

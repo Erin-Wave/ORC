@@ -107,8 +107,18 @@ def evaluate(
         return {"n_starts": 0}
 
     # Keep only starts whose FULL horizon (deposits + hold) fits in the series.
+    # Bounded from BELOW as well, which it was not: `ends0 < N` alone admits a
+    # NEGATIVE index, and numpy then reads close[ends] and W[ends + 1] from the
+    # END of the array. kernel_review 2026-09-05 ran it on the real panel --
+    # hold_bars=-168 gives horizon_bars=-144, and the result came back with
+    # n_starts 36480, start_idx [0,1,2] and end_idx [-144,-143,-142]: every
+    # early start date valued at a price years in its own future, reported as
+    # an ordinary answer.
     ends0 = starts0 + spec.horizon_bars
-    fits = ends0 < N
+    # `> starts0`, not just `>= 0`. Bounding at zero alone still admits an end
+    # BEFORE its own start -- valuing a position on a bar earlier than the one
+    # it was opened on. hold_bars=-168 removed 144 rows and left 36,336.
+    fits = (ends0 < N) & (ends0 > starts0)
     if not fits.any():
         return {"n_starts": 0}
 
