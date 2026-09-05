@@ -866,6 +866,18 @@ def activity(now: datetime | None = None, tasks: list[dict] | None = None) -> di
 # which is why it is a tunable and not a threshold; reports/ACTIVITY.jsonl
 # shows what each scout actually added, so the cadence can be judged from
 # evidence later instead of guessed at again.
+# What a blocking finding does NOT stop
+# --------------------------------------------------------------------------
+# The rule is what the finding can INVALIDATE. A defect in the evaluators voids
+# a trial, a robustness score and a minute-bar re-run, so those wait for it to
+# be fixed. It cannot make the web say something different, cannot change how
+# many symbols were delisted, and cannot make the test suite weaker.
+#
+# kernel_review is the most important of the four: reading the suspect code
+# harder is the correct response to knowing it is suspect, and it is what
+# produces the finding that clears the block.
+BLOCKED_STILL_ALLOWED = ("kernel_review", "scout", "survivorship", "mutation")
+
 ZERO_N_WORK = {
     "scout": 180,
     "kernel_review": 60 * 24,
@@ -1033,19 +1045,37 @@ def next_action(now: datetime | None = None,
     except Exception:                                              # noqa: BLE001
         blocking = []
     if blocking:
-        # Not a full stop.  Research on code known to be wrong is forbidden,
-        # but reading that code harder is exactly the right response, so the
-        # kernel review is the one action allowed through.
-        due = last_activity_at("kernel_review")
-        if "kernel_review" not in skip and (
-                due is None
-                or (now - due) > timedelta(minutes=ZERO_N_WORK["kernel_review"])):
-            return "kernel_review", (
-                f"high 결함 {len(blocking)}건이 열려 있어 연구는 멈춥니다 — "
-                "그 코드를 더 읽는 것만 허용됩니다")
+        # A blocking finding forbids COMPUTING a number on code known to be
+        # wrong. It does not forbid everything, and treating it as a full stop
+        # is how the loop spent 2026-09-05 from 15:31 to 17:16 printing
+        # `blocked` every fifteen minutes and doing nothing else -- because
+        # kernel_review reliably returns four to nine high findings per run, so
+        # "any open high finding halts research" halts it most of the time.
+        #
+        # The line is what the finding can INVALIDATE. A defect in the
+        # evaluators voids a trial, a robustness score and a minute-bar
+        # re-run, so those wait. It cannot make the web say something else,
+        # cannot change how many symbols were delisted, and cannot make the
+        # test suite weaker -- so scout, survivorship and mutation carry on,
+        # and kernel_review most of all: reading the suspect code harder is
+        # the right response to knowing it is suspect.
+        # kernel_review FIRST, not by its clock. Sorting by allowance put
+        # scout (180 min) ahead of it (1440), and when the code is known to be
+        # wrong the thing to do is read it -- it is also the only action here
+        # that can produce the finding which clears the block.
+        allowed = [a for a in BLOCKED_STILL_ALLOWED if a not in skip]
+        allowed.sort(key=lambda a: (a != "kernel_review", ZERO_N_WORK[a]))
+        for action in allowed:
+            at = last_activity_at(action)
+            if at is None or (now - at) > timedelta(minutes=ZERO_N_WORK[action]):
+                return action, (
+                    f"high 결함 {len(blocking)}건이 열려 있어 새 숫자는 "
+                    f"계산하지 않습니다 — {action}는 그 결함이 무효로 만들 수 "
+                    "있는 것이 아니므로 계속합니다")
         return "blocked", (
             f"high 결함 {len(blocking)}건: {', '.join(f['id'] for f in blocking)}. "
-            "사람이 고치거나 findings.py 로 결정을 기록해야 합니다")
+            "사람이 고치거나 findings.py 로 결정을 기록해야 합니다. "
+            f"그동안 허용된 작업({', '.join(sorted(allowed))})은 모두 최신입니다")
 
     queued = [p.stem for p in sorted(config.QUEUE.glob("*.json"))] \
         if config.QUEUE.exists() else []

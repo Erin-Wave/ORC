@@ -235,16 +235,27 @@ def test_a_blocking_finding_stops_research_but_not_reading_the_code(sandbox,
                                                                    monkeypatch):
     """Research on code known to be wrong is forbidden -- a number computed on
     it looks like evidence and is not.  Reading that code harder is the correct
-    response, so the kernel review is the one action allowed through."""
+    response, so the kernel review is preferred over every other action.
+
+    UPDATED 2026-09-05. This used to assert that once kernel_review had run,
+    the answer was `blocked` and the loop stood still. That is what it then did
+    for nearly two hours at a stretch, because kernel_review returns four to
+    nine high findings per run. The policy now is what the finding can
+    INVALIDATE, and the rest of BLOCKED_STILL_ALLOWED keeps going -- the test
+    is updated to the new policy rather than deleted, and what it still pins is
+    that kernel_review comes FIRST and that `blocked` still names the ids when
+    there is genuinely nothing allowed left."""
     import findings
     monkeypatch.setattr(findings, "blocking",
                         lambda: [{"id": "deadbeef1234", "file": "orc/eval/x.py",
                                   "severity": "high", "what": "wrong"}])
     action, why = runstate.next_action(datetime.now(UTC))
-    assert action == "kernel_review"
-    assert "연구는 멈춥니다" in why
+    assert action == "kernel_review",         "reading the suspect code is still the first answer"
+    assert "새 숫자는 계산하지 않습니다" in why
 
-    runstate.record_activity("kernel_review", "just ran")
+    # The others carry on; only when ALL of them are fresh is it `blocked`.
+    for a in runstate.BLOCKED_STILL_ALLOWED:
+        runstate.record_activity(a, "just ran")
     action, why = runstate.next_action(datetime.now(UTC))
     assert action == "blocked"
     assert "deadbeef1234" in why
@@ -1147,3 +1158,46 @@ def test_the_two_lanes_do_not_reach_for_git_at_once(monkeypatch):
            / "forever.py").read_text(encoding="utf-8")
     assert "with _GIT_LOCK:\n        return _land_locked(" in src, \
         "land() no longer serialises the git work"
+
+
+def test_a_blocking_finding_stops_only_what_it_can_invalidate(sandbox, monkeypatch):
+    """2026-09-05, 15:31 to 17:16: the loop printed `blocked` every fifteen
+    minutes and did nothing else.
+
+    kernel_review reliably returns four to nine high findings per run, so "any
+    open high finding halts research" halts it most of the time. The owner's
+    words were blocked 존나뜬다고.
+
+    The line is what the finding can INVALIDATE. A defect in the evaluators
+    voids a trial, a robustness score and a minute-bar re-run. It cannot make
+    the web say something different, cannot change how many symbols were
+    delisted, and cannot make the test suite weaker.
+    """
+    import findings as findings_mod
+
+    monkeypatch.setattr(findings_mod, "blocking",
+                        lambda: [{"id": "abc123", "severity": "high"}])
+    now = datetime.now(UTC)
+
+    # Nothing has run, so the cheapest allowed action is offered rather than a
+    # dead end.
+    action, why = runstate.next_action(now)
+    assert action in runstate.BLOCKED_STILL_ALLOWED, action
+    assert "새 숫자는 계산하지 않습니다" in why
+
+    # The forbidden ones stay forbidden however stale they are.
+    for banned in ("cycle", "robustness", "execution_realism", "reason"):
+        assert banned not in runstate.BLOCKED_STILL_ALLOWED
+
+    # With every allowed action fresh it says `blocked` and says why, rather
+    # than pretending there is work.
+    for a in runstate.BLOCKED_STILL_ALLOWED:
+        runstate.record_activity(a, "just ran", 1.0, ok=True)
+    action, why = runstate.next_action(now + timedelta(minutes=1))
+    assert action == "blocked"
+    assert "허용된 작업" in why
+
+    # And a caller that cannot perform them is not offered them.
+    action, _ = runstate.next_action(now,
+                                     skip=set(runstate.BLOCKED_STILL_ALLOWED))
+    assert action == "blocked"
