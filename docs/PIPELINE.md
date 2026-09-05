@@ -1086,3 +1086,47 @@ gitignore돼 있고 아무도 열 수 없다.
 | I32 | **화면은 틱마다, 실패한 틱에도 갱신된다** | `main()`의 `try` 바깥 호출, `test_a_broken_dashboard_cannot_stop_the_research` |
 | I33 | **표시장치의 결함은 연구를 멈출 수 없다** | `refresh_dashboard()`가 raise하지 않음 — 예외/비영/타임아웃 3경로 모두 테스트 |
 | I34 | **청산은 0을 남기고, 그 계좌는 다시 거래하지 않는다** | `signal.py`의 `cash = 0.0`, `test_a_liquidation_leaves_nothing_to_open_the_next_trade_with` |
+
+
+## 15. N=0은 빈 결과가 아니라 보정을 끈 것 — 2026-09-05
+
+`sqlite3.connect()`는 없는 경로에 **실패하지 않고 데이터베이스를 만든다.**
+그래서 `ORC_LEDGER`를 잘못 가리키면 이 프로젝트의 리더 전체가 완벽하게
+동작한다 — 스키마가 서고, 모든 쿼리가 돌고, `total_trials()`가 0을 돌려주고,
+`verdict.disqualifiers()`가 **모든 결과를 "이전 시도 0회" 기준으로 보정한다.**
+어디에서도 예외가 나지 않는다.
+
+도달 가능하다는 증거는 이 저장소에 있던 0바이트 `ledger/trials.db`다.
+2026-09-05 17:32, 읽기 전용 adversary probe가 파일명을 잘못 짚어(진짜는
+`trials.sqlite`) 만든 것이다. 그 probe는 `sqlite3`를 직접 썼으니 이 방어가
+막았을 대상은 아니지만, **같은 오타를 `ORC_LEDGER`로 내면 프로젝트 자신의
+리더를 그대로 통과한다.**
+
+### 15a. sandbox.py의 주석이 코드에 없는 동작을 설명하고 있었다
+
+`orc/sandbox.py:125`가 워크트리의 `ledger/`를 지우면서 이렇게 적어뒀다 —
+*"a stray Ledger() lands on nothing rather than on a copy nobody reads"*.
+떨어지지 않았다. 빈 원장을 새로 만들었다. 실제 워크트리에서 측정한 값:
+
+```
+수정 전   exit 0   N = 0
+수정 후   exit 1   FileNotFoundError: Refusing to create an empty one...
+진짜 원장          N = 7230
+```
+
+13a와 같은 종류다: 주석이 방어를 주장하고 코드는 하지 않았다.
+
+### 15b. 왜 호출부를 하나도 안 고쳤나
+
+`Ledger(`가 34곳이고 그중 `orc/orchestrator/runner.py`와 `spec.py`가
+`CODE_HASH_ROOTS` 안이다. 인자를 추가하면 **등록부 전체가 새 행으로
+재실행되고 N이 한 세대 늘어난다.** 그래서 규칙을 경로에 걸었다 —
+**설정된 원장은 여는 것만으로 생기지 않는다.** 자기 경로를 이름 지어 넘긴
+호출자(테스트, 샌드박스, 스크래치)는 의도한 것이므로 그대로다.
+
+새 프로젝트를 진짜로 시작하는 유일한 통로는 `ORC_ALLOW_EMPTY_LEDGER=1`이고,
+그건 기본값이 아니라 **선언**이다.
+
+| # | 불변식 | 지키는 것 |
+|---|---|---|
+| I35 | **설정된 원장은 여는 것만으로 생기지 않는다** | `Ledger.__init__`의 거부, `test_the_configured_ledger_is_never_created_by_opening_it` |

@@ -296,6 +296,12 @@ def sandbox(tmp_path, monkeypatch):
         monkeypatch.setattr(config, name, p)
     (tmp_path / "configs" / "closed").mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(config, "LEDGER_DB", tmp_path / "trials.sqlite")
+    # This fixture IS a genuinely new project, which is the one case
+    # Ledger() will create a configured ledger for -- and it has to say so.
+    # Opening the configured path no longer brings it into existence, because
+    # a wrong ORC_LEDGER used to yield a working, empty ledger reporting N=0
+    # with nothing failing anywhere.
+    Ledger(config.LEDGER_DB, create_if_missing=True).close()
     monkeypatch.setattr(runstate, "LAST_REASONING", tmp_path / ".last_cycle")
     # The real supervisor's heartbeat must not reach a test.  Without this,
     # activity() reads the live lock on this workstation and every verdict test

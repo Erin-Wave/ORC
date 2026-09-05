@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -210,9 +211,44 @@ def code_hash(paths: list[Path] | None = None) -> str:
     return h.hexdigest()
 
 
+# An empty ledger is not an empty result -- it is the multiple-testing
+# correction switched off.
+#
+# sqlite3.connect() CREATES a database rather than failing on a path that is
+# not there, and every reader here then works perfectly against it: the schema
+# builds, the queries run, N comes back 0, and `verdict.disqualifiers()`
+# corrects every result against zero prior looks. There is no error anywhere.
+#
+# The evidence this is reachable is a 0-byte `ledger/trials.db` sitting in this
+# repository, created 2026-09-05 17:32 by a read-only adversary probe that
+# guessed the filename (the real one is trials.sqlite). That probe used
+# sqlite3 directly so this guard would not have caught it, but the same typo
+# through ORC_LEDGER -- or a checkout that did not pull the 16 MB file --
+# reaches the project's own reader and is silent all the way to a report.
+#
+# So the CONFIGURED ledger is never brought into existence as a side effect of
+# opening it. A caller that names its own path (a test, a sandbox, a scratch
+# copy) is doing so deliberately and keeps the old behaviour, which is why no
+# call site had to change -- two of the 34 are inside CODE_HASH_ROOTS and
+# touching them would re-run the entire registry.
+ALLOW_EMPTY_LEDGER_ENV = "ORC_ALLOW_EMPTY_LEDGER"
+
+
 class Ledger:
-    def __init__(self, path: Path | None = None):
+    def __init__(self, path: Path | None = None,
+                 create_if_missing: bool | None = None):
         self.path = Path(path or config.LEDGER_DB)
+        if create_if_missing is None:
+            create_if_missing = self.path != Path(config.LEDGER_DB)
+        if (not create_if_missing and not self.path.exists()
+                and not os.environ.get(ALLOW_EMPTY_LEDGER_ENV)):
+            raise FileNotFoundError(
+                f"the ledger is not at {self.path}. Refusing to create an "
+                "empty one: N would read 0 and every result would be corrected "
+                "against zero prior looks, with nothing failing anywhere. "
+                "ledger/trials.sqlite is committed, so a real checkout has it "
+                "-- check ORC_LEDGER and ORC_ROOT. To start a genuinely new "
+                f"project set {ALLOW_EMPTY_LEDGER_ENV}=1.")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
         self.conn.execute("PRAGMA journal_mode=WAL")

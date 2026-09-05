@@ -640,7 +640,10 @@ def test_a_ledger_that_stopped_growing_is_news(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ORC_ROOT", tmp_path)
     monkeypatch.setattr(config, "LEDGER_DB", db)
 
-    with Ledger(db) as l:
+    # A fresh tmp ledger, declared. Opening the configured path no longer
+    # creates it: a wrong ORC_LEDGER used to give a working, empty ledger
+    # reporting N=0 with nothing failing anywhere.
+    with Ledger(db, create_if_missing=True) as l:
         l.record(**_row())
         stale = (now - timedelta(days=9)).isoformat()
         l.conn.execute("DROP TRIGGER trials_no_update")   # append-only, so age it by hand
@@ -1762,7 +1765,7 @@ def test_a_second_hypothesis_sees_a_cell_an_earlier_one_measured(tmp_path,
     args = dict(run_id="r1", family="fam", symbol="BTCUSDT", evaluator="analytic",
                 cfg={"stride_days": 7, "n_contributions": 52},
                 metrics={"tm_q05": 1.2}, n_starts=10, panel_hash="p1", code="c1")
-    with Ledger() as led:
+    with Ledger(create_if_missing=True) as led:
         id_a, new_a = led.record(hypothesis_id="H0001", **args)
         id_b, new_b = led.record(hypothesis_id="H0002", **args)
         assert new_a is True and new_b is False, "the measurement was repeated"
@@ -3198,3 +3201,51 @@ def test_every_scoring_path_loads_the_panel_the_rule_needs():
     assert surface._needs_positioning([_D(), _C()]) is True
     assert surface._needs_positioning([_D()]) is False
     assert surface._needs_positioning([]) is False
+
+
+def test_the_configured_ledger_is_never_created_by_opening_it(tmp_path, monkeypatch):
+    """N=0 is not an empty result. It is the correction switched off.
+
+    sqlite3.connect() CREATES a database rather than failing on a path that is
+    not there, so a wrong ORC_LEDGER used to produce a perfectly working, empty
+    ledger: the schema builds, every query runs, n_trials() returns 0, and
+    verdict.disqualifiers() then corrects every result in the project against
+    zero prior looks. Nothing raises, nothing is red, and the multiple-testing
+    denominator this whole design is built around is gone.
+
+    The evidence it is reachable is a 0-byte ledger/trials.db in this
+    repository, left on 2026-09-05 by a read-only probe that guessed the
+    filename. That one went through sqlite3 directly, so this guard would not
+    have caught it -- but the same typo through ORC_LEDGER, or a checkout that
+    did not pull the 16 MB file, comes straight through Ledger().
+
+    A caller that NAMES a path keeps the old behaviour, because 34 call sites
+    construct a Ledger and two of them are inside CODE_HASH_ROOTS: adding an
+    argument there would re-run the entire registry as new rows.
+    """
+    from orc import config
+    from orc.ledger.trials import ALLOW_EMPTY_LEDGER_ENV, Ledger
+
+    missing = tmp_path / "typo" / "trials.db"
+    monkeypatch.setattr(config, "LEDGER_DB", missing)
+    monkeypatch.delenv(ALLOW_EMPTY_LEDGER_ENV, raising=False)
+
+    with pytest.raises(FileNotFoundError, match="Refusing to create an empty"):
+        Ledger()
+    assert not missing.exists(), "refused and created it anyway"
+
+    # Naming the same path explicitly is still the configured ledger.
+    with pytest.raises(FileNotFoundError):
+        Ledger(missing)
+
+    # A caller with its own path is deliberate and unaffected -- this is what
+    # keeps every existing call site working.
+    own = tmp_path / "scratch.sqlite"
+    assert Ledger(own).total_trials() == 0
+    assert own.exists()
+
+    # And a genuinely new project has one way through, which is a declaration
+    # rather than a silent default.
+    monkeypatch.setenv(ALLOW_EMPTY_LEDGER_ENV, "1")
+    assert Ledger().total_trials() == 0
+    assert missing.exists()
